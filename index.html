@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <title>땅콩 레이스: 뮤턴트 모드</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+
+  <style>
+
+    body {
+
+      margin: 0; padding: 0; display: flex; justify-content: center; align-items: center;
+
+      height: 100vh; width: 100vw; background-color: #05050a; overflow: hidden;
+
+      font-family: 'Noto Sans KR', sans-serif;
+
+    }
+
+    canvas { display: block; outline: none; }
+
+    #ui-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 640px; height: 800px; pointer-events: none; z-index: 10; }
+
+    #ui-container > div { pointer-events: auto; }
+
+    .glass-panel { background: rgba(10, 12, 20, 0.7) !important; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08) !important; border-top: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; border-radius: 12px; }
+
+    .modern-input { background: rgba(255, 255, 255, 0.05) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 6px !important; padding: 10px 10px !important; font-family: 'Noto Sans KR', sans-serif; transition: all 0.3s ease; }
+
+    .modern-input:focus { outline: none; background: rgba(255, 255, 255, 0.1) !important; border-color: #00e5ff !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3) !important; }
+
+    .number-input { width: 35px !important; padding: 10px 5px !important; text-align: center; }
+
+    .modern-btn { background: linear-gradient(135deg, #007bff, #00e5ff) !important; color: #fff !important; border: none !important; border-radius: 8px !important; text-transform: uppercase; letter-spacing: 1px; font-weight: 700 !important; font-family: 'Noto Sans KR', sans-serif; transition: all 0.3s ease; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+    .modern-btn:hover { box-shadow: 0 0 20px rgba(0, 229, 255, 0.6) !important; transform: translateY(-2px); }
+
+    .ghost-btn { background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #aaa !important; border-radius: 6px !important; transition: all 0.3s ease; }
+
+    .ghost-btn:hover { background: rgba(255, 255, 255, 0.1) !important; color: #fff !important; border-color: rgba(255, 255, 255, 0.3) !important; }
+
+    input[type="checkbox"] { accent-color: #00e5ff; width: 16px; height: 16px; margin-right: 10px; cursor: pointer; }
+
+    input[type="range"] { width: 100%; accent-color: #00e5ff; cursor: pointer; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; -webkit-appearance: none; margin-top: 10px; }
+
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #00e5ff; cursor: pointer; box-shadow: 0 0 10px rgba(0,229,255,0.8); }
+
+    .futuristic-title { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+
+    select option { background: #0a0c14; color: #fff; }
+
+    
+
+    /* 스크롤바 커스텀 */
+
+    ::-webkit-scrollbar { width: 8px; }
+
+    ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.5); }
+
+
+
+    .lib-item { font-size: 32px; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.05); text-align:center; }
+
+    .lib-item:hover { background: rgba(0, 229, 255, 0.2); transform: scale(1.1); }
+
+    .lib-item img { width: 40px; height: 40px; object-fit: contain; }
+
+
+
+    #fsBtn { position: fixed; right: 20px; top: 20px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; }
+
+    #fsBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
+
+  </style>
+
+</head>
+
+<body>
+
+  
+
+<button id="fsBtn">🔲 FULLSCREEN</button>
+
+<div id="ui-container"></div>
+
+
+
+<script>
+
+document.getElementById('fsBtn').addEventListener('click', () => {
+
+  if (!document.fullscreenElement) {
+
+    document.documentElement.requestFullscreen();
+
+  } else {
+
+    if (document.exitFullscreen) {
+
+      document.exitFullscreen();
+
+    }
+
+  }
+
+});
+
+document.addEventListener('fullscreenchange', () => {
+
+  if (document.fullscreenElement) {
+
+    document.getElementById('fsBtn').innerText = '🔲 WINDOWED';
+
+  } else {
+
+    document.getElementById('fsBtn').innerText = '🔲 FULLSCREEN';
+
+  }
+
+});
+
+
+
+const imgLibraryData = [
+
+  { category: "동물 얼굴 (Animals)", type: "emoji", items: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦉','🐺','🐴'] },
+
+  { category: "국기 (Flags)", type: "emoji", items: ['🇰🇷','🇺🇸','🇬🇧','🇯🇵','🇨🇳','🇩🇪','🇫🇷','🇧🇷','🇮🇹','🇨🇦','🇪🇸','🇦🇺'] },
+
+  { category: "스포츠 공 (Sports)", type: "emoji", items: ['⚽','⚾','🏀','🏐','🏈','🏉','🎾','🎱','🎳','🏓'] },
+
+  { category: "과일 단면 (Fruits)", type: "emoji", items: ['🍎','🍉','🍊','🍋','🍌','🍍','🥝','🥥','🍅','🥑'] }
+
+];
+
+
+
+const i18n = {
+
+  ko: {
+
+    game_title: "PEANUT RACE", lang_title: "언어 설정", setup_title: "여정의 준비", obs_title: "장애물 및 규칙 설정",
+
+    length_title: "여정의 척도 (거리)", len_short: "단거리", len_normal: "일반", len_long: "장거리", len_epic: "대장정",
+
+    cb_auto_gauge: "⚙️ 스마트 밸런스 (인원/길이에 맞게 게이지 자동조절)",
+
+    gauge_title: "각성을 위한 시련의 깊이 (개인 게이지)",
+
+    team_gauge_title: "팀 단합의 결정체 (팀 스킬 게이지)",
+
+    th_name: "이름", th_count: "참여수", th_team: "팀", th_img: "이미지 첨부",
+
+    btn_lib: "📚 앨범", lib_title: "이미지 라이브러리",
+
+    obs_light: "⚡ 라이트 모드 (참여자가 많을 때 사용)", obs_mutant: "🧬 뮤턴트 모드 (시련을 딛고 각성하는 랜덤 스킬)",
+
+    obs_team: "⚔️ 팀 배틀 (스킬은 적군에게만, 1위 배출 팀 우승)", 
+
+    team_red: "🔴 레드 팀", team_blue: "🔵 블루 팀", team_green: "🟢 그린 팀", team_yellow: "🟡 옐로우 팀", 
+
+    team_purple: "🟣 퍼플 팀", team_orange: "🟠 오렌지 팀", team_cyan: "🩵 시안 팀", team_pink: "💖 핑크 팀", 
+
+    team_win: (team, wins) => `🏆 ${team} 승리! (${wins}구간 점령) 🏆`,
+
+    tie_breaker_msg: (team) => `(동률 타이브레이커: 가장 먼저 결승선을 밟은 [${team}] 승리!)`,
+
+    opt_random: "🎲 랜덤", opt_red: "🔴 레드", opt_blue: "🔵 블루", opt_green: "🟢 그린", opt_yellow: "🟡 옐로우",
+
+    opt_purple: "🟣 퍼플", opt_orange: "🟠 오렌지", opt_cyan: "🩵 시안", opt_pink: "💖 핑크",
+
+    obs_elec: "정전기 트랩 (3초 멈춤)", obs_bubble: "비눗방울 (3초 궤도 이탈)", obs_first_only: "1등만 뽑기 (1등 도착 시 안전 완주)", obs_record: "레이스 녹화 (비디오 파일 저장)",
+
+    btn_add: "+ 참가자 추가", btn_start: "레이스 시작", btn_remove: "삭제", btn_force_finish: "🚀 즉시 완주",
+
+    speed_btn: (lvl) => ["⏳ 보통", "⏳ 빠름", "⏳ 매우 빠름"][lvl],
+
+    cam_btn: (lvl) => ["🚁 드론 렌즈", "🎬 액션 렌즈", "🔍 밀착 렌즈"][lvl],
+
+    default_name: "이름없음", names: ["철수", "영희", "민수", "지우", "우성", "동원", "제니", "리사"],
+
+    alert_light_mode: "라이트 모드를 해제할 경우 그래픽 부하로 인해 참가 인원은 최대 7명까지만 가능합니다.",
+
+    skill_btn: "✨ 스킬 활성화 설정",
+
+    modal_title: "스킬 활성화 설정",
+
+    modal_close: "닫기",
+
+    cat_personal: "개인 스킬 (공통)",
+
+    cat_teambattle: "개인 스킬 (팀 배틀 전용)",
+
+    cat_teamulti: "팀 단위 스킬 (팀 게이지)",
+
+    skill_desc: [
+
+      "자신 주변의 적들을 얼려버립니다.", // 0
+
+      "적군 중 한명과 위치를 바꿉니다.", // 1
+
+      "주변 적들을 빨아들인 후 튕겨내고 자신은 가속합니다.", // 2
+
+      "지나간 자리에 적을 느리게 하는 늪을 남깁니다.", // 3
+
+      "적들을 끌어당기는 블랙홀이 됩니다.", // 4
+
+      "자신의 크기가 작아집니다.", // 5
+
+      "여러 갈래로 튕기는 파편을 흩뿌립니다.", // 6
+
+      "트랙 중앙으로 이동하여 앞의 적을 밀치며 돌진합니다.", // 7
+
+      "아군 선두에게 가속과 보호막을 부여합니다.", // 8
+
+      "적군 선두를 멈추게 합니다.", // 9
+
+      "자신 뒤에 거대한 벽을 세워 길을 막습니다.", // 10
+
+      "목표(1등)를 자석처럼 끌어당겨 거리를 좁힙니다.", // 11
+
+      "적 선두들의 중력을 5초간 역전시켜 뒤로 솟구치게 만듭니다.", // 12 (중력의 배신)
+
+      "높이 도약하여 모든 장애물과 적을 뛰어넘어 전진합니다." // 13 (바빌론의 탑)
+
+    ],
+
+    team_skill_names: ["정화의 성역", "미시적 관점", "프리즘 여과지", "최후의 수호자"],
+
+    team_skill_desc: [
+
+      "팀원 전체의 상태 이상을 해제하고 보호막을 부여합니다.", // 0
+
+      "팀원 전체가 작아져 날렵해집니다.", // 1
+
+      "아군 선두에서 적군만 위로 밀어내는 장벽이 올라갑니다.", // 2
+
+      "각 구간의 골키퍼 로봇이 깨어나 적군을 방어합니다." // 3
+
+    ],
+
+    ann_ice: (name) => `❄️ ${name}님이 적군의 시간을 묶어두었습니다!`, ann_bomb: (name) => `💥 ${name}님의 용기가 거대한 벽을 허물었습니다!`,
+
+    ann_swap: (name, target) => `✨ 운명의 장난! ${name}님이 적군 ${target}와 자리를 바꿨습니다!`, ann_fast: (name) => `💨 ${name}님이 순풍을 타고 질주합니다!`,
+
+    ann_slow: (name) => `늪에 빠진 ${name}님, 발걸음이 무거워집니다...`, ann_force_finish: "✨ 창조자의 자비로 모두가 보호받으며 결승선으로 이끌립니다! ✨",
+
+    ann_starlight: (name, target) => `✨ ${name}님이 ${target}님에게 모든 힘을 실어줍니다!`,
+
+    ann_anchor: (name, target) => `⚓ ${name}님이 적군 선두 ${target}의 발목을 잡았습니다!`,
+
+    ann_wall: (name) => `🧱 ${name}님이 거대한 통곡의 벽을 세웠습니다!`,
+
+    ann_chaser: (name, target) => `🧲 ${name}님이 선두 ${target}님을 무자비하게 끌어당깁니다!`,
+
+    ann_gravity: (name) => `🌌 ${name}님이 적 선두들에게 중력의 배신을 선사합니다!`,
+
+    ann_babel: (name) => `☁️ ${name}님이 바빌론의 탑을 쌓아 하늘을 비행합니다!`,
+
+    ann_heal: (team) => `💖 [${team}]의 숭고한 결속으로 모든 시련이 정화되고 빛의 성역이 펼쳐집니다!`,
+
+    ann_team_shrink: (team) => `🔍 [${team}]이(가) 미시적 관점을 얻어 7초간 크기가 축소됩니다!`,
+
+    ann_team_prism: (team) => `🌈 [${team}]이(가) 프리즘 여과지를 전개하여 적들을 위로 밀어냅니다!`,
+
+    ann_team_guardian: (team) => `🛡️ [${team}]이(가) 최후의 수호자를 각성시켰습니다! 구간을 철통같이 방어합니다!`,
+
+    section_pass: (sec, name, team) => `🚩 제 ${sec}구간 선두: [${team}] ${name}!`,
+
+    ann_ending: "✨ 오늘의 엔딩 요정 ✨", minimap_hint: "미니맵을 눌러 대상을 변경하거나\n빈 공간을 눌러 추적을 복귀하세요", score_title: "RACE FINISHED",
+
+    btn_restart: "이 멤버로 다시 달리기", btn_new: "처음부터 다시 설정하기", btn_save_txt: "결과 텍스트로 저장",
+
+    skill_names: ["빙결의 파동", "운명의 역전", "인과응보", "집착의 늪", "심연의 인력", "겸손의 미덕", "기억의 파편", "초월의 질주", "별을 미는 순풍", "심연의 닻", "통곡의 벽", "추격자", "중력의 배신", "바빌론의 탑"]
+
+  },
+
+  en: {
+
+    game_title: "PEANUT RACE", lang_title: "Select Language", setup_title: "Journey Preparation", obs_title: "Obstacles & Rules",
+
+    length_title: "Journey Length", len_short: "Short", len_normal: "Normal", len_long: "Long", len_epic: "Epic Odyssey",
+
+    cb_auto_gauge: "⚙️ Smart Balance (Auto-adjust gauges)",
+
+    gauge_title: "Depth of Trials for Awakening (Personal)",
+
+    team_gauge_title: "Team Cohesion (Team Skill Gauge)",
+
+    th_name: "Name", th_count: "Qty", th_team: "Team", th_img: "Image (Lib/File)",
+
+    btn_lib: "📚 Lib", lib_title: "Image Library",
+
+    obs_light: "⚡ Light Mode (For many participants)", obs_mutant: "🧬 Mutant Mode (Random skill awakening)",
+
+    obs_team: "⚔️ Team Battle (Skills hit enemies, 1st place wins)", 
+
+    team_red: "🔴 RED TEAM", team_blue: "🔵 BLUE TEAM", team_green: "🟢 GREEN TEAM", team_yellow: "🟡 YELLOW TEAM", 
+
+    team_purple: "🟣 PURPLE TEAM", team_orange: "🟠 ORANGE TEAM", team_cyan: "🩵 CYAN TEAM", team_pink: "💖 PINK TEAM",
+
+    team_win: (team, wins) => `🏆 ${team} WINS! (${wins} Sections) 🏆`,
+
+    tie_breaker_msg: (team) => `(Tie-breaker applied: [${team}] wins by first-to-finish!)`,
+
+    opt_random: "🎲 Rand", opt_red: "🔴 Red", opt_blue: "🔵 Blue", opt_green: "🟢 Green", opt_yellow: "🟡 Yellow",
+
+    opt_purple: "🟣 Purple", opt_orange: "🟠 Orange", opt_cyan: "🩵 Cyan", opt_pink: "💖 Pink",
+
+    obs_elec: "Electric Trap (3s Stun)", obs_bubble: "Soap Bubbles (3s Float)", obs_first_only: "1st Place Only", obs_record: "Race Recording",
+
+    btn_add: "+ Add Participant", btn_start: "Start Race", btn_remove: "Remove", btn_force_finish: "🚀 Finish All",
+
+    speed_btn: (lvl) => ["⏳ Normal", "⏳ Fast", "⏳ Faster"][lvl],
+
+    cam_btn: (lvl) => ["🚁 Drone View", "🎬 Action View", "🔍 Close-up"][lvl],
+
+    default_name: "Unknown", names: ["Alice", "Bob", "Charlie", "Diana", "Evan", "Fiona", "George", "Hannah"],
+
+    alert_light_mode: "Max 7 players allowed when Light Mode is off due to heavy graphics.",
+
+    skill_btn: "✨ Skill Settings",
+
+    modal_title: "Skill Activation Settings",
+
+    modal_close: "Close",
+
+    cat_personal: "Personal Skills (Common)",
+
+    cat_teambattle: "Personal Skills (Team Battle Only)",
+
+    cat_teamulti: "Team Skills (Team Gauge)",
+
+    skill_desc: [
+
+      "Freezes enemies around you.", // 0
+
+      "Swaps position with an enemy.", // 1
+
+      "Pulls enemies and bursts them away, gaining speed.", // 2
+
+      "Leaves a sticky slime slowing enemies.", // 3
+
+      "Becomes a blackhole pulling enemies.", // 4
+
+      "Shrinks your size.", // 5
+
+      "Drops bouncing flares.", // 6
+
+      "Dashes through the center, pushing enemies.", // 7
+
+      "Grants shield and speed to the leading ally.", // 8
+
+      "Stuns the leading enemy.", // 9
+
+      "Summons a huge wall behind you.", // 10
+
+      "Magnetically pulls the 1st place target.", // 11
+
+      "Reverses gravity for enemy leaders for 5s.", // 12
+
+      "Leaps high to bypass all obstacles and enemies." // 13
+
+    ],
+
+    team_skill_names: ["Cleansing Sanctuary", "Microscopic View", "Prism Filter", "Last Guardian"],
+
+    team_skill_desc: [
+
+      "Cleanses debuffs and grants shields to all allies.", // 0
+
+      "Shrinks all allies for better evasion.", // 1
+
+      "Deploys a barrier moving upwards, sweeping enemies.", // 2
+
+      "Awakens Guardian Robots to block enemies." // 3
+
+    ],
+
+    ann_ice: (name) => `❄️ ${name} froze the enemies!`, ann_bomb: (name) => `💥 ${name} shattered the wall!`,
+
+    ann_swap: (name, target) => `✨ Fate inverted! ${name} swapped with enemy ${target}!`, ann_fast: (name) => `💨 ${name} speeds up!`,
+
+    ann_slow: (name) => `${name} slowing down...`, ann_force_finish: "✨ All entities safely guided! ✨",
+
+    ann_starlight: (name, target) => `✨ ${name} transferred all power to ${target}!`,
+
+    ann_anchor: (name, target) => `⚓ ${name} anchored down the enemy leader ${target}!`,
+
+    ann_wall: (name) => `🧱 ${name} summoned the Wailing Wall!`,
+
+    ann_chaser: (name, target) => `🧲 ${name} magnetically pulls down ${target}!`,
+
+    ann_gravity: (name) => `🌌 ${name} casted Gravity's Betrayal on enemy leaders!`,
+
+    ann_babel: (name) => `☁️ ${name} built the Tower of Babylon and leaps into the sky!`,
+
+    ann_heal: (team) => `💖 The united spirit of [${team}] cleanses all trials!`,
+
+    ann_team_shrink: (team) => `🔍 [${team}] gained Microscopic Perspective!`,
+
+    ann_team_prism: (team) => `🌈 [${team}] deployed a Prism Filter to sweep enemies!`,
+
+    ann_team_guardian: (team) => `🛡️ [${team}] awakened the Last Guardian! Defending all sections!`,
+
+    section_pass: (sec, name, team) => `🚩 Section ${sec} Leader: [${team}] ${name}!`,
+
+    ann_ending: "✨ ENDING FAIRY ✨", minimap_hint: "Click minimap to change target\nClick empty space to auto-focus", score_title: "RACE FINISHED",
+
+    btn_restart: "Race Again", btn_new: "Reset Parameters", btn_save_txt: "Save Results (TXT)",
+
+    skill_names: ["Glacial Pulse", "Fate Inversion", "Retribution", "Sticky Slime", "Mini Blackhole", "Shrink", "Flare Drop", "Zenith Dash", "Starlight Transfer", "Abyssal Anchor", "Wailing Wall", "Chaser", "Gravity's Betrayal", "Tower of Babylon"]
+
+  },
+
+  zh: {
+
+    game_title: "PEANUT RACE", lang_title: "选择语言", setup_title: "旅程准备", obs_title: "障碍与规则设置",
+
+    length_title: "旅程长度", len_short: "短途", len_normal: "标准", len_long: "长途", len_epic: "史诗远征",
+
+    cb_auto_gauge: "⚙️ 智能平衡 (根据人数和长度自动调整能量槽)",
+
+    gauge_title: "觉醒所需的试炼 (个人能量)",
+
+    team_gauge_title: "团队凝聚力 (团队技能能量槽)",
+
+    th_name: "名称", th_count: "数量", th_team: "队伍", th_img: "图片 (图库/文件)",
+
+    btn_lib: "📚 图库", lib_title: "图片库",
+
+    obs_light: "⚡ 轻量模式", obs_mutant: "🧬 突变模式", 
+
+    obs_team: "⚔️ 团队战 (技能仅对敌人生效，第一名所在队伍获胜)", 
+
+    team_red: "🔴 红队", team_blue: "🔵 蓝队", team_green: "🟢 绿队", team_yellow: "🟡 黄队", 
+
+    team_purple: "🟣 紫队", team_orange: "🟠 橙队", team_cyan: "🩵 青队", team_pink: "💖 粉队",
+
+    team_win: (team, wins) => `🏆 ${team} 胜利! (占领 ${wins} 区间) 🏆`,
+
+    tie_breaker_msg: (team) => `(触发平局决胜：最先到达终点的 [${team}] 获胜！)`,
+
+    opt_random: "🎲 随机", opt_red: "🔴 红队", opt_blue: "🔵 蓝队", opt_green: "🟢 绿队", opt_yellow: "🟡 黄队",
+
+    opt_purple: "🟣 紫队", opt_orange: "🟠 橙队", opt_cyan: "🩵 青队", opt_pink: "💖 粉队",
+
+    obs_elec: "静电陷阱", obs_bubble: "肥皂泡泡", obs_first_only: "只选第一名", obs_record: "比赛录像",
+
+    btn_add: "+ 添加参与者", btn_start: "开始比赛", btn_remove: "移除", btn_force_finish: "🚀 立即完成",
+
+    speed_btn: (lvl) => ["⏳ 正常", "⏳ 较快", "⏳ 极快"][lvl],
+
+    cam_btn: (lvl) => ["🚁 无人机", "🎬 动作视角", "🔍 紧密跟随"][lvl],
+
+    default_name: "无名", names: ["小明", "小红", "小刚", "小芳", "建国", "翠花", "子涵", "欣怡"],
+
+    alert_light_mode: "为了保证流畅度，关闭轻量模式时最多允许 7 名玩家参与。",
+
+    skill_btn: "✨ 技能激活设置",
+
+    modal_title: "技能激活设置",
+
+    modal_close: "关闭",
+
+    cat_personal: "个人技能 (通用)",
+
+    cat_teambattle: "个人技能 (仅限团队战)",
+
+    cat_teamulti: "团队技能 (团队能量槽)",
+
+    skill_desc: [
+
+      "冻结周围的敌人。", // 0
+
+      "与一名敌人交换位置。", // 1
+
+      "吸附周围敌人后弹开，并自身加速。", // 2
+
+      "留下让敌人减速的沼泽。", // 3
+
+      "化身黑洞吸引敌人。", // 4
+
+      "体型变小。", // 5
+
+      "散布弹跳的碎片。", // 6
+
+      "移至赛道中央向前冲刺并推开敌人。", // 7
+
+      "给予领跑队友加速和护盾。", // 8
+
+      "定身敌方领先者。", // 9
+
+      "在身后召唤一道不可逾越的高墙。", // 10
+
+      "像磁铁一样强力拉扯第一名。", // 11
+
+      "反转敌方领先者的重力5秒，使其向后坠落。", // 12
+
+      "高高跃起，跨越所有障碍物和敌人向前冲刺。" // 13
+
+    ],
+
+    team_skill_names: ["净化圣域", "微观视角", "棱镜滤网", "最后守卫者"],
+
+    team_skill_desc: [
+
+      "解除全队负面状态并赋予护盾。", // 0
+
+      "全队变小，灵活穿梭。", // 1
+
+      "展开向上移动的光网，推开敌人。", // 2
+
+      "唤醒赛段守卫机器人防御敌军。" // 3
+
+    ],
+
+    ann_ice: (name) => `❄️ ${name} 冻结了敌人！`, ann_bomb: (name) => `💥 ${name} 击碎了高墙！`,
+
+    ann_swap: (name, target) => `✨ 命运逆转！${name} 与敌人 ${target} 交换了位置！`, ann_fast: (name) => `💨 ${name} 加速前进！`,
+
+    ann_slow: (name) => `${name} 步伐沉重...`, ann_force_finish: "✨ 全员受庇护直达终点！ ✨",
+
+    ann_starlight: (name, target) => `✨ ${name} 将所有力量传递给了 ${target}！`,
+
+    ann_anchor: (name, target) => `⚓ ${name} 死死拖住了敌方首领 ${target} 的脚步！`,
+
+    ann_wall: (name) => `🧱 ${name} 召唤了叹息之墙！`,
+
+    ann_chaser: (name, target) => `🧲 ${name} 强力吸向了 ${target}！`,
+
+    ann_gravity: (name) => `🌌 ${name} 对敌方领先者施加了重力背叛！`,
+
+    ann_babel: (name) => `☁️ ${name} 筑起巴比伦塔，跃向天空！`,
+
+    ann_heal: (team) => `💖 [${team}]的团结净化了所有负面状态！`,
+
+    ann_team_shrink: (team) => `🔍 [${team}] 获得了微观视角，隐秘冲刺！`,
+
+    ann_team_prism: (team) => `🌈 [${team}] 展开了棱镜滤网，正在击退敌人！`,
+
+    ann_team_guardian: (team) => `🛡️ [${team}] 唤醒了最后的守护者！封锁所有赛段！`,
+
+    section_pass: (sec, name, team) => `🚩 第 ${sec} 赛段领先: [${team}] ${name}!`,
+
+    ann_ending: "✨ 今日结尾妖精 ✨", minimap_hint: "点击小地图更改目标\n点击空白处自动追踪第一名", score_title: "RACE FINISHED",
+
+    btn_restart: "再跑一次", btn_new: "重新设置参数", btn_save_txt: "保存成绩 (TXT)",
+
+    skill_names: ["冰川脉冲", "命运逆转", "因果报应", "执念沼泽", "深渊引力", "谦逊美德", "记忆碎片", "超越冲刺", "星光引流", "深渊之锚", "叹息之墙", "追击者", "重力背叛", "巴比伦塔"]
+
+  },
+
+  ja: {
+
+    game_title: "PEANUT RACE", lang_title: "言語設定", setup_title: "旅の準備", obs_title: "障害物とルールの設定",
+
+    length_title: "旅の長さ", len_short: "短距離", len_normal: "普通", len_long: "長距離", len_epic: "大遠征",
+
+    cb_auto_gauge: "⚙️ スマートバランス (人数と長さに応じてゲージを自動調整)",
+
+    gauge_title: "覚醒のための試練 (個人ゲージ)",
+
+    team_gauge_title: "チームの結束力 (チームスキルゲージ)",
+
+    th_name: "名前", th_count: "数", th_team: "チーム", th_img: "画像 (ライブラリ/ファイル)",
+
+    btn_lib: "📚 アルバム", lib_title: "画像ライブラリ",
+
+    obs_light: "⚡ ライトモード", obs_mutant: "🧬 ミュータントモード", 
+
+    obs_team: "⚔️ チームバトル (スキルは敵のみ、1位のチームが勝利)", 
+
+    team_red: "🔴 レッド", team_blue: "🔵 ブルー", team_green: "🟢 グリーン", team_yellow: "🟡 イエロー", 
+
+    team_purple: "🟣 パープル", team_orange: "🟠 オレンジ", team_cyan: "🩵 シアン", team_pink: "💖 ピンク",
+
+    team_win: (team, wins) => `🏆 ${team} 勝利! (${wins}区間占領) 🏆`,
+
+    tie_breaker_msg: (team) => `(同点タイブレーカールール：先にゴールした [${team}] が勝利！)`,
+
+    opt_random: "🎲 ランダム", opt_red: "🔴 レッド", opt_blue: "🔵 ブルー", opt_green: "🟢 グリーン", opt_yellow: "🟡 イエロー",
+
+    opt_purple: "🟣 パープル", opt_orange: "🟠 オレンジ", opt_cyan: "🩵 シアン", opt_pink: "💖 ピンク",
+
+    obs_elec: "静電気トラップ", obs_bubble: "シャボン玉", obs_first_only: "1位のみ選出", obs_record: "レース録画",
+
+    btn_add: "+ 参加者追加", btn_start: "レース開始", btn_remove: "削除", btn_force_finish: "🚀 即時完走",
+
+    speed_btn: (lvl) => ["⏳ 普通", "⏳ 速い", "⏳ 極速"][lvl],
+
+    cam_btn: (lvl) => ["🚁 ドローン", "🎬 アクション", "🔍 密着カメラ"][lvl],
+
+    default_name: "名無し", names: ["太郎", "花子", "健太", "結衣", "翔太", "さくら", "大輝", "葵"],
+
+    alert_light_mode: "ライトモードをオフにする場合、参加人数は最大7名までとなります。",
+
+    skill_btn: "✨ スキル有効化設定",
+
+    modal_title: "スキル有効化設定",
+
+    modal_close: "閉じる",
+
+    cat_personal: "個人スキル (共通)",
+
+    cat_teambattle: "個人スキル (チームバトル専用)",
+
+    cat_teamulti: "チームスキル (チームゲージ)",
+
+    skill_desc: [
+
+      "周囲の敵を凍らせます。", // 0
+
+      "敵1体と位置を入れ替えます。", // 1
+
+      "敵を吸い寄せてから弾き飛ばし、自身は加速します。", // 2
+
+      "通った跡に敵を遅くする沼を残します。", // 3
+
+      "敵を引き寄せるブラックホールになります。", // 4
+
+      "サイズが小さくなります。", // 5
+
+      "跳ね返る破片をばらまきます。", // 6
+
+      "トラック中央を突進し、敵を押し除けます。", // 7
+
+      "味方の先頭に加速とシールドを与えます。", // 8
+
+      "敵の先頭を足止めします。", // 9
+
+      "自分の後ろに巨大な壁を出現させます。", // 10
+
+      "ターゲット(1位)を磁石のように引き寄せます。", // 11
+
+      "敵の先頭の重力を5秒間反転させ、後ろへ落下させます。", // 12
+
+      "高く跳躍し、すべての障害物と敵を飛び越えて前進します。" // 13
+
+    ],
+
+    team_skill_names: ["浄化の聖域", "微視的観点", "プリズムフィルター", "最後の守護者"],
+
+    team_skill_desc: [
+
+      "味方全員のデバフを解除し、シールドを付与します。", // 0
+
+      "味方全員が小さくなり、回避しやすくなります。", // 1
+
+      "敵だけを上に押し出す障壁を展開します。", // 2
+
+      "各区間のロボットが覚醒し、敵を防ぎます。" // 3
+
+    ],
+
+    ann_ice: (name) => `❄️ ${name}が敵の時間を凍らせました！`, ann_bomb: (name) => `💥 ${name}が壁を打ち砕きました！`,
+
+    ann_swap: (name, target) => `✨ 運命の逆転！${name}が敵の ${target} と入れ替わりました！`, ann_fast: (name) => `💨 ${name}が加速します！`,
+
+    ann_slow: (name) => `${name}の足取りが重くなります...`, ann_force_finish: "✨ 全員が安全に完走へ導かれます！ ✨",
+
+    ann_starlight: (name, target) => `✨ ${name}が${target}に全ての力を託しました！`,
+
+    ann_anchor: (name, target) => `⚓ ${name}が敵の先頭${target}の足を引っ張りました！`,
+
+    ann_wall: (name) => `🧱 ${name}が巨大な嘆きの壁を築きました！`,
+
+    ann_chaser: (name, target) => `🧲 ${name}が${target}を強力に引き寄せます！`,
+
+    ann_gravity: (name) => `🌌 ${name}が敵の先頭に重力の裏切りをかけました！`,
+
+    ann_babel: (name) => `☁️ ${name}がバビロンの塔を築き、空を飛び越えます！`,
+
+    ann_heal: (team) => `💖 [${team}]の結束により味方全員が浄化され聖域を得ました！`,
+
+    ann_team_shrink: (team) => `🔍 [${team}]が微視的観点を獲得し、密かに疾走します！`,
+
+    ann_team_prism: (team) => `🌈 [${team}]がプリズムを展開し、敵を押し返します！`,
+
+    ann_team_guardian: (team) => `🛡️ [${team}]が最後の守護者を覚醒させました！全区間を防衛します！`,
+
+    section_pass: (sec, name, team) => `🚩 第 ${sec} 区間トップ: [${team}] ${name}!`,
+
+    ann_ending: "✨ 今日のエンディング妖精 ✨", minimap_hint: "ミニマップで観測対象を変更\n空白をクリックで自動追跡に戻る", score_title: "RACE FINISHED",
+
+    btn_restart: "再レース", btn_new: "設定し直す", btn_save_txt: "結果を保存 (TXT)",
+
+    skill_names: ["氷結の波動", "運命の逆転", "因果応報", "執着の沼", "深淵の引力", "謙譲の美徳", "記憶の破片", "超越の疾走", "星を押す追い風", "深淵の錨", "嘆きの壁", "追跡者", "重力の裏切り", "バビロンの塔"]
+
+  }
+
+};
+
+
+
+let currentLang = 'ko'; 
+
+let langDiv, setupDiv, playerListDiv;
+
+let playerRows = []; let customPlayersData = [];
+
+let useLightMode = true, useMutantMode = true, useElectricTrap = true, useBubbleTrap = true, useFirstPlaceOnly = false;
+
+let useTeamBattle = false;
+
+let cbLight, cbMutant, cbTeam, cbElectric, cbBubble, cbFirstOnly, cbRecord, cbAutoGauge;
+
+let lenSlider, gaugeSlider, teamGaugeSlider; 
+
+let gaugeThreshold = 15;
+
+let teamGaugeThreshold = 30;
+
+let teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+
+let mediaRecorder = null, recordedChunks = [], isRecording = false, forceFinishAll = false;
+
+let firstWinner = null, endingFairyTimer = 0, constellationTimer = 0, speedLevel = 0, cameraMode = 0; 
+
+
+
+let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true]; // 14 skills
+
+let activeTeamSkills = [true, true, true, true];
+
+
+
+let currentEditingRow = null;
+
+let currentEditingBtn = null;
+
+
+
+let bgStars = [], balls = [], spinners = [], staticPins = [], track = [], blackholePads = [], bricks = [];
+
+let particles = [], shrinkPads = [], growPads = [], ripples = [], swapPads = [], specialEffects = [], wallBars = [];
+
+let electricTraps = [], soapBubbles = [], bubbleZones = [], announcements = [], mutantFlares = [], wailingWalls = [], prisms = []; 
+
+let guardians = [];
+
+
+
+let globalGuardianActive = false;
+
+let globalGuardianTeam = null;
+
+let globalGuardianTimer = 0;
+
+let globalGuardianColor = null;
+
+
+
+let flashColor = null, flashLife = 0, cameraShake = 0, zoomTimer = 0, targetDynamicZoom = 1.0;
+
+let WORLD_HEIGHT = 20000; 
+
+const BRICK_ZONES = [{ start: 0.30, end: 0.31 }, { start: 0.55, end: 0.56 }, { start: 0.80, end: 0.81 }];
+
+let camX = 0, camY = 0, camScale = 0.5, gameStarted = false, raceFinished = false, targetBall = null, manualFocus = false, finishCounter = 0;
+
+let constellationSpots = [], constellationEdges = [];
+
+
+
+let numSegments = 5;
+
+let segmentLength = 0;
+
+let segmentCrossed = {};
+
+let teamSegmentWins = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+
+let sectionBannerTimer = 0;
+
+let sectionBannerText = "";
+
+let sectionBannerColor = null;
+
+
+
+let rankScrollY = 0, rankTargetScrollY = 0, isRankDragging = false, rankDragStartY = 0, rankScrollStartY = 0, rankDragMoved = false;
+
+let osc, env;
+
+
+
+function setup() {
+
+  let canvas = createCanvas(windowWidth, windowHeight);
+
+  canvas.id('gameCanvas');
+
+  canvas.elt.style.display = 'none';
+
+  canvas.elt.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+
+  colorMode(HSB, 360, 100, 100, 100); textFont('Noto Sans KR');
+
+  osc = new p5.Oscillator('sine'); env = new p5.Envelope();
+
+  env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(0.5, 0);
+
+  createLangUI();
+
+}
+
+
+
+function windowResized() {
+
+  resizeCanvas(windowWidth, windowHeight);
+
+}
+
+
+
+function createLangUI() {
+
+  if (langDiv) langDiv.remove(); if (setupDiv) setupDiv.remove();
+
+  let uiContainer = select('#ui-container');
+
+  langDiv = createDiv(''); langDiv.parent(uiContainer); langDiv.class('glass-panel');
+
+  langDiv.style('width', '100%'); langDiv.style('height', '100%'); langDiv.style('display', 'flex'); langDiv.style('flex-direction', 'column'); langDiv.style('align-items', 'center'); langDiv.style('justify-content', 'center');
+
+  let preTitle = createElement('h1', 'PEANUT RACE'); preTitle.parent(langDiv); preTitle.class('futuristic-title'); preTitle.style('margin-bottom', '10px'); preTitle.style('text-shadow', '0 0 20px rgba(0, 229, 255, 0.8)');
+
+  let title = createElement('h3', 'SYSTEM INITIALIZATION'); title.parent(langDiv); title.style('margin-bottom', '40px'); title.style('font-weight', '300'); title.style('color', '#88aaff');
+
+  let langs = [{ code: 'ko', label: '🇰🇷 한국어 접속' }, { code: 'en', label: '🇺🇸 ENGLISH CONNECT' }, { code: 'zh', label: '🇨🇳 中文连接' }, { code: 'ja', label: '🇯🇵 日本語接続' }];
+
+  langs.forEach(l => {
+
+    let btn = createButton(l.label); btn.parent(langDiv); btn.class('modern-btn');
+
+    btn.style('width', '250px'); btn.style('padding', '15px'); btn.style('margin-bottom', '15px'); btn.style('font-size', '16px');
+
+    btn.mousePressed(() => { currentLang = l.code; langDiv.remove(); createSetupUI(); });
+
+  });
+
+}
+
+
+
+function createSkillModal() {
+
+  let t = i18n[currentLang];
+
+  if(document.getElementById('skill-modal')) document.getElementById('skill-modal').remove();
+
+  let modal = createDiv(''); modal.id('skill-modal'); modal.parent(select('#ui-container')); modal.class('glass-panel'); modal.style('display', 'none'); modal.style('position', 'absolute'); modal.style('top', '50%'); modal.style('left', '50%'); modal.style('transform', 'translate(-50%, -50%)'); modal.style('width', '85%'); modal.style('height', '85%'); modal.style('padding', '25px'); modal.style('box-sizing', 'border-box'); modal.style('flex-direction', 'column'); modal.style('overflow-y', 'auto'); modal.style('z-index', '100');
+
+  let title = createElement('h2', t.modal_title); title.parent(modal); title.style('color', '#fff'); title.style('text-align', 'center'); title.style('margin-top', '0'); title.style('margin-bottom', '20px');
+
+  let makeCategory = (titleText, skillIndices, isTeamMulti) => {
+
+    let catTitle = createElement('h4', titleText); catTitle.parent(modal); catTitle.style('color', '#00e5ff'); catTitle.style('margin-top', '15px'); catTitle.style('margin-bottom', '10px'); catTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)'); catTitle.style('padding-bottom', '5px');
+
+    skillIndices.forEach(idx => {
+
+      let row = createDiv(''); row.parent(modal); row.style('display', 'flex'); row.style('align-items', 'flex-start'); row.style('margin-bottom', '10px');
+
+      let isChecked = isTeamMulti ? activeTeamSkills[idx] : activeMutantSkills[idx];
+
+      let name = isTeamMulti ? t.team_skill_names[idx] : t.skill_names[idx]; let desc = isTeamMulti ? t.team_skill_desc[idx] : t.skill_desc[idx];
+
+      let cb = createCheckbox('', isChecked); cb.parent(row); cb.style('margin-top', '2px'); cb.changed(() => { if(isTeamMulti) activeTeamSkills[idx] = cb.checked(); else activeMutantSkills[idx] = cb.checked(); });
+
+      let label = createDiv(`<b>${name}</b><br><span style="color:#aaa; font-size:12px;">${desc}</span>`); label.parent(row); label.style('color', '#fff'); label.style('font-size', '14px'); label.style('margin-left', '8px'); label.style('line-height', '1.4');
+
+    });
+
+  };
+
+  makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
+
+  let closeBtn = createButton(t.modal_close); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '30px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
+
+}
+
+
+
+function createLibModal() {
+
+  let t = i18n[currentLang];
+
+  if(document.getElementById('lib-modal')) document.getElementById('lib-modal').remove();
+
+  let modal = createDiv(''); modal.id('lib-modal'); modal.parent(select('#ui-container')); modal.class('glass-panel'); modal.style('display', 'none'); modal.style('position', 'absolute'); modal.style('top', '50%'); modal.style('left', '50%'); modal.style('transform', 'translate(-50%, -50%)'); modal.style('width', '85%'); modal.style('height', '85%'); modal.style('padding', '25px'); modal.style('box-sizing', 'border-box'); modal.style('flex-direction', 'column'); modal.style('overflow-y', 'auto'); modal.style('z-index', '200');
+
+  let title = createElement('h2', t.lib_title || "Library"); title.parent(modal); title.style('color', '#fff'); title.style('text-align', 'center'); title.style('margin-top', '0'); title.style('margin-bottom', '20px');
+
+  imgLibraryData.forEach(cat => {
+
+    let catTitle = createElement('h4', cat.category); catTitle.parent(modal); catTitle.style('color', '#00e5ff'); catTitle.style('margin-top', '15px'); catTitle.style('margin-bottom', '10px'); catTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)');
+
+    let grid = createDiv(''); grid.parent(modal); grid.style('display', 'flex'); grid.style('flex-wrap', 'wrap'); grid.style('gap', '10px'); grid.style('margin-bottom', '20px');
+
+    cat.items.forEach(item => {
+
+      let btn = createDiv(''); btn.parent(grid); btn.class('lib-item');
+
+      if (cat.type === 'emoji') { btn.html(item); btn.mousePressed(() => selectEmojiLib(item)); } 
+
+      else if (cat.type === 'url') { let img = createImg(item.url, item.name); img.parent(btn); img.elt.crossOrigin = "Anonymous"; btn.mousePressed(() => selectUrlLib(item.url)); }
+
+    });
+
+  });
+
+  let closeBtn = createButton(t.modal_close || "Close"); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
+
+}
+
+
+
+function openLibModal(rowData, btnElt) { currentEditingRow = rowData; currentEditingBtn = btnElt; document.getElementById('lib-modal').style.display = 'flex'; }
+
+function selectEmojiLib(emoji) {
+
+  let c = document.createElement('canvas'); c.width = 64; c.height = 64; let ctx = c.getContext('2d'); ctx.font = '48px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(emoji, 32, 36); let dataUrl = c.toDataURL('image/png');
+
+  loadImage(dataUrl, (img) => { if (currentEditingRow) currentEditingRow.img = img; if (currentEditingBtn) { currentEditingBtn.style('background', '#00e5ff'); currentEditingBtn.style('color', '#000'); } });
+
+  document.getElementById('lib-modal').style.display = 'none';
+
+}
+
+function selectUrlLib(url) {
+
+  loadImage(url, (img) => { if (currentEditingRow) currentEditingRow.img = img; if (currentEditingBtn) { currentEditingBtn.style('background', '#00e5ff'); currentEditingBtn.style('color', '#000'); } }, (e) => { console.error("CORS Error:", e); alert("이미지를 불러올 수 없습니다."); });
+
+  document.getElementById('lib-modal').style.display = 'none';
+
+}
+
+
+
+function createSetupUI() {
+
+  let t = i18n[currentLang]; playerRows = [];
+
+  let uiContainer = select('#ui-container');
+
+  setupDiv = createDiv(''); setupDiv.parent(uiContainer); setupDiv.class('glass-panel'); setupDiv.style('width', '100%'); setupDiv.style('height', '100%'); setupDiv.style('padding', '40px'); setupDiv.style('box-sizing', 'border-box'); setupDiv.style('overflow-y', 'auto');
+
+  let mainTitle = createElement('h1', t.game_title); mainTitle.parent(setupDiv); mainTitle.class('futuristic-title'); mainTitle.style('text-align', 'center'); mainTitle.style('margin-top', '10px'); mainTitle.style('margin-bottom', '5px'); mainTitle.style('text-shadow', '0 0 20px rgba(0, 229, 255, 0.8)');
+
+  let title = createElement('p', t.setup_title); title.parent(setupDiv); title.style('text-align', 'center'); title.style('margin-top', '0px'); title.style('margin-bottom', '20px'); title.style('color', '#88aaff'); title.style('font-size', '14px');
+
+  
+
+  let lenDiv = createDiv(''); lenDiv.parent(setupDiv); lenDiv.style('margin-top', '25px'); lenDiv.style('margin-bottom', '10px');
+
+  let lenLabel = createElement('span', `${t.length_title}: 20000 (${t.len_normal})`); lenLabel.parent(lenDiv); lenLabel.style('color', '#fff'); lenLabel.style('font-weight', 'bold');
+
+  lenSlider = createInput('20000', 'range'); lenSlider.parent(lenDiv); lenSlider.attribute('min', '10000'); lenSlider.attribute('max', '80000'); lenSlider.attribute('step', '10000');
+
+  lenSlider.input(() => { let val = parseInt(lenSlider.value()); let desc = val <= 10000 ? t.len_short : val <= 30000 ? t.len_normal : val <= 50000 ? t.len_long : t.len_epic; lenLabel.html(`${t.length_title}: ${val} (${desc})`); });
+
+
+
+  cbAutoGauge = createCheckbox(' ' + t.cb_auto_gauge, true); cbAutoGauge.parent(setupDiv); cbAutoGauge.style('margin-top', '20px'); cbAutoGauge.style('color', '#00e5ff'); cbAutoGauge.style('font-weight', 'bold');
+
+
+
+  let gaugeDiv = createDiv(''); gaugeDiv.parent(setupDiv); gaugeDiv.style('margin-top', '15px'); gaugeDiv.style('margin-bottom', '10px');
+
+  let gaugeLabel = createElement('span', `${t.gauge_title}: 15`); gaugeLabel.parent(gaugeDiv); gaugeLabel.style('color', '#fff'); gaugeLabel.style('font-weight', 'bold');
+
+  gaugeSlider = createInput('15', 'range'); gaugeSlider.parent(gaugeDiv); gaugeSlider.attribute('min', '5'); gaugeSlider.attribute('max', '50'); gaugeSlider.attribute('step', '1');
+
+  gaugeSlider.input(() => { gaugeLabel.html(`${t.gauge_title}: ${gaugeSlider.value()}`); });
+
+
+
+  let teamGaugeDiv = createDiv(''); teamGaugeDiv.parent(setupDiv); teamGaugeDiv.style('margin-top', '15px'); teamGaugeDiv.style('margin-bottom', '10px');
+
+  let teamGaugeLabel = createElement('span', `${t.team_gauge_title}: 30`); teamGaugeLabel.parent(teamGaugeDiv); teamGaugeLabel.style('color', '#ff55aa'); teamGaugeLabel.style('font-weight', 'bold');
+
+  teamGaugeSlider = createInput('30', 'range'); teamGaugeSlider.parent(teamGaugeDiv); teamGaugeSlider.attribute('min', '10'); teamGaugeSlider.attribute('max', '100'); teamGaugeSlider.attribute('step', '5');
+
+  teamGaugeSlider.input(() => { teamGaugeLabel.html(`${t.team_gauge_title}: ${teamGaugeSlider.value()}`); });
+
+
+
+  gaugeDiv.style('display', 'none'); teamGaugeDiv.style('display', 'none'); 
+
+
+
+  let obsTitle = createElement('h3', t.obs_title); obsTitle.parent(setupDiv); obsTitle.style('margin-top', '10px'); obsTitle.style('border-bottom', '1px solid rgba(255,255,255,0.1)'); obsTitle.style('padding-bottom', '10px'); title.style('color', '#fff');
+
+  
+
+  cbLight = createCheckbox(' ' + t.obs_light, true); cbLight.parent(setupDiv); cbLight.style('margin-top', '15px'); cbLight.style('color', '#ffea00'); cbLight.style('font-weight', 'bold');
+
+  cbMutant = createCheckbox(' ' + t.obs_mutant, true); cbMutant.parent(setupDiv); cbMutant.style('margin-top', '15px'); cbMutant.style('color', '#ffaa00'); cbMutant.style('font-weight', 'bold');
+
+  cbTeam = createCheckbox(' ' + t.obs_team, false); cbTeam.parent(setupDiv); cbTeam.style('margin-top', '15px'); cbTeam.style('color', '#ff55aa'); cbTeam.style('font-weight', 'bold');
+
+  cbElectric = createCheckbox(' ' + t.obs_elec, true); cbElectric.parent(setupDiv); cbElectric.style('margin-top', '15px'); cbElectric.style('color', '#ddd');
+
+  cbBubble = createCheckbox(' ' + t.obs_bubble, true); cbBubble.parent(setupDiv); cbBubble.style('margin-top', '10px'); cbBubble.style('color', '#ddd');
+
+  cbFirstOnly = createCheckbox(' ' + t.obs_first_only, false); cbFirstOnly.parent(setupDiv); cbFirstOnly.style('margin-top', '10px'); cbFirstOnly.style('color', '#ddd');
+
+  cbRecord = createCheckbox(' ' + t.obs_record, false); cbRecord.parent(setupDiv); cbRecord.style('margin-top', '20px'); cbRecord.style('color', '#00e5ff'); cbRecord.style('font-weight', 'bold');
+
+
+
+  let skillBtn = createButton(t.skill_btn); skillBtn.parent(setupDiv); skillBtn.class('ghost-btn'); skillBtn.style('width', '100%'); skillBtn.style('margin-top', '20px'); skillBtn.style('padding', '10px'); skillBtn.mousePressed(() => { document.getElementById('skill-modal').style.display = 'flex'; });
+
+  createSkillModal(); createLibModal();
+
+
+
+  let btnRow = createDiv(''); btnRow.parent(setupDiv); btnRow.style('text-align', 'center'); btnRow.style('margin-top', '30px'); btnRow.style('margin-bottom', '20px');
+
+  let addBtn = createButton(t.btn_add); addBtn.parent(btnRow); addBtn.class('ghost-btn'); addBtn.style('padding', '12px 20px'); addBtn.style('margin-right', '15px'); addBtn.mousePressed(addPlayerRow);
+
+  let startBtn = createButton(t.btn_start); startBtn.parent(btnRow); startBtn.class('modern-btn'); startBtn.style('padding', '12px 30px'); startBtn.mousePressed(startGameFromUI);
+
+  
+
+  let headerRow = createDiv(''); headerRow.parent(setupDiv); headerRow.style('display', 'flex'); headerRow.style('align-items', 'center'); headerRow.style('justify-content', 'space-between'); headerRow.style('margin-bottom', '5px'); headerRow.style('padding', '0 15px'); headerRow.style('color', '#88aaff'); headerRow.style('font-size', '12px'); headerRow.style('font-weight', 'bold');
+
+  let hName = createDiv(t.th_name); hName.parent(headerRow); hName.style('width', '60px'); hName.style('text-align', 'center');
+
+  let hCount = createDiv(t.th_count); hCount.parent(headerRow); hCount.style('width', '45px'); hCount.style('text-align', 'center');
+
+  let hTeam = createDiv(t.th_team); hTeam.parent(headerRow); hTeam.style('width', '85px'); hTeam.style('text-align', 'center'); hTeam.id('hTeam');
+
+  let hImg = createDiv(t.th_img); hImg.parent(headerRow); hImg.style('width', '140px'); hImg.style('text-align', 'center');
+
+  let hDel = createDiv(''); hDel.parent(headerRow); hDel.style('width', '60px');
+
+  
+
+  playerListDiv = createDiv(''); playerListDiv.parent(setupDiv);
+
+  
+
+  cbTeam.changed(() => { let disp = cbTeam.checked() ? 'inline-block' : 'none'; playerRows.forEach(r => r.teamSelect.style('display', disp)); teamGaugeDiv.style('display', (cbTeam.checked() && !cbAutoGauge.checked()) ? 'block' : 'none'); select('#hTeam').style('display', cbTeam.checked() ? 'block' : 'none'); });
+
+  cbAutoGauge.changed(() => { let disp = cbAutoGauge.checked() ? 'none' : 'block'; gaugeDiv.style('display', disp); teamGaugeDiv.style('display', (!cbAutoGauge.checked() && cbTeam.checked()) ? 'block' : 'none'); });
+
+  select('#hTeam').style('display', cbTeam.checked() ? 'block' : 'none');
+
+
+
+  for(let i=0; i<4; i++) addPlayerRow();
+
+}
+
+
+
+function addPlayerRow() {
+
+  let t = i18n[currentLang];
+
+  let row = createDiv(''); row.parent(playerListDiv); row.style('display', 'flex'); row.style('align-items', 'center'); row.style('justify-content', 'space-between'); row.style('margin-bottom', '15px'); row.style('background', 'rgba(255,255,255,0.03)'); row.style('border', '1px solid rgba(255,255,255,0.08)'); row.style('padding', '10px 15px'); row.style('border-radius', '8px');
+
+  let defaultName = t.names[playerRows.length % t.names.length];
+
+  
+
+  let nameInput = createInput(defaultName); nameInput.parent(row); nameInput.class('modern-input'); nameInput.style('width', '60px');
+
+  let countInput = createInput('1', 'number'); countInput.parent(row); countInput.class('modern-input number-input'); countInput.attribute('min', '1'); countInput.attribute('max', '50'); countInput.attribute('title', '참가 개수'); countInput.style('margin', '0 5px'); countInput.style('width', '45px');
+
+  
+
+  let teamSelect = createSelect(); teamSelect.parent(row); teamSelect.class('modern-input'); teamSelect.style('width', '85px'); teamSelect.style('padding', '8px 5px'); teamSelect.style('font-size', '12px'); teamSelect.style('margin-right', '5px');
+
+  teamSelect.option(t.opt_random, 'RANDOM'); teamSelect.option(t.opt_red, 'RED'); teamSelect.option(t.opt_blue, 'BLUE'); teamSelect.option(t.opt_green, 'GREEN'); teamSelect.option(t.opt_yellow, 'YELLOW'); teamSelect.option(t.opt_purple, 'PURPLE'); teamSelect.option(t.opt_orange, 'ORANGE'); teamSelect.option(t.opt_cyan, 'CYAN'); teamSelect.option(t.opt_pink, 'PINK');
+
+  let isTeamMode = cbTeam && cbTeam.checked(); teamSelect.style('display', isTeamMode ? 'inline-block' : 'none');
+
+
+
+  let rowData = { nameInput: nameInput, countInput: countInput, teamSelect: teamSelect, img: null };
+
+  let imgContainer = createDiv(''); imgContainer.parent(row); imgContainer.style('display', 'flex'); imgContainer.style('align-items', 'center'); imgContainer.style('width', '140px');
+
+  let libBtn = createButton(t.btn_lib || '📚'); libBtn.parent(imgContainer); libBtn.class('ghost-btn'); libBtn.style('padding', '4px 8px'); libBtn.style('font-size', '11px'); libBtn.style('margin-right', '5px'); libBtn.mousePressed(() => openLibModal(rowData, libBtn));
+
+  let fileInput = createFileInput((file) => { if (file.type === 'image') { loadImage(file.data, (img) => { rowData.img = img; libBtn.style('background', '#00e5ff'); libBtn.style('color', '#000'); }); } });
+
+  fileInput.parent(imgContainer); fileInput.style('font-size', '10px'); fileInput.style('width', '90px'); fileInput.style('color', '#aaa');
+
+  
+
+  let removeBtn = createButton(t.btn_remove); removeBtn.parent(row); removeBtn.class('ghost-btn'); removeBtn.style('padding', '6px 10px'); removeBtn.style('font-size', '12px'); removeBtn.style('width', '60px'); removeBtn.mousePressed(() => { row.remove(); playerRows = playerRows.filter(r => r !== rowData); });
+
+  playerRows.push(rowData);
+
+}
+
+
+
+function startGameFromUI() {
+
+  if (playerRows.length === 0) return; let t = i18n[currentLang];
+
+  let totalP = 0; for (let r of playerRows) { totalP += parseInt(r.countInput.value()) || 1; }
+
+  if (!cbLight.checked() && totalP > 7) { alert(t.alert_light_mode); return; }
+
+
+
+  WORLD_HEIGHT = parseInt(lenSlider.value());
+
+  useLightMode = cbLight.checked(); useMutantMode = cbMutant.checked(); useTeamBattle = cbTeam.checked();
+
+  useElectricTrap = cbElectric.checked(); useBubbleTrap = cbBubble.checked(); useFirstPlaceOnly = cbFirstOnly.checked(); isRecording = cbRecord.checked();
+
+  
+
+  customPlayersData = [];
+
+  for (let r of playerRows) { 
+
+    let count = parseInt(r.countInput.value()) || 1; let baseName = r.nameInput.value() || t.default_name; let teamPref = r.teamSelect.value();
+
+    for (let i = 0; i < count; i++) { let displayName = count > 1 ? `${baseName} ${i + 1}` : baseName; customPlayersData.push({ name: displayName, img: r.img, teamPref: teamPref }); }
+
+  }
+
+
+
+  if (cbAutoGauge.checked()) {
+
+    let density = customPlayersData.length / (WORLD_HEIGHT / 10000); gaugeThreshold = constrain(floor(8 + density * 2.5), 5, 50);
+
+    let activeTeams = new Set(customPlayersData.map(p => p.teamPref)).size; let avgTeamSize = customPlayersData.length / max(1, activeTeams);
+
+    teamGaugeThreshold = constrain(floor(gaugeThreshold * avgTeamSize * 1.2), 10, 100);
+
+  } else { gaugeThreshold = parseInt(gaugeSlider.value()); teamGaugeThreshold = parseInt(teamGaugeSlider.value()); }
+
+  
+
+  document.querySelector('canvas').style.display = 'block'; userStartAudio(); osc.start(); setupDiv.hide(); gameStarted = true; initWorld(); 
+
+  if (isRecording) { startRecording(); }
+
+}
+
+
+
+function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
+
+function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
+
+function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
+
+function getTeamName(team, t) { if (team === 'RED') return t.team_red; if (team === 'BLUE') return t.team_blue; if (team === 'GREEN') return t.team_green; if (team === 'YELLOW') return t.team_yellow; if (team === 'PURPLE') return t.team_purple; if (team === 'ORANGE') return t.team_orange; if (team === 'CYAN') return t.team_cyan; if (team === 'PINK') return t.team_pink; return ''; }
+
+function downloadRankings() { let sorted = [...balls].sort((a, b) => a.finishOrder - b.finishOrder); let txt = "🏆 PEANUT RACE - FINAL RANKINGS 🏆\n"; let dateStr = new Date().toLocaleString(); txt += `Date: ${dateStr}\n\n`; if (useTeamBattle && firstWinner) { let t = i18n[currentLang]; let maxWins = -1; let winningTeam = null; let tiedTeams = []; for (let team in teamSegmentWins) { if (teamSegmentWins[team] > maxWins) { maxWins = teamSegmentWins[team]; tiedTeams = [team]; } else if (teamSegmentWins[team] === maxWins) { tiedTeams.push(team); } } if (tiedTeams.length === 1) { winningTeam = tiedTeams[0]; } else { let tieSorted = [...balls].sort((a, b) => { if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); for(let b of tieSorted) { if(tiedTeams.includes(b.team)) { winningTeam = b.team; break; } } } if(!winningTeam) winningTeam = firstWinner.team; txt += `*** ${t.team_win(getTeamName(winningTeam, t), maxWins)} ***\n\n`; } sorted.forEach((b, i) => { let teamPrefix = useTeamBattle ? `[${getTeamPrefix(b.team).trim()}] ` : ''; txt += `${i + 1}. ${teamPrefix}${b.name}\n`; }); let blob = new Blob([txt], { type: 'text/plain' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let fileDate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Rankings_${fileDate}.txt`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
+
+function isBrickZone(yRatio) { for (let z of BRICK_ZONES) { if (yRatio >= z.start && yRatio <= z.end) return true; } return false; }
+
+function getScatteredX(t, padding) { return random(t.left + padding, t.right - padding); }
+
+function getVolume(x, y, maxVol = 0.5) { if (!targetBall) return maxVol; let d = dist(targetBall.x, targetBall.y, x, y); return map(d, 0, 1500, maxVol, 0, true); }
+
+function playNormalHit(freq, x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.5); if (vol < 0.01) return; osc.setType('sine'); osc.freq(freq + random(-30, 30)); env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(vol, 0); env.play(osc); }
+
+function playBombSound(x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.7); if (vol < 0.01) return; osc.setType('square'); osc.freq(120); env.setADSR(0.01, 0.3, 0.2, 0.6); env.setRange(vol, 0); env.play(osc); }
+
+function playIceSound(x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.5); if (vol < 0.01) return; osc.setType('triangle'); osc.freq(2000); env.setADSR(0.01, 0.1, 0.3, 0.8); env.setRange(vol, 0); env.play(osc); }
+
+function playSwapSound(x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.6); if (vol < 0.01) return; osc.setType('sine'); osc.freq(600); env.setADSR(0.05, 0.2, 0.5, 1.0); env.setRange(vol, 0); env.play(osc); setTimeout(() => { if(osc) osc.freq(1200); }, 100); }
+
+function playZapSound(x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.4); if (vol < 0.01) return; osc.setType('sawtooth'); osc.freq(300); env.setADSR(0.01, 0.1, 0.2, 0.1); env.setRange(vol, 0); env.play(osc); }
+
+function playHealSound(x, y) { if (getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.6); if (vol < 0.01) return; osc.setType('sine'); osc.freq(800); env.setADSR(0.1, 0.4, 0.4, 1.2); env.setRange(vol, 0); env.play(osc); }
+
+
+
+function addEventLog(ball, text, col, isMajor = false) { if (!isMajor && ball !== targetBall) { let unfinished = balls.filter(b => !b.finished).sort((a, b) => b.y - a.y); let isLeader = (unfinished.length > 0 && unfinished[0] === ball); if (!isLeader) return; } announcements.push({ text: text, color: col, life: 240, maxLife: 240 }); if (announcements.length > 5) announcements.shift(); }
+
+function sweepThePast(lastY) { let threshold = lastY - 2000; wallBars = wallBars.filter(o => o.y > threshold); staticPins = staticPins.filter(o => o.y > threshold); spinners = spinners.filter(o => o.y > threshold); blackholePads = blackholePads.filter(o => o.y > threshold); shrinkPads = shrinkPads.filter(o => o.y > threshold); growPads = growPads.filter(o => o.y > threshold); swapPads = swapPads.filter(o => o.y > threshold); electricTraps = electricTraps.filter(o => o.y > threshold); bubbleZones = bubbleZones.filter(o => o.yEnd > threshold); bricks = bricks.filter(o => o.y > threshold); wailingWalls = wailingWalls.filter(o => o.y > threshold); }
+
+function drawBackgroundGrid(vTop, vBottom) { noStroke(); bgStars.forEach(s => { s.blink += s.speed; if (s.y < vTop - 500 || s.y > vBottom + 500) return; let a = map(sin(s.blink), -1, 1, 10, 80); fill(0, 0, 100, a); ellipse(s.x, s.y, s.r); }); stroke(260, 50, 15, 60); strokeWeight(1); for (let i = -4000; i < 4000; i += 200) line(i, vTop - 500, i, vBottom + 500); let yStartGrid = floor((vTop - 500) / 200) * 200; for (let j = yStartGrid; j < vBottom + 500; j += 200) line(-4000, j, 4000, j); }
+
+function drawSegments(vTop, vBottom) { if (!useTeamBattle) return; for (let i = 1; i <= numSegments; i++) { let sy = i * segmentLength; if (sy < vTop - 500 || sy > vBottom + 500) continue; push(); stroke(255, 80); strokeWeight(4); drawingContext.setLineDash([20, 20]); line(-10000, sy, 10000, sy); drawingContext.setLineDash([]); let tIdx = constrain(floor(sy/40), 0, track.length - 1); let cx = track[tIdx] ? track[tIdx].center : 0; noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 10; drawingContext.shadowColor = '#fff'; } fill(255, 200); textFont('Orbitron'); textSize(36); textAlign(CENTER, BOTTOM); text(`SECTION ${i}`, cx, sy - 10); drawingContext.shadowBlur = 0; pop(); } }
+
+function drawTrack(vTop, vBottom) { noFill(); for (let i = 1; i < track.length; i++) { let p1 = track[i-1]; let p2 = track[i]; if (p2.y < vTop - 500 || p1.y > vBottom + 500) continue; let isInView = (p2.y > vTop && p2.y < vBottom); strokeWeight(15); if (isInView && !useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = p2.cStr; stroke(p2.hue, 80, 100, 90); } else { drawingContext.shadowBlur = 0; stroke(p2.hue, 80, 100, 50); } line(p1.left, p1.y, p2.left, p2.y); line(p1.right, p1.y, p2.right, p2.y); if (p2.isBump) { if (!useLightMode) { fill(p2.hue, 80, 100, 80); noStroke(); triangle(p2.left, p2.y, p2.left - 25, p2.y - 20, p2.left - 25, p2.y + 20); triangle(p2.right, p2.y, p2.right + 25, p2.y - 20, p2.right + 25, p2.y + 20); } else { fill(p2.hue, 80, 100, 50); noStroke(); triangle(p2.left, p2.y, p2.left - 25, p2.y - 20, p2.left - 25, p2.y + 20); triangle(p2.right, p2.y, p2.right + 25, p2.y - 20, p2.right + 25, p2.y + 20); } } } drawingContext.shadowBlur = 0; }
+
+
+
+function drawAnnouncements() { 
+
+  let tSize = map(constrain(width, 600, 1600), 600, 1600, 13, 22);
+
+  let lineSpacing = tSize * 2.0;
+
+  let startY = height - 50; 
+
+  for (let i = 0; i < announcements.length; i++) { 
+
+    let ann = announcements[i]; ann.life--; let alpha = 100; 
+
+    if (ann.life > ann.maxLife - 30) alpha = map(ann.maxLife - ann.life, 0, 30, 0, 100); 
+
+    else if (ann.life < 30) alpha = map(ann.life, 0, 30, 0, 100); 
+
+    let yPos = startY - (announcements.length - 1 - i) * lineSpacing; 
+
+    if (ann.life < 30) yPos -= map(ann.life, 30, 0, 0, 10); 
+
+    push(); textAlign(LEFT, CENTER); textSize(tSize); 
+
+    if (!useLightMode) { drawingContext.shadowBlur = 6; drawingContext.shadowColor = 'rgba(0, 0, 0, 0.8)'; } 
+
+    fill(hue(ann.color), saturation(ann.color), brightness(ann.color), alpha); 
+
+    text(ann.text, width > 800 ? 40 : 20, yPos); 
+
+    pop(); 
+
+  } 
+
+  announcements = announcements.filter(a => a.life > 0); 
+
+}
+
+
+
+function drawRankings() { let sorted = [...balls].sort((a, b) => b.y - a.y); let panelWidth = 120; let contentHeight = sorted.length * 24 + 16; let panelHeight = min(250, contentHeight); let maxScroll = max(0, contentHeight - panelHeight); rankScrollY = lerp(rankScrollY, rankTargetScrollY, 0.15); drawingContext.shadowBlur = 10; drawingContext.shadowColor = 'rgba(0,0,0,0.2)'; fill(10, 12, 20, 80); stroke(255, 10); strokeWeight(1); rect(10, 15, panelWidth, panelHeight, 8); drawingContext.shadowBlur = 0; push(); drawingContext.save(); drawingContext.beginPath(); drawingContext.rect(10, 15, panelWidth, panelHeight); drawingContext.clip(); translate(0, -rankScrollY); textAlign(LEFT, CENTER); textSize(12); sorted.forEach((b, i) => { let yPos = 30 + i * 24; if (b === targetBall) { noStroke(); fill(255, 40); rect(12, yPos - 11, panelWidth - 4, 22, 4); } if (b.finished) { fill(255); textSize(10); text(`🏁`, panelWidth - 5, yPos); textSize(12); } let displayName = b.name.length > 5 ? b.name.substring(0, 5) + '..' : b.name; let teamPrefix = useTeamBattle ? getTeamPrefix(b.team) : ''; fill(b.color); if (!useLightMode) { drawingContext.shadowBlur = 6; drawingContext.shadowColor = b.cStr; } text(`${i+1}. ${teamPrefix}${displayName}`, 18, yPos); drawingContext.shadowBlur = 0; }); drawingContext.restore(); pop(); if (maxScroll > 0) { let scrollBarY = map(rankScrollY, 0, maxScroll, 18, 15 + panelHeight - 20); noStroke(); fill(255, 50); rect(10 + panelWidth - 5, scrollBarY, 3, 15, 2); } }
+
+function drawFinalScoreboard() { let t = i18n[currentLang]; let winText = t.score_title; let glowColor = '#00e5ff'; let isTieBreaker = false; let winningTeam = null; if (useTeamBattle && firstWinner) { let maxWins = -1; let tiedTeams = []; for (let team in teamSegmentWins) { if (teamSegmentWins[team] > maxWins) { maxWins = teamSegmentWins[team]; tiedTeams = [team]; } else if (teamSegmentWins[team] === maxWins) { tiedTeams.push(team); } } if (tiedTeams.length === 1) { winningTeam = tiedTeams[0]; } else { isTieBreaker = true; let tieSorted = [...balls].sort((a, b) => { if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); for(let b of tieSorted) { if(tiedTeams.includes(b.team)) { winningTeam = b.team; break; } } } if(!winningTeam) winningTeam = firstWinner.team; winText = t.team_win(getTeamName(winningTeam, t), maxWins); if (winningTeam === 'RED') glowColor = '#ff3366'; else if (winningTeam === 'BLUE') glowColor = '#33aaff'; else if (winningTeam === 'GREEN') glowColor = '#33ff66'; else if (winningTeam === 'YELLOW') glowColor = '#ffcc00'; else if (winningTeam === 'PURPLE') glowColor = '#bb33ff'; else if (winningTeam === 'ORANGE') glowColor = '#ff8833'; else if (winningTeam === 'CYAN') glowColor = '#33ffff'; else if (winningTeam === 'PINK') glowColor = '#ff66b2'; } drawingContext.shadowBlur = 30; drawingContext.shadowColor = useTeamBattle ? glowColor : 'rgba(0, 229, 255, 0.4)'; fill(10, 15, 25, 220); stroke(0, 0, 100, 30); strokeWeight(1); rectMode(CENTER); rect(width/2, height/2, 450, 540, 15); rectMode(CORNER); drawingContext.shadowBlur = 0; textAlign(CENTER); drawingContext.shadowBlur = 20; drawingContext.shadowColor = glowColor; fill(useTeamBattle ? glowColor : color(190, 80, 100)); textFont('Orbitron'); textSize(24); text(winText, width/2, height/2 - 180); if (useTeamBattle && isTieBreaker) { textFont('Noto Sans KR'); textSize(13); fill(255, 180); noStroke(); text(t.tie_breaker_msg(getTeamName(winningTeam, t)), width/2, height/2 - 150); } textFont('Noto Sans KR'); let sorted = [...balls].sort((a, b) => a.finishOrder - b.finishOrder); sorted.slice(0, 3).forEach((b, i) => { fill(b.color); textSize(24); text(`${i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} ${getTeamPrefix(b.team)}${b.name}`, width/2, height/2 - 95 + i * 38); }); drawingContext.shadowBlur = 0; let btn1Y = height/2 + 80; let btn1Hover = (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn1Y && mouseY < btn1Y + 45); if (btn1Hover) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = glowColor; } fill(btn1Hover ? color(190, 80, 100, 80) : color(190, 80, 100, 30)); stroke(190, 80, 100, 80); strokeWeight(2); rect(width/2 - 150, btn1Y, 300, 45, 8); fill(100); noStroke(); textSize(16); textAlign(CENTER, CENTER); text(t.btn_restart, width/2, btn1Y + 22); drawingContext.shadowBlur = 0; let btn2Y = height/2 + 140; let btn2Hover = (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn2Y && mouseY < btn2Y + 45); if (btn2Hover) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#fff'; } fill(btn2Hover ? color(0, 0, 100, 20) : color(0, 0, 100, 5)); stroke(0, 0, 100, 50); strokeWeight(2); rect(width/2 - 150, btn2Y, 300, 45, 8); fill(100); noStroke(); textSize(16); textAlign(CENTER, CENTER); text(t.btn_new, width/2, btn2Y + 22); drawingContext.shadowBlur = 0; let btn3Y = height/2 + 200; let btn3Hover = (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn3Y && mouseY < btn3Y + 45); if (btn3Hover) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#ffea00'; } fill(btn3Hover ? color(50, 80, 100, 80) : color(50, 80, 100, 30)); stroke(50, 80, 100, 80); strokeWeight(2); rect(width/2 - 150, btn3Y, 300, 45, 8); fill(100); noStroke(); textSize(16); textAlign(CENTER, CENTER); text(t.btn_save_txt, width/2, btn3Y + 22); drawingContext.shadowBlur = 0; }
+
+function drawForceFinishButton(t) { if (forceFinishAll) return; let btnX = width - 85; let btnY = height - 50; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(190, 80, 100, 80) : color(10, 12, 20, 180)); stroke(190, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.btn_force_finish, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+
+function drawSpeedButton(t) { let btnX = width - 85; let btnY = 90; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(220, 80, 100, 80) : color(10, 12, 20, 180)); stroke(220, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.speed_btn(speedLevel), btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+
+function drawCameraButton(t) { if (forceFinishAll) return; let btnX = width - 85; let btnY = 50; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(280, 80, 100, 80) : color(10, 12, 20, 180)); stroke(280, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.cam_btn(cameraMode), btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+
+function drawMinimap(t) { let mmX = width - 85, mmY = 150, mmW = 75, mmH = height - 250; drawingContext.shadowBlur = 15; drawingContext.shadowColor = 'rgba(0,0,0,0.6)'; fill(10, 12, 20, 200); stroke(255, 30); strokeWeight(1); rect(mmX, mmY, mmW, mmH, 12); drawingContext.shadowBlur = 0; let getX = (wx) => mmX + mmW/2 + map(wx, -500, 500, -mmW/2.5, mmW/2.5); let getY = (wy) => mmY + map(wy, 0, WORLD_HEIGHT, 0, mmH); stroke(255, 15); strokeWeight(2); noFill(); beginShape(); for (let i = 0; i < track.length; i += 10) { vertex(getX(track[i].center), getY(track[i].y)); } endShape(); noStroke(); fill(0, 100, 100, 30); for (let z of BRICK_ZONES) { let yStart = mmY + z.start * mmH; let yHeight = (z.end - z.start) * mmH; rect(mmX + 2, yStart, mmW - 4, yHeight, 4); } noStroke(); staticPins.forEach(p => { if (!p.isActive) return; if (p.type === 'fast') { fill(120, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else if (p.type === 'slow') { fill(0, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else { fill(40, 100, 100, 40); ellipse(getX(p.x), getY(p.y), 1.5); } }); fill(280, 100, 80, 90); blackholePads.forEach(bh => ellipse(getX(bh.x), getY(bh.y), 4)); fill(55, 100, 100, 90); electricTraps.forEach(et => ellipse(getX(et.x), getY(et.y), 3)); fill(180, 60, 100, 90); soapBubbles.forEach(sb => ellipse(getX(sb.x), getY(sb.y), 3)); balls.forEach(b => { let px = getX(b.x); let py = getY(b.y); if (b === targetBall) { stroke(190, 80, 100, 90); strokeWeight(2); fill(b.color); ellipse(px, py, 9); } else { noStroke(); fill(b.color); ellipse(px, py, 5); } }); let firstPlaceFinished = balls.some(b => b.finished); if (firstPlaceFinished && !raceFinished) { fill(100); textAlign(RIGHT); textSize(11); text(t.minimap_hint, mmX - 10, mmY + 15); } }
+
+
+
+function initWorld() {
+
+  forceFinishAll = false; firstWinner = null; endingFairyTimer = 0; constellationTimer = 0; speedLevel = 0; cameraMode = 0;
+
+  teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+
+  balls = []; spinners = []; staticPins = []; track = []; blackholePads = []; bricks = []; particles = []; shrinkPads = []; growPads = []; ripples = []; swapPads = []; specialEffects = []; announcements = []; electricTraps = []; soapBubbles = []; bubbleZones = []; wallBars = []; mutantFlares = []; wailingWalls = []; prisms = []; guardians = [];
+
+  globalGuardianActive = false; globalGuardianTeam = null; globalGuardianTimer = 0; globalGuardianColor = null; flashColor = null; flashLife = 0; cameraShake = 0; zoomTimer = 0; targetDynamicZoom = 1.0; 
+
+  camX = 0; camY = 0; camScale = 0.5; raceFinished = false; targetBall = null; manualFocus = false; finishCounter = 0; rankScrollY = 0; rankTargetScrollY = 0;
+
+  numSegments = 5; segmentLength = WORLD_HEIGHT / numSegments; segmentCrossed = {}; for(let i=1; i<=numSegments; i++) segmentCrossed[i] = false; teamSegmentWins = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 }; sectionBannerTimer = 0; sectionBannerText = ""; sectionBannerColor = null;
+
+  bgStars = []; for (let i = 0; i < 400; i++) bgStars.push({ x: random(-3000, 3000), y: random(-1000, WORLD_HEIGHT + 2000), r: random(1, 4), blink: random(TWO_PI), speed: random(0.01, 0.05) });
+
+  
+
+  let trackSeed = random(1000); 
+
+  for (let y = 0; y <= WORLD_HEIGHT; y += 40) {
+
+    let yRatio = y / WORLD_HEIGHT; let centerX = 0 + sin(y * 0.0008 + trackSeed) * 350 + cos(y * 0.0015 + trackSeed/2) * 120;
+
+    let baseW = map(yRatio, 0, 1, 500, 300); let bulge = sin(y * 0.001) > 0.5 ? sin((y * 0.001 - 0.5) * PI) * 350 : 0; let noiseW = (noise(y * 0.005 + trackSeed) - 0.5) * 100;
+
+    let w = constrain(baseW + bulge + noiseW, 250, 900); if (isBrickZone(yRatio)) w = 500; 
+
+    let isBump = (y > 0 && y % 320 === 0 && !isBrickZone(yRatio)); let bumpW = isBump ? 25 : 0;
+
+    let hueVal = (y / 40 + trackSeed) % 360; let cStr = color(hueVal, 80, 100).toString();
+
+    track.push({ y, left: centerX - w/2 + bumpW, right: centerX + w/2 - bumpW, center: centerX, hue: hueVal, cStr: cStr, isBump: isBump });
+
+  }
+
+
+
+  if (useTeamBattle) {
+
+    let counts = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+
+    customPlayersData.forEach(p => { if (p.teamPref !== 'RANDOM') counts[p.teamPref]++; });
+
+    let randoms = customPlayersData.filter(p => p.teamPref === 'RANDOM');
+
+    for (let i = randoms.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [randoms[i], randoms[j]] = [randoms[j], randoms[i]]; }
+
+    randoms.forEach(p => { let minTeam = Object.keys(counts).reduce((a, b) => counts[a] <= counts[b] ? a : b); p.assignedTeam = minTeam; counts[minTeam]++; });
+
+    customPlayersData.forEach(p => { if (p.teamPref !== 'RANDOM') p.assignedTeam = p.teamPref; });
+
+  }
+
+
+
+  customPlayersData.forEach((pData, i) => {
+
+    let startX = 0 + (i - customPlayersData.length/2) * 20 + random(-5, 5);
+
+    let newBall = new RacingBall(startX, 250 + random(-20, 20), pData.name, i, customPlayersData.length, pData.assignedTeam);
+
+    if (pData.img) newBall.img = pData.img; balls.push(newBall);
+
+  });
+
+
+
+  constellationSpots = []; constellationEdges = []; let n = balls.length;
+
+  for (let i = 0; i < n; i++) {
+
+    let angle = map(i, 0, n, -HALF_PI, TWO_PI - HALF_PI); let r = (i % 2 === 0 && n > 4) ? 140 : 70; if (n <= 4) r = 100; 
+
+    constellationSpots.push({ x: 0 + cos(angle) * r, y: WORLD_HEIGHT + 200 + sin(angle) * r });
+
+    constellationEdges.push([i, (i + 1) % n]); if (n > 4) constellationEdges.push([i, (i + 2) % n]); 
+
+  }
+
+
+
+  for (let i = 1; i <= numSegments; i++) { guardians.push(new GuardianRobot(i * segmentLength - 120)); }
+
+
+
+  let barY = 800;
+
+  while(barY < WORLD_HEIGHT - 1000) {
+
+    if (!isBrickZone(barY / WORLD_HEIGHT)) { let tIdx = floor(barY / 40); if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; if ((t.right - t.left) >= 450) { wallBars.push(new WallBar(barY, random(['left', 'right']), t)); } } }
+
+    barY += random(600, 1200);
+
+  }
+
+
+
+  for (let y = 700; y < WORLD_HEIGHT - 500; y += 150) {
+
+    if (isBrickZone(y / WORLD_HEIGHT)) continue; let tIdx = floor(y / 40);
+
+    if (tIdx >= 0 && tIdx < track.length) {
+
+      let t = track[tIdx]; let rowIdx = floor(y / 150); let colIdx = 0; let rowOffset = (rowIdx % 2 === 0) ? 0 : 75;
+
+      for (let x = t.left + 70; x < t.right - 70; x += 150) { let pinType = 'normal'; let randVal = random(1); if (randVal < 0.02) pinType = 'fast'; else if (randVal < 0.04) pinType = 'slow'; let pinGroup = (rowIdx + colIdx) % 2; staticPins.push(new StaticPin(x + rowOffset + random(-10, 10), y + random(-10, 10), pinType, pinGroup)); colIdx++; }
+
+    }
+
+  }
+
+
+
+  let currentY = 1200; let obstacleTypes = ['spinner', 'shrink', 'grow', 'swap', 'electric', 'bubble'];
+
+  while (currentY < WORLD_HEIGHT - 1500) {
+
+    let yRatio = currentY / WORLD_HEIGHT; if (isBrickZone(yRatio)) { currentY += 400; continue; } let tIdx = floor(currentY / 40);
+
+    if (tIdx >= 0 && tIdx < track.length) {
+
+      let t = track[tIdx]; let tWidth = t.right - t.left; let type = random(obstacleTypes);
+
+      if (tWidth >= 550 && random(1) < 0.15) { type = 'blackhole'; }
+
+      if (type === 'spinner') spinners.push(new Spinner(getScatteredX(t, 90), currentY, 160, 15, random(-0.12, 0.12)));
+
+      else if (type === 'blackhole') blackholePads.push(new BlackholePad(getScatteredX(t, 80), currentY, 146, 106));
+
+      else if (type === 'shrink') shrinkPads.push(new ShrinkPad(getScatteredX(t, 60), currentY, 110));
+
+      else if (type === 'grow') growPads.push(new GrowPad(getScatteredX(t, 60), currentY, 110));
+
+      else if (type === 'swap') swapPads.push(new SwapPad(getScatteredX(t, 60), currentY, 45));
+
+      else if (type === 'electric' && useElectricTrap) electricTraps.push(new ElectricTrap(getScatteredX(t, 50), currentY));
+
+      else if (type === 'bubble' && useBubbleTrap) bubbleZones.push({ yStart: currentY - 200, yEnd: currentY + 600 });
+
+    }
+
+    currentY += random(1000, 1500); 
+
+  }
+
+
+
+  let brickW = 60; let brickH = 25;
+
+  for (let z of BRICK_ZONES) {
+
+    for (let y = WORLD_HEIGHT * z.start; y < WORLD_HEIGHT * z.end; y += brickH + 5) {
+
+      let tIdx = floor(y / 40); if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; for (let x = t.left + brickW/2; x < t.right - brickW/2; x += brickW + 2) bricks.push(new Brick(x, y, brickW, brickH)); }
+
+    }
+
+  }
+
+}
+
+
+
+function draw() {
+
+  background(260, 80, 5); 
+
+  if (!gameStarted) return; 
+
+  let t = i18n[currentLang];
+
+  let unfinishedBalls = balls.filter(b => !b.finished); let lastBallRemaining = unfinishedBalls.length === 1 ? unfinishedBalls[0] : null;
+
+  let activeRunners = [...unfinishedBalls].sort((a, b) => b.y - a.y);
+
+  
+
+  if (frameCount % 60 === 0 && activeRunners.length > 0) { let lastY = activeRunners[activeRunners.length - 1].y; sweepThePast(lastY); }
+
+  
+
+  if (globalGuardianTimer > 0) { globalGuardianTimer--; if (globalGuardianTimer <= 0) globalGuardianActive = false; }
+
+
+
+  for (let i = 1; i < activeRunners.length; i++) {
+
+    let current = activeRunners[i]; let ahead = activeRunners[i-1]; let gap = ahead.y - current.y;
+
+    if (gap > 1200 && !current.hasCatchUpShield) { current.hasCatchUpShield = true; playIceSound(current.x, current.y); } 
+
+    else if (gap < 400 && current.hasCatchUpShield) { current.hasCatchUpShield = false; createParticles(current.x, current.y, color(150, 80, 100), 10); }
+
+  }
+
+  if(activeRunners.length > 0) activeRunners[0].hasCatchUpShield = false;
+
+
+
+  let leadBall = activeRunners.length > 0 ? activeRunners[0] : balls[0]; 
+
+  if (endingFairyTimer > 0 && firstWinner) { targetBall = firstWinner; endingFairyTimer--; }
+
+  else if (leadBall && !manualFocus) { targetBall = leadBall; }
+
+
+
+  if (useTeamBattle && !raceFinished) {
+
+    for (let i = 1; i < numSegments; i++) {
+
+      let segY = i * segmentLength;
+
+      if (!segmentCrossed[i]) {
+
+        let crossedBalls = balls.filter(b => b.y >= segY).sort((a,b) => b.y - a.y);
+
+        if (crossedBalls.length > 0) {
+
+          let winnerOfSection = crossedBalls[0]; segmentCrossed[i] = true; teamSegmentWins[winnerOfSection.team]++; sectionBannerTimer = 180; sectionBannerColor = winnerOfSection.color; sectionBannerText = t.section_pass(i, winnerOfSection.name, getTeamName(winnerOfSection.team, t)); playSwapSound(winnerOfSection.x, winnerOfSection.y);
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+
+  let allDone = balls.every(b => b.finished);
+
+  if (allDone && !raceFinished) { raceFinished = true; constellationTimer = 300; }
+
+  if (raceFinished && constellationTimer > 0) { constellationTimer--; }
+
+
+
+  if (!raceFinished && targetBall) {
+
+    let targetScale;
+
+    let baseScaleForAction = map(targetBall.y, 0, WORLD_HEIGHT, 0.75, 1.1, true); 
+
+    let speedZoom = constrain(targetBall.vy * 0.025, 0, 0.4); 
+
+    let idealActionScale = max(0.35, baseScaleForAction - speedZoom);
+
+    
+
+    if (cameraMode === 0) { targetScale = 0.45; if (zoomTimer > 0) zoomTimer--; } 
+
+    else if (cameraMode === 2) { targetScale = 1.3; if (zoomTimer > 0) zoomTimer--; } 
+
+    else { 
+
+      if (zoomTimer > 0) { zoomTimer--; targetDynamicZoom = lerp(targetDynamicZoom, targetDynamicZoom * 0.98 + idealActionScale * 0.02, 0.1); targetScale = targetDynamicZoom; } 
+
+      else { targetDynamicZoom = lerp(targetDynamicZoom, idealActionScale, 0.05); targetScale = targetDynamicZoom; } 
+
+    }
+
+    
+
+    let baseLerp = endingFairyTimer > 0 ? 0.1 : 0.04; 
+
+    let scaleLerpSpeed = cameraMode === 1 ? 0.03 : baseLerp; 
+
+    
+
+    camScale = lerp(camScale, targetScale, scaleLerpSpeed); 
+
+    camX = lerp(camX, width / (2 * camScale) - targetBall.x, baseLerp * 2.5); 
+
+    camY = lerp(camY, height / (2 * camScale) - targetBall.y, baseLerp * 2.5);
+
+    
+
+    if (cameraShake > 0.1) { if (cameraMode === 1) { camX += random(-cameraShake, cameraShake) / camScale; camY += random(-cameraShake, cameraShake) / camScale; } cameraShake *= 0.85; }
+
+  } else { camScale = lerp(camScale, 0.85, 0.02); camX = lerp(camX, width / (2 * camScale) - 0, 0.05); camY = lerp(camY, height / (2 * camScale) - (WORLD_HEIGHT + 200), 0.05); }
+
+
+
+  push(); scale(camScale); translate(camX, camY);
+
+  let viewTop = targetBall ? targetBall.y - (height / camScale) * 1.5 : 0; let viewBottom = targetBall ? targetBall.y + (height / camScale) * 1.5 : WORLD_HEIGHT;
+
+  
+
+  drawBackgroundGrid(viewTop, viewBottom); drawTrack(viewTop, viewBottom); drawSegments(viewTop, viewBottom);
+
+
+
+  guardians.forEach(g => { g.update(balls); if (g.y > viewTop - 500 && g.y < viewBottom + 500) g.display(); g.applyEffect(balls); });
+
+  wallBars.forEach(wb => { if (wb.y > viewTop && wb.y < viewBottom) wb.display(); });
+
+
+
+  if (useBubbleTrap) { bubbleZones.forEach(zone => { let anyBallInZone = balls.some(b => b.y >= zone.yStart && b.y <= zone.yEnd); if (anyBallInZone && frameCount % 150 === 0 && soapBubbles.length < 8) { let tIdx = floor(zone.yEnd / 40); if(tIdx >= 0 && tIdx < track.length) soapBubbles.push(new SoapBubble(random(track[tIdx].left + 50, track[tIdx].right - 50), zone.yEnd)); } }); }
+
+
+
+  blackholePads.forEach(bh => { if (bh.y > viewTop && bh.y < viewBottom) bh.display(); }); shrinkPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); growPads.forEach(gp => { if (gp.y > viewTop && gp.y < viewBottom) gp.display(); }); swapPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); bricks.forEach(br => { if (br.y > viewTop && br.y < viewBottom) br.display(); }); staticPins.forEach(p => { if (p.y > viewTop && p.y < viewBottom) p.display(); }); spinners.forEach(s => { s.update(); if (s.y > viewTop && s.y < viewBottom) s.display(); }); electricTraps.forEach(et => { if (et.y > viewTop && et.y < viewBottom) et.display(); });
+
+  
+
+  for (let i = prisms.length - 1; i >= 0; i--) { let p = prisms[i]; p.update(); if (p.y > viewTop && p.y < viewBottom) p.display(); if (p.isDead()) prisms.splice(i, 1); }
+
+  for (let i = soapBubbles.length - 1; i >= 0; i--) { let sb = soapBubbles[i]; sb.update(); if (sb.y > viewTop && sb.y < viewBottom) sb.display(); if (sb.popped || sb.y < 0) soapBubbles.splice(i, 1); }
+
+  for (let i = ripples.length - 1; i >= 0; i--) { let r = ripples[i]; r.update(); r.display(); if (r.isDead()) ripples.splice(i, 1); }
+
+  for (let i = mutantFlares.length - 1; i >= 0; i--) { let f = mutantFlares[i]; f.update(); if (f.y > viewTop && f.y < viewBottom) f.display(); if (f.life <= 0) mutantFlares.splice(i, 1); }
+
+  for (let i = wailingWalls.length - 1; i >= 0; i--) { let w = wailingWalls[i]; w.update(); if (w.y > viewTop && w.y < viewBottom) w.display(); if (w.isDead()) wailingWalls.splice(i, 1); }
+
+
+
+  blendMode(ADD);
+
+  for (let i = specialEffects.length - 1; i >= 0; i--) { let fx = specialEffects[i]; fx.update(); fx.display(); if (fx.isDead()) specialEffects.splice(i, 1); }
+
+  for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.update(); p.display(); if (p.isDead()) particles.splice(i, 1); }
+
+  blendMode(BLEND);
+
+
+
+  if (raceFinished) { stroke(50, 60, 100, 60 + sin(frameCount * 0.05) * 40); strokeWeight(2); for (let edge of constellationEdges) { let b1 = balls[edge[0]]; let b2 = balls[edge[1]]; line(b1.x, b1.y, b2.x, b2.y); } }
+
+  let triggerShieldForAll = useFirstPlaceOnly && balls.some(b => b.finished);
+
+
+
+  balls.forEach(b => {
+
+    b.cosmicBoost = (!b.finished && leadBall && leadBall.y - b.y > 2500); b.isLastOne = (b === lastBallRemaining && !b.finished) || (triggerShieldForAll && !b.finished) || (forceFinishAll && !b.finished);
+
+    b.update(); b.display();
+
+    
+
+    if (b.frozenTimer <= 0 && b.trapTimer <= 0 && !forceFinishAll && endingFairyTimer <= 0) {
+
+      b.checkBallCollision(balls);
+
+      if (b.checkTrackCollision()) playNormalHit(400, b.x, b.y);
+
+      wallBars.forEach(wb => wb.applyEffect(b)); staticPins.forEach(p => { if (b.checkPinCollision(p, t)) playNormalHit(800, b.x, b.y); });
+
+      spinners.forEach(s => { if (b.checkSpinnerCollision(s)) playNormalHit(300, b.x, b.y); }); blackholePads.forEach(bh => bh.applyForce(b)); shrinkPads.forEach(sp => sp.applyEffect(b)); 
+
+      growPads.forEach(gp => gp.applyEffect(b)); swapPads.forEach(sp => sp.applyEffect(b, leadBall)); electricTraps.forEach(et => et.applyEffect(b)); soapBubbles.forEach(sb => sb.applyEffect(b));
+
+      wailingWalls.forEach(w => w.applyEffect(b)); prisms.forEach(p => p.applyEffect(b));
+
+
+
+      for (let i = mutantFlares.length - 1; i >= 0; i--) {
+
+        if (abs(b.y - mutantFlares[i].y) > 100) continue; 
+
+        if (b !== mutantFlares[i].owner && !b.finished && !b.hasCatchUpShield && !b.isDashing && !b.isJumping) { 
+
+          if (!useTeamBattle || b.team !== mutantFlares[i].owner.team) {
+
+            if (dist(b.x, b.y, mutantFlares[i].x, mutantFlares[i].y) < b.r + mutantFlares[i].r) { 
+
+              if (b.divineShieldTimer > 0) { mutantFlares.splice(i, 1); createParticles(b.x, b.y, color(60, 100, 100), 10); } 
+
+              else { b.vy = -8; b.slowTimer = 120; playBombSound(b.x, b.y); createParticles(b.x, b.y, color(10, 80, 100), 20); mutantFlares.splice(i, 1); }
+
+            }
+
+          }
+
+        }
+
+      }
+
+
+
+      for (let i = bricks.length - 1; i >= 0; i--) {
+
+        if (abs(b.y - bricks[i].y) > 100) continue; 
+
+        if (b.checkBrickCollision(bricks[i])) {
+
+          let hitBrick = bricks[i]; bricks.splice(i, 1); 
+
+          if (b.isDashing || b.divineShieldTimer > 0) { createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 15); continue; } 
+
+          if (hitBrick.item === 'ice') { playIceSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(200, 80, 100), 40); specialEffects.push(new IceFX(hitBrick.x, hitBrick.y)); flashColor = color(200, 80, 100); flashLife = 40; zoomTimer = 45; targetDynamicZoom = 1.3; addEventLog(b, t.ann_ice(b.name), b.color, false); balls.forEach(other => { if (other !== b && !other.finished && other.y > b.y && !other.hasCatchUpShield && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== b.team)) other.frozenTimer = 120; }); } 
+
+          else if (hitBrick.item === 'bomb') { playBombSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(10, 90, 100), 50); specialEffects.push(new BombFX(hitBrick.x, hitBrick.y)); flashColor = color(10, 100, 100); flashLife = 40; cameraShake = 20; zoomTimer = 50; targetDynamicZoom = 1.4; addEventLog(b, t.ann_bomb(b.name), b.color, false); for (let j = bricks.length - 1; j >= 0; j--) { if (dist(hitBrick.x, hitBrick.y, bricks[j].x, bricks[j].y) < 160) { createParticles(bricks[j].x, bricks[j].y, color(bricks[j].hue, 80, 100), 5); bricks.splice(j, 1); } } } 
+
+          else { playNormalHit(1200, hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 10); } break; 
+
+        }
+
+      }
+
+    }
+
+  });
+
+
+
+  stroke(30, 100, 100, 50); strokeWeight(10); line(-5000, WORLD_HEIGHT - 100, 5000, WORLD_HEIGHT - 100); pop();
+
+
+
+  if (endingFairyTimer > 0 && firstWinner) { let alpha = min(150 - endingFairyTimer, 20) * 5; push(); fill(firstWinner.colorH, firstWinner.colorS, firstWinner.colorB, alpha * 0.2); rect(0, 0, width, height); textAlign(CENTER, CENTER); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = firstWinner.cStr; } fill(255, alpha); textSize(30); text(t.ann_ending, width/2, height - 200); textSize(60); text(firstWinner.name, width/2, height - 120); drawingContext.shadowBlur = 0; pop(); }
+
+  if (flashLife > 0 && flashColor) { noStroke(); fill(hue(flashColor), saturation(flashColor), brightness(flashColor), flashLife * 2); rect(0, 0, width, height); flashLife--; }
+
+  if (sectionBannerTimer > 0) { push(); let alpha = min(sectionBannerTimer, 20) * 12; let yOffset = map(sectionBannerTimer, 180, 160, -100, height/3, true); if (sectionBannerTimer < 20) yOffset = map(sectionBannerTimer, 20, 0, height/3, -100); fill(10, 15, 25, alpha * 0.4); rectMode(CENTER); rect(width/2, yOffset, width, 100); textAlign(CENTER, CENTER); textSize(26); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = sectionBannerColor.toString(); } stroke(sectionBannerColor.levels[0], sectionBannerColor.levels[1], sectionBannerColor.levels[2], alpha); strokeWeight(2); fill(255, alpha); text(sectionBannerText, width/2, yOffset); drawingContext.shadowBlur = 0; pop(); sectionBannerTimer--; }
+
+
+
+  drawAnnouncements(); 
+
+  
+
+  if (raceFinished && endingFairyTimer <= 0) { if (constellationTimer > 0) {} else { if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } drawFinalScoreboard(); } }
+
+  else if (endingFairyTimer <= 0 && !raceFinished) { drawMinimap(t); drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawForceFinishButton(t); }
+
+
+
+  if (manualFocus && !raceFinished && endingFairyTimer <= 0) { push(); fill(255, 150); textAlign(CENTER, TOP); textSize(13); let txt = currentLang==='ko'?"빈 공간 클릭 시 선두 자동 추적":currentLang==='en'?"Click empty space to auto-focus leader":currentLang==='zh'?"点击空白处自动追踪第一名":"空白をクリックで先頭を自動追跡"; text(txt, width/2, 20); pop(); }
+
+}
+
+
+
+// ==========================================
+
+// 6. 핵심 객체들
+
+// ==========================================
+
+class GuardianRobot {
+
+  constructor(y) { this.y = y; this.w = 100; this.h = 28; this.vx = 0; this.maxSpeed = 12; this.x = 0; }
+
+  update(balls) {
+
+    if (!globalGuardianActive) return; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t && this.x === 0 && this.vx === 0) this.x = t.center;
+
+    let target = null; let minDist = 800; 
+
+    for(let b of balls) { if(b.finished || b.team === globalGuardianTeam || b.divineShieldTimer > 0 || b.isDashing || b.isJumping || b.isLastOne) continue; let dy = this.y - b.y; if(dy > 0 && dy < minDist) { minDist = dy; target = b; } }
+
+    if (target) { let dx = target.x - this.x; this.vx = constrain(dx, -this.maxSpeed, this.maxSpeed); } else { this.vx *= 0.9; }
+
+    this.x += this.vx; if (t) { this.x = constrain(this.x, t.left + this.w/2, t.right - this.w/2); }
+
+  }
+
+  display() {
+
+    push(); translate(this.x, this.y);
+
+    if (globalGuardianActive) { if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = globalGuardianColor.toString(); } fill(globalGuardianColor); stroke(255, 100); strokeWeight(3); } else { fill(40); stroke(80); strokeWeight(2); }
+
+    rectMode(CENTER); rect(0, 0, this.w, this.h, 8); 
+
+    if (globalGuardianActive) { fill(255); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); } else { fill(20); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); }
+
+    drawingContext.shadowBlur = 0; pop();
+
+  }
+
+  applyEffect(balls) {
+
+    if (!globalGuardianActive) return;
+
+    for(let b of balls) {
+
+        if (b.finished || b.team === globalGuardianTeam || b.isLastOne || b.isJumping) continue;
+
+        let closestX = constrain(b.x, this.x - this.w/2, this.x + this.w/2); let closestY = constrain(b.y, this.y - this.h/2, this.y + this.h/2);
+
+        if (dist(b.x, b.y, closestX, closestY) < b.r) {
+
+            if (b.isDashing || b.divineShieldTimer > 0) { createParticles(closestX, closestY, color(255), 10); continue; }
+
+            b.vy = -abs(b.vy) * 1.5 - 15; b.y = this.y - this.h/2 - b.r - 5; b.vx = (b.x < this.x ? -15 : 15); b.slowTimer = 60; playNormalHit(800, b.x, b.y); createParticles(b.x, b.y, globalGuardianColor, 15);
+
+        }
+
+    }
+
+  }
+
+}
+
+
+
+class PrismFilter {
+
+  constructor(x, y, team, col) { this.x = x; this.y = y; this.team = team; this.col = col; this.life = 300; this.maxLife = 300; this.w = 1500; }
+
+  update() { this.y -= 4; this.life--; }
+
+  display() { push(); translate(0, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); drawingContext.shadowBlur = 0; pop(); }
+
+  applyEffect(b) { if (b.finished || b.divineShieldTimer > 0 || b.team === this.team || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 20) { b.y = this.y - b.r - 20; b.vy = -6; b.vx += random(-1, 1); createParticles(b.x, b.y, this.col, 3); } }
+
+  isDead() { return this.life <= 0; }
+
+}
+
+
+
+class WailingWall {
+
+  constructor(y, life, col) { this.y = y; this.life = life; this.maxLife = life; this.col = col; this.tIdx = constrain(floor(y / 40), 0, track.length - 1); this.w = track[this.tIdx] ? track[this.tIdx].right - track[this.tIdx].left : 600; this.x = track[this.tIdx] ? track[this.tIdx].center : 0; }
+
+  update() { this.life--; }
+
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } fill(hue(this.col), saturation(this.col), brightness(this.col), alpha); stroke(255, alpha); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.w, 20, 10); drawingContext.shadowBlur = 0; pop(); }
+
+  applyEffect(b) { if (b.finished || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 15) { if (b.y < this.y) { b.y = this.y - b.r - 15; b.vy = (-abs(b.vy) * 0.8 - 2); b.vx += random(-2, 2); createParticles(b.x, b.y, this.col, 5); playNormalHit(800, b.x, b.y); } } }
+
+  isDead() { return this.life <= 0; }
+
+}
+
+
+
+class RacingBall {
+
+  constructor(x, y, name, i, totalPlayers, assignedTeam) {
+
+    this.x = x; this.y = y; this.name = name; this.id = i; this.baseR = 13; this.targetR = 13; this.r = 13; 
+
+    if (useTeamBattle) { this.team = assignedTeam; let baseHue = 0; if (this.team === 'RED') baseHue = 355; else if (this.team === 'BLUE') baseHue = 215; else if (this.team === 'GREEN') baseHue = 130; else if (this.team === 'YELLOW') baseHue = 45; else if (this.team === 'PURPLE') baseHue = 280; else if (this.team === 'ORANGE') baseHue = 30; else if (this.team === 'CYAN') baseHue = 180; else if (this.team === 'PINK') baseHue = 320; this.color = color((baseHue + random(-10, 10) + 360) % 360, 85, 100); } else { this.team = null; this.color = color(i * (360 / totalPlayers), 85, 100); }
+
+    this.colorH = hue(this.color); this.colorS = saturation(this.color); this.colorB = brightness(this.color); this.cStr = this.color.toString();
+
+    this.vx = random(-1, 1); this.vy = 0; this.history = []; this.img = null; this.sizeTimer = 0; this.isLastOne = false; 
+
+    this.finished = false; this.finishOrder = 0; this.cooldown = 0; this.frozenTimer = 0; this.angle = random(TWO_PI);
+
+    this.trapTimer = 0; this.trapType = null; this.trapObj = null; this.trapCooldown = 0; this.fastTimer = 0; this.slowTimer = 0; this.cosmicBoost = false; this.hasCatchUpShield = false;
+
+    this.mutantType = -1; this.collisionGauge = 0; this.skillActive = false; this.mutantTimer = 0;
+
+    this.hasRetribution = false; this.isBlackhole = false; this.isSticky = false; this.isDashing = false; 
+
+    this.divineShieldTimer = 0; this.chaserTimer = 0; this.chaseTarget = null;
+
+    this.reverseGravityTimer = 0; this.isJumping = false; this.jumpTimer = 0;
+
+  }
+
+  
+
+  incrementGauge() { 
+
+    if (this.finished || this.isLastOne) return; 
+
+    if (useMutantMode && !this.skillActive) { this.collisionGauge++; if (this.collisionGauge >= gaugeThreshold) { this.activateMutantSkill(); } }
+
+    if (useTeamBattle && this.team) { teamGauges[this.team]++; if (teamGauges[this.team] >= teamGaugeThreshold) { this.activateTeamSkill(); teamGauges[this.team] = 0; } }
+
+  }
+
+
+
+  activateTeamSkill() {
+
+    let t = i18n[currentLang]; let skillPool = []; for(let i=0; i<4; i++) { if(activeTeamSkills[i]) skillPool.push(i); } if (skillPool.length === 0) return;
+
+    let teamSkillType = random(skillPool);
+
+    if (teamSkillType === 0) { playHealSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished) { ally.frozenTimer = 0; ally.slowTimer = 0; ally.trapTimer = 0; ally.trapObj = null; ally.fastTimer = 0; ally.isDashing = false; ally.hasRetribution = false; ally.isSticky = false; ally.isBlackhole = false; ally.reverseGravityTimer = 0; ally.divineShieldTimer = 150; createParticles(ally.x, ally.y, color(60, 100, 100), 15); } }); flashColor = color(60, 50, 100); flashLife = 20; addEventLog(this, t.ann_heal(getTeamName(this.team, t)), color(60, 100, 100), true); } 
+
+    else if (teamSkillType === 1) { playIceSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished) { ally.targetR = ally.baseR * 0.4; ally.sizeTimer = 420; createParticles(ally.x, ally.y, color(190, 80, 100), 15); } }); flashColor = color(190, 50, 100); flashLife = 20; addEventLog(this, t.ann_team_shrink(getTeamName(this.team, t)), color(190, 100, 100), true); } 
+
+    else if (teamSkillType === 2) { let leadingAlly = balls.filter(b => b.team === this.team && !b.finished).sort((a,b)=>b.y - a.y)[0] || this; prisms.push(new PrismFilter(leadingAlly.x, leadingAlly.y, this.team, this.color)); playIceSound(this.x, this.y); flashColor = this.color; flashLife = 20; addEventLog(this, t.ann_team_prism(getTeamName(this.team, t)), this.color, true); } 
+
+    else { playIceSound(this.x, this.y); globalGuardianActive = true; globalGuardianTeam = this.team; globalGuardianColor = this.color; globalGuardianTimer = 600; flashColor = this.color; flashLife = 20; addEventLog(this, t.ann_team_guardian(getTeamName(this.team, t)), this.color, true); }
+
+  }
+
+
+
+  activateMutantSkill() {
+
+    this.collisionGauge = 0; let t = i18n[currentLang]; let skillPool = []; let basePool = [0,1,2,3,4,5,6,7,10,11,13]; let teamPool = [8,9,12];
+
+    basePool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); if(useTeamBattle) { teamPool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); }
+
+    if (skillPool.length === 0) return;
+
+    this.skillActive = true; this.mutantType = random(skillPool);
+
+    if (cameraMode === 1 && this.mutantType !== 13) { zoomTimer = 45; targetDynamicZoom = 1.4; }
+
+    if (this.mutantType !== 13 && this.mutantType !== 1) { specialEffects.push(new NovaFX(this.x, this.y, this.color)); for(let k=0; k<40; k++) particles.push(new Particle(this.x, this.y, this.color)); playIceSound(this.x, this.y); }
+
+    if (this.mutantType !== 1) { addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); }
+
+
+
+    switch(this.mutantType) {
+
+      case 0: balls.forEach(other => { if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 400) { other.vx = 0; other.vy = 0; other.frozenTimer = 240; createParticles(other.x, other.y, color(200, 80, 100), 10); } }); specialEffects.push(new IceFX(this.x, this.y)); this.skillActive = false; break;
+
+      case 1: flashColor = this.color; flashLife = 20; let targets = balls.filter(b => !b.finished && b !== this && b.divineShieldTimer <= 0 && !b.isJumping && (!useTeamBattle || b.team !== this.team)).sort((a,b) => b.y - a.y); let target = targets[0]; if (!target && useTeamBattle) target = balls.filter(b => !b.finished && b !== this && b.divineShieldTimer <= 0 && !b.isJumping).sort((a,b) => b.y - a.y)[0]; if(target && target !== this) { let tx = this.x, ty = this.y, tvx = this.vx, tvy = this.vy; this.x = target.x; this.y = target.y; this.vx = target.vx; this.vy = target.vy; target.x = tx; target.y = ty; target.vx = tvx; target.vy = tvy; specialEffects.push(new SwapFX(this.x, this.y, target.x, target.y)); playSwapSound(this.x, this.y); addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); addEventLog(this, t.ann_swap(this.name, target.name), color(45, 100, 100), true); } this.skillActive = false; break;
+
+      case 2: this.hasRetribution = true; this.mutantTimer = 150; break;
+
+      case 3: this.isSticky = true; this.mutantTimer = 240; break;
+
+      case 4: this.isBlackhole = true; this.mutantTimer = 300; break;
+
+      case 5: this.targetR = this.baseR * 0.5; this.mutantTimer = 300; break;
+
+      case 6: for(let j=0; j<8; j++) { let ang = random(TWO_PI); let speed = random(15, 25); mutantFlares.push(new FlareTrap(this.x, this.y, cos(ang)*speed, sin(ang)*speed, this.cStr, this)); } this.skillActive = false; break;
+
+      case 7: this.isDashing = true; this.mutantTimer = 120; break;
+
+      case 8: let leadingAlly = balls.filter(b => (!useTeamBattle || b.team === this.team) && !b.finished && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingAlly) { leadingAlly.fastTimer = 180; leadingAlly.vy += 5; leadingAlly.hasCatchUpShield = true; this.frozenTimer = 60; specialEffects.push(new NovaFX(leadingAlly.x, leadingAlly.y, color(60, 100, 100))); addEventLog(this, t.ann_starlight(this.name, leadingAlly.name), color(60, 100, 100), true); } this.skillActive = false; break;
+
+      case 9: let leadingEnemy = balls.filter(b => (!useTeamBattle || b.team !== this.team) && !b.finished && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingEnemy) { leadingEnemy.vy = 0; leadingEnemy.frozenTimer = 180; this.frozenTimer = 180; specialEffects.push(new NovaFX(leadingEnemy.x, leadingEnemy.y, color(280, 100, 50))); addEventLog(this, t.ann_anchor(this.name, leadingEnemy.name), color(280, 100, 50), true); } this.skillActive = false; break;
+
+      case 10: wailingWalls.push(new WailingWall(this.y - 80, 180, this.color)); addEventLog(this, t.ann_wall(this.name), this.color, true); this.skillActive = false; break;
+
+      case 11: let unfinished = balls.filter(b => !b.finished && !b.isJumping).sort((a,b)=>b.y - a.y); let chaseObj = unfinished[0]; if (chaseObj && chaseObj !== this) { this.chaseTarget = chaseObj; this.chaserTimer = 180; addEventLog(this, t.ann_chaser(this.name, chaseObj.name), this.color, true); } else { this.skillActive = false; } break;
+
+      case 12: let applied = false; let teams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK']; teams.forEach(tm => { if(tm !== this.team) { let enemyLeader = balls.filter(b => b.team === tm && !b.finished).sort((a,b)=>b.y - a.y)[0]; if(enemyLeader && enemyLeader.divineShieldTimer <= 0) { enemyLeader.reverseGravityTimer = 300; applied = true; specialEffects.push(new NovaFX(enemyLeader.x, enemyLeader.y, color(280, 100, 100))); } } }); if(applied) addEventLog(this, t.ann_gravity(this.name), color(280, 100, 100), true); this.skillActive = false; break;
+
+      case 13: this.isJumping = true; this.jumpTimer = 150; this.vy = 18; playIceSound(this.x, this.y); addEventLog(this, t.ann_babel(this.name), color(200, 20, 100), true); break;
+
+    }
+
+  }
+
+
+
+  update() {
+
+    if (this.cooldown > 0) this.cooldown--; if (this.trapCooldown > 0) this.trapCooldown--;
+
+    if (this.reverseGravityTimer > 0) { this.reverseGravityTimer--; if (frameCount % 4 === 0) createParticles(this.x, this.y - 10, color(280, 80, 100), 2); if (this.divineShieldTimer > 0) this.reverseGravityTimer = 0; }
+
+    if (this.divineShieldTimer > 0) { this.divineShieldTimer--; this.frozenTimer = 0; this.slowTimer = 0; this.fastTimer = 0; this.trapTimer = 0; this.isDashing = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.chaserTimer = 0; this.trapObj = null; }
+
+
+
+    let currentZ = 0;
+
+
+
+    if (this.isJumping) {
+
+      this.jumpTimer--; this.vy = 18; 
+
+      let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx] ? track[tIdx].center : 0;
+
+      this.x = lerp(this.x, tCenter, 0.05);
+
+      let progress = 1 - (this.jumpTimer / 150); currentZ = sin(progress * Math.PI);
+
+      if (frameCount % 3 === 0) createParticles(this.x, this.y + 20, color(0, 0, 100), 2);
+
+      if (this.jumpTimer <= 0) {
+
+        this.isJumping = false; this.skillActive = false; playBombSound(this.x, this.y); specialEffects.push(new NovaFX(this.x, this.y, color(255)));
+
+        balls.forEach(other => { if (other !== this && !other.finished && !other.isJumping && dist(this.x, this.y, other.x, other.y) < 150) { let pushDir = (other.x > this.x) ? 1 : -1; other.vx = pushDir * 12; other.vy = 6; } });
+
+      }
+
+    }
+
+
+
+    if (this.skillActive && this.mutantTimer > 0) {
+
+      this.mutantTimer--;
+
+      if (this.isSticky) { if(frameCount % 5 === 0) createParticles(this.x, this.y, color(100, 80, 80), 3); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 300) { other.slowTimer = 360; } }); }
+
+      if (this.isBlackhole) { if(frameCount % 3 === 0) createParticles(this.x, this.y, color(280, 100, 50), 4); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 3.0, 0.5); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; } }); }
+
+      if (this.hasRetribution) {
+
+        if (this.mutantTimer > 1) { if (frameCount % 3 === 0) createParticles(this.x, this.y, color(0, 100, 50), 2); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 6.0, 1.0); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; other.vx *= 0.8; other.vy *= 0.8; } }); } 
+
+        else if (this.mutantTimer === 1) { playBombSound(this.x, this.y); specialEffects.push(new BombFX(this.x, this.y)); createParticles(this.x, this.y, color(0, 100, 100), 50); balls.forEach(other => { if (abs(this.y - other.y) > 350) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 350) { let angle = random(TWO_PI); let forceX = cos(angle) * random(15, 25); let forceY = sin(angle) * random(15, 25); other.vx = forceX; other.vy = forceY; other.frozenTimer = 60; createParticles(other.x, other.y, color(0, 100, 100), 15); } }); this.vy += 18; }
+
+      }
+
+      if (this.isDashing) { this.vy = 18; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx].center; this.x = lerp(this.x, tCenter, 0.15); if(frameCount % 2 === 0) createParticles(this.x, this.y, color(180, 100, 100), 3); balls.forEach(other => { if (abs(this.y - other.y) > 150) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && d < this.r * 8) { let pushDir = (other.x > tCenter) ? 1 : -1; other.vx = pushDir * 15; createParticles(other.x, other.y, color(180, 30, 100), 2); } }); }
+
+      if (this.mutantTimer <= 0) { this.skillActive = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.isDashing = false; this.targetR = this.baseR; }
+
+    }
+
+
+
+    if (this.chaserTimer > 0 && this.chaseTarget && !this.chaseTarget.finished) {
+
+      this.chaserTimer--; let dx = this.chaseTarget.x - this.x; let dy = this.chaseTarget.y - this.y; let d = dist(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y);
+
+      if (d > 20) { this.vx += (dx / d) * 1.0; this.vy += (dy / d) * 1.5; if (this.chaseTarget.divineShieldTimer <= 0 && !this.chaseTarget.isJumping) { this.chaseTarget.vx -= (dx / d) * 0.3; this.chaseTarget.vy -= (dy / d) * 0.8; if (frameCount % 4 === 0) createParticles(this.chaseTarget.x, this.chaseTarget.y, color(210, 100, 100), 2); } }
+
+      if (this.chaserTimer <= 0) { this.skillActive = false; this.chaseTarget = null; }
+
+    } else if (this.chaserTimer > 0) { this.chaserTimer = 0; this.skillActive = false; this.chaseTarget = null; }
+
+
+
+    if (this.y > WORLD_HEIGHT - 100) {
+
+      if (!this.finished) { 
+
+        this.finished = true; finishCounter++; this.finishOrder = finishCounter; this.hasCatchUpShield = false; 
+
+        if (finishCounter === 1) { firstWinner = this; endingFairyTimer = 150; if (cameraMode === 1) { zoomTimer = 150; targetDynamicZoom = 2.8; cameraShake = 15; } for(let k = 0; k < 150; k++) specialEffects.push(new Confetti(this.x, this.y)); playSwapSound(this.x, this.y); }
+
+        if (useTeamBattle && !segmentCrossed[numSegments] && this.team) { segmentCrossed[numSegments] = true; teamSegmentWins[this.team]++; }
+
+      }
+
+      let targetSpot = constellationSpots[this.id]; this.x = lerp(this.x, targetSpot.x, 0.04); this.y = lerp(this.y, targetSpot.y, 0.04); return; 
+
+    }
+
+    
+
+    if (!this.isJumping) this.angle += (this.vx * 0.15);
+
+    if (forceFinishAll && !this.finished) { this.trapTimer = 0; this.frozenTimer = 0; this.slowTimer = 0; this.hasCatchUpShield = false; this.vy += 1.0; }
+
+
+
+    if (this.trapTimer > 0) {
+
+      if (this.divineShieldTimer > 0 || this.isJumping) { this.trapTimer = 0; this.trapObj = null; createParticles(this.x, this.y, color(60, 100, 100), 5); } 
+
+      else {
+
+        this.trapTimer--; if (!this.trapObj) { this.trapTimer = 0; return; } 
+
+        if (this.trapType === 'electric') { this.x = this.trapObj.x + random(-5, 5); this.y = this.trapObj.y + random(-5, 5); if (frameCount % 10 === 0) createParticles(this.x, this.y, color(55, 100, 100), 2); if (this.trapTimer <= 0) { this.vx = (random() > 0.5 ? 1 : -1) * random(5, 8); this.vy = random(-8, -4); this.trapObj = null; this.trapCooldown = 90; this.trapTimer = 0; } return; } 
+
+        else if (this.trapType === 'bubble') { this.x = this.trapObj.x; this.y = this.trapObj.y; if (this.trapTimer <= 0 || this.trapObj.popped) { playIceSound(this.x, this.y); for(let i=0; i<20; i++) particles.push(new Particle(this.x, this.y, color(random(360), 40, 100))); if (this.trapObj) this.trapObj.popped = true; this.trapObj = null; this.vy = -2; this.trapCooldown = 60; this.trapTimer = 0; } return; }
+
+      }
+
+    }
+
+
+
+    if (this.frozenTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { if (this.divineShieldTimer > 0) { this.frozenTimer = 0; createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.frozenTimer--; this.vx *= 0.5; this.vy *= 0.5; this.x += this.vx; this.y += this.vy; return; } }
+
+    if (this.fastTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { this.fastTimer--; this.vy += 0.5; if (frameCount % 5 === 0) createParticles(this.x, this.y, color(120, 100, 100), 1); }
+
+    if (this.slowTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { if (this.divineShieldTimer > 0) { this.slowTimer = 0; createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.slowTimer--; this.vy *= 0.75; if (frameCount % 5 === 0) createParticles(this.x, this.y, color(0, 100, 100), 1); } }
+
+    if (this.cosmicBoost && !this.finished) { this.vy += 0.4; if (frameCount % 4 === 0) { let ang = random(TWO_PI); let d = random(10, 30); particles.push(new Particle(this.x + cos(ang) * d, this.y + sin(ang) * d, color(50, 80, 100))); } }
+
+    if (this.sizeTimer > 0) { this.sizeTimer--; if (this.sizeTimer <= 0 && !this.skillActive) this.targetR = this.baseR; }
+
+    this.r = lerp(this.r, this.targetR, 0.1);
+
+    
+
+    let maxHist = useLightMode ? 8 : 25; this.history.push({x: this.x, y: this.y, z: currentZ}); if (this.history.length > maxHist) this.history.shift();
+
+    let gravities = [0.12, 0.18, 0.26]; 
+
+    if (!this.isJumping) { if (this.reverseGravityTimer > 0) { this.vy -= 0.8; } else { this.vy += gravities[speedLevel]; } }
+
+    
+
+    this.vx = constrain(this.vx, -20, 20); this.vy = constrain(this.vy, -35, 40);
+
+    this.x += this.vx; this.y += this.vy; 
+
+    this.vx *= 0.985; if (!this.isJumping) this.vy *= 0.985;
+
+  }
+
+
+
+  checkBallCollision(others) {
+
+    if (this.finished || this.cooldown > 0 || this.isJumping) return;
+
+    for (let other of others) {
+
+      if (other === this || other.finished || other.cooldown > 0 || other.frozenTimer > 0 || other.trapTimer > 0 || other.isJumping) continue;
+
+      if (abs(this.y - other.y) > 50 || abs(this.x - other.x) > 50) continue; 
+
+      let d = dist(this.x, this.y, other.x, other.y);
+
+      if (d < this.r + other.r) { 
+
+        if (useTeamBattle && this.team === other.team) { let pushX = (this.x < other.x) ? -0.5 : 0.5; this.vx += pushX; other.vx -= pushX; this.cooldown = 10; other.cooldown = 10; } 
+
+        else { let midX = (this.x + other.x) / 2; let midY = (this.y + other.y) / 2; ripples.push(new Ripple(midX, midY)); playNormalHit(600, midX, midY); this.vy += 1.5; other.vy += 1.5; let pushX = (this.x < other.x) ? -1 : 1; this.vx += pushX * 0.8; other.vx -= pushX * 0.8; this.cooldown = 20; other.cooldown = 20; this.incrementGauge(); other.incrementGauge(); }
+
+        break; 
+
+      }
+
+    }
+
+  }
+
+
+
+  checkTrackCollision() {
+
+    if (this.finished) return false; let idx = floor(this.y / 40);
+
+    if (idx >= 0 && idx < track.length) {
+
+      let t = track[idx];
+
+      if (this.x < t.left + this.r) { this.x = t.left + this.r; if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = abs(this.vx) * 0.5 + basePush; this.incrementGauge(); } if (!this.isJumping) createParticles(this.x, this.y, this.color); return true; }
+
+      if (this.x > t.right - this.r) { this.x = t.right - this.r; if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = -(abs(this.vx) * 0.5 + basePush); this.incrementGauge(); } if (!this.isJumping) createParticles(this.x, this.y, this.color); return true; }
+
+    }
+
+    return false;
+
+  }
+
+
+
+  checkPinCollision(p, t) {
+
+    if (this.isLastOne || this.finished || !p.isActive || this.isDashing || this.isJumping) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
+
+    let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5; let d = dist(this.x, this.y, p.x, p.y);
+
+    if (d < this.r + hitRadius) {
+
+      this.incrementGauge(); addEventLog(this, t.ann_fast(this.name), color(120, 80, 100), false); addEventLog(this, t.ann_slow(this.name), color(0, 80, 100), false);
+
+      if (p.type === 'fast') { this.fastTimer = 300; this.slowTimer = 0; playIceSound(this.x, this.y); } else if (p.type === 'slow') { if (this.divineShieldTimer > 0) { createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.slowTimer = 300; this.fastTimer = 0; playZapSound(this.x, this.y); } }
+
+      let angle = atan2(this.y - p.y, this.x - p.x) + random(-0.1, 0.1); let speed = sqrt(this.vx**2 + this.vy**2) + random(3, 5); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed; createParticles(this.x, this.y, this.color); return true;
+
+    }
+
+    return false;
+
+  }
+
+
+
+  checkSpinnerCollision(s) {
+
+    if (this.isLastOne || this.finished || this.hasCatchUpShield || this.isDashing || this.divineShieldTimer > 0 || this.isJumping) return false;
+
+    let dx = this.x - s.x; let dy = this.y - s.y; let rx = dx * cos(-s.angle) - dy * sin(-s.angle); let ry = dx * sin(-s.angle) + dy * cos(-s.angle);
+
+    if (abs(rx) < s.w/2 + this.r && abs(ry) < s.h/2 + this.r) { let force = s.speed * rx * (1.5 + random(-0.2, 0.2)); this.vx += cos(s.angle) * force; this.vy = -abs(this.vy) * 0.6 - abs(force); createParticles(this.x, this.y, this.color); return true; }
+
+    return false;
+
+  }
+
+
+
+  checkBrickCollision(brick) {
+
+    if (this.isLastOne || this.finished || this.hasCatchUpShield || this.isJumping) return false; 
+
+    let closestX = constrain(this.x, brick.x - brick.w/2, brick.x + brick.w/2); let closestY = constrain(this.y, brick.y - brick.h/2, brick.y + brick.h/2); let d = dist(this.x, this.y, closestX, closestY);
+
+    if (d < this.r) { if (this.isDashing || this.divineShieldTimer > 0) return true; let dx = this.x - closestX; let dy = this.y - closestY; if (abs(dx) > abs(dy)) { this.vx *= -0.8; this.x = closestX + (dx > 0 ? this.r : -this.r); } else { this.vy *= -0.8; this.y = closestY + (dy > 0 ? this.r : -this.r); } return true; }
+
+    return false; 
+
+  }
+
+
+
+  display() {
+
+    let jumpScale = 1.0; let jumpOffsetY = 0;
+
+    if (this.isJumping) { let progress = 1 - (this.jumpTimer / 150); let z = sin(progress * Math.PI); jumpScale = 1.0 + z * 4.5; jumpOffsetY = -z * 150; push(); translate(this.x, this.y); noStroke(); fill(0, 0, 0, 80 * (1 - z * 0.8)); ellipse(0, z * 20, this.r * 2.5 * (1 - z * 0.4)); pop(); }
+
+    if (this.chaserTimer > 0 && this.chaseTarget && !this.isJumping) { push(); stroke(210, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(4); drawingContext.setLineDash([10, 15]); line(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y); drawingContext.setLineDash([]); pop(); }
+
+    blendMode(ADD); noStroke();
+
+    for (let i = 0; i < this.history.length; i++) { let pos = this.history[i]; let pct = i / this.history.length; let alpha = pct * 80; let histZ = pos.z || 0; let histScale = 1.0 + histZ * 4.5; let histOffsetY = -histZ * 150; let size = map(pct, 0, 1, this.r * 0.4, this.r * 2.2) * histScale; fill(this.colorH, this.colorS, this.colorB, alpha); ellipse(pos.x, pos.y + histOffsetY, size); }
+
+    blendMode(BLEND);
+
+    noStroke(); 
+
+    if (this.isLastOne) { if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'hsla(50, 100%, 100%, 1)'; } stroke(50, 80, 100, 60 + sin(frameCount * 0.1) * 40); strokeWeight(4); ellipse(this.x, this.y, this.r * 2.8); noStroke(); } else { if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.cStr; } }
+
+    if (this.reverseGravityTimer > 0) { push(); translate(this.x, this.y); rotate(frameCount*0.1); stroke(280, 100, 100, 90 + sin(frameCount)*50); strokeWeight(3); noFill(); let pulse = this.r * 2.5 + random(-2,2); ellipse(0,0,pulse); pop(); }
+
+    if (this.isSticky) { push(); translate(this.x, this.y); noFill(); stroke(100, 80, 50, 60); strokeWeight(40 + sin(frameCount*0.5)*15); ellipse(0, 0, 300); stroke(100, 100, 30, 40); strokeWeight(10); ellipse(0, 0, 250 + cos(frameCount*0.3)*20); pop(); }
+
+    if (this.isBlackhole) { push(); translate(this.x, this.y); rotate(frameCount*0.1); noFill(); stroke(280, 100, 20, 80); strokeWeight(30); ellipse(0, 0, 300 + sin(frameCount*0.3)*20); stroke(280, 60, 80, 50); strokeWeight(8); for(let i=0; i<4; i++) { rotate(PI/2); arc(0, 0, 260, 260, 0, PI/2 - 0.2); } fill(0, 0, 0, 80); noStroke(); ellipse(0,0,this.r*4); pop(); }
+
+    if (this.hasRetribution) { push(); translate(this.x, this.y); let speedRot = map(this.mutantTimer, 150, 0, 0.1, 0.8); rotate(-frameCount * speedRot); let pullR = map(this.mutantTimer, 150, 0, 350, 10); fill(0, 100, 50, 40); stroke(0, 100, 100, 90); strokeWeight(4); beginShape(); for(let i=0; i<16; i++) { let a = i*TWO_PI/16; let rOff = pullR + (i%2===0 ? 25 : 0); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); }
+
+    if (this.isDashing) { push(); translate(this.x, this.y); noStroke(); fill(180, 100, 100, 80); triangle(0, this.r*7, -this.r*3, -this.r*2, this.r*3, -this.r*2); stroke(180, 100, 100, 60); strokeWeight(3); line(-this.r*2, 0, -this.r*7, 0); line(this.r*2, 0, this.r*7, 0); pop(); }
+
+    if (this.img) { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(255); drawingContext.beginPath(); drawingContext.arc(0, 0, this.r, 0, Math.PI * 2); drawingContext.clip(); imageMode(CENTER); image(this.img, 0, 0, this.r * 2.2, this.r * 2.2); pop(); } else { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(this.color); ellipse(-this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); ellipse(this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); pop(); }
+
+    if (!this.finished && !this.skillActive && this.collisionGauge > 0 && useMutantMode && !this.isJumping) { push(); translate(this.x, this.y); rotate(-HALF_PI); noFill(); stroke(255, 60); strokeWeight(2); ellipse(0, 0, this.r * 2.8); stroke(this.color); let arcEnd = map(this.collisionGauge, 0, gaugeThreshold, 0, TWO_PI); arc(0, 0, this.r * 2.8, this.r * 2.8, 0, arcEnd); pop(); }
+
+    if (this.hasCatchUpShield && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle * 0.5); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = color(160, 80, 100).toString(); } stroke(160, 80, 100, 70 + sin(frameCount * 0.2) * 30); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<6; i++) { let a = i * TWO_PI/6; vertex(cos(a) * this.r * 2.5, sin(a) * this.r * 2.5); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
+
+    if (this.divineShieldTimer > 0 && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(-this.angle * 0.5); if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = color(60, 100, 100).toString(); } fill(60, 50, 100, 30); stroke(60, 100, 100, 80 + sin(frameCount * 0.3) * 40); strokeWeight(3); ellipse(0, 0, this.r * 3.5); drawingContext.shadowBlur = 0; pop(); }
+
+    if (this.frozenTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle); fill(200, 20, 100, 90); stroke(200, 80, 100, 100); strokeWeight(2); rect(-this.r*1.5, -this.r*1.5, this.r*3, this.r*3, 4); pop(); } else if (this.trapTimer > 0 && this.trapType === 'electric' && !this.isJumping) { push(); translate(this.x, this.y); let c = (frameCount % 4 < 2) ? color(55, 100, 100) : color(180, 100, 100); stroke(c); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<10; i++) { let a = i * (TWO_PI/10); let rOff = this.r + random(5, 15); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); } else if (this.trapCooldown > 0 && !this.isLastOne && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 0, 100, 60 + sin(frameCount * 0.2) * 40); strokeWeight(2); ellipse(0, 0, this.r * 2.5); pop(); } else if (this.fastTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(120, 80, 100, 80); strokeWeight(3); ellipse(0, 0, this.r * 2 + sin(frameCount * 0.5) * 5); pop(); } else if (this.slowTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 80, 100, 80); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.r * 2.5, this.r * 2.5, 4); pop(); }
+
+    drawingContext.shadowBlur = 0; fill(this.isLastOne ? color(50, 50, 100) : 100); textAlign(CENTER); textSize(14/camScale); if (!useLightMode) { drawingContext.shadowBlur = 5; drawingContext.shadowColor = 'black'; } text(this.name, this.x, this.y + jumpOffsetY - 18 * jumpScale); drawingContext.shadowBlur = 0;
+
+  }
+
+}
+
+
+
+class BombFX { constructor(x, y) { this.x = x; this.y = y; this.life = 40; this.maxLife = 40; } update() { this.life--; } display() { let p = 1 - (this.life / this.maxLife); push(); translate(this.x, this.y); noFill(); stroke(10, 80, 100, (1 - p) * 100); strokeWeight((1 - p) * 30); ellipse(0, 0, p * 600); stroke(20, 90, 100, (1 - p) * 80); strokeWeight((1 - p) * 15); ellipse(0, 0, p * 800); pop(); } isDead() { return this.life <= 0; } }
+
+class IceFX { constructor(x, y) { this.x = x; this.y = y; this.life = 50; this.maxLife = 50; } update() { this.life--; } display() { let p = 1 - (this.life / this.maxLife); push(); translate(this.x, this.y); stroke(200, 50, 100, (1 - p) * 100); for(let i=0; i<12; i++) { let a = (TWO_PI / 12) * i; let d1 = p * 50; let d2 = p * 350; strokeWeight((1 - p) * 10); line(cos(a) * d1, sin(a) * d1, cos(a) * d2, sin(a) * d2); } pop(); } isDead() { return this.life <= 0; } }
+
+class SwapFX { constructor(x1, y1, x2, y2) { this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2; this.life = 60; this.maxLife = 60; this.particles = []; for(let i=0; i<40; i++) { this.particles.push({ x: this.x1 + random(-30, 30), y: this.y1 + random(-40, 40), vx: random(-2, 2), vy: random(-4, 0), size: random(3, 8) }); this.particles.push({ x: this.x2 + random(-30, 30), y: this.y2 + random(-40, 40), vx: random(-2, 2), vy: random(-4, 0), size: random(3, 8) }); } } update() { this.life--; for(let p of this.particles) { p.x += p.vx; p.y += p.vy; p.vy += 0.1; } } display() { let alpha = map(this.life, 0, this.maxLife, 0, 255); push(); noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = 'hsla(45, 100%, 80%, 1)'; } fill(45, 80, 100, alpha); for(let p of this.particles) { ellipse(p.x, p.y, p.size); } drawingContext.shadowBlur = 0; pop(); } isDead() { return this.life <= 0; } }
+
+class NovaFX { constructor(x, y, col) { this.x = x; this.y = y; this.col = col; this.r = 10; this.life = 255; } update() { this.r += 25; this.life -= 15; } display() { push(); translate(this.x, this.y); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.col.toString(); } fill(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*30); stroke(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*100); strokeWeight(15); ellipse(0,0,this.r*2); drawingContext.shadowBlur = 0; pop(); } isDead() { return this.life <= 0; } }
+
+class FlareTrap { constructor(x, y, vx, vy, colorStr, owner) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.r = 10; this.life = 600; this.cStr = colorStr; this.owner = owner; } update() { this.x += this.vx; this.y += this.vy; this.vx *= 0.92; this.vy *= 0.92; this.life--; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t) { if (this.x < t.left + this.r) { this.x = t.left + this.r + 2; this.vx *= -1; } if (this.x > t.right - this.r) { this.x = t.right - this.r - 2; this.vx *= -1; } } } display() { push(); translate(this.x, this.y); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(10, 80, 100, (this.life/600)*255); noStroke(); let pulseR = this.r + sin(frameCount * 0.3) * 3; ellipse(0, 0, pulseR * 2); fill(255, (this.life/600)*200); ellipse(0, 0, this.r); drawingContext.shadowBlur = 0; pop(); } }
+
+class Confetti { constructor(x, y) { this.x = x; this.y = y; this.c = color(random(360), 80, 100); let angle = random(TWO_PI); let speed = random(5, 20); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed - 8; this.life = 150 + random(50); this.size = random(6, 15); this.rot = random(TWO_PI); this.rotSpeed = random(-0.3, 0.3); } update() { this.x += this.vx; this.y += this.vy; this.vy += 0.4; this.vx *= 0.94; this.life -= 1.5; this.rot += this.rotSpeed; } display() { push(); translate(this.x, this.y); rotate(this.rot); noStroke(); fill(hue(this.c), saturation(this.c), brightness(this.c), this.life); rect(-this.size/2, -this.size/2, this.size, this.size); pop(); } isDead() { return this.life <= 0; } }
+
+class Ripple { constructor(x, y) { this.x = x; this.y = y; this.r = 15; this.life = 200; } update() { this.r += 3; this.life -= 15; } display() { noFill(); stroke(50, 40, 100, (this.life / 200) * 80); strokeWeight(3); ellipse(this.x, this.y, this.r * 2); } isDead() { return this.life <= 0; } }
+
+class Particle { constructor(x, y, col) { this.x = x; this.y = y; this.colorH = hue(col); this.colorS = saturation(col); this.colorB = brightness(col); let angle = random(TWO_PI); let speed = random(2, 12); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed; this.life = 100; this.r = random(3, 8); } update() { this.vx *= 0.92; this.vy *= 0.92; this.vy += 0.15; this.x += this.vx; this.y += this.vy; this.life -= 4; this.r *= 0.95; } display() { noStroke(); fill(this.colorH, this.colorS, this.colorB, this.life); ellipse(this.x, this.y, this.r * 2); } isDead() { return this.life <= 0; } }
+
+function createParticles(x, y, col, num = 8) { if (useLightMode) num = floor(num / 2) + 1; for (let i = 0; i < num; i++) { particles.push(new Particle(x, y, col)); } }
+
+
+
+class Brick { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.hue = random(360); this.item = 'none'; let rand = random(1); if (rand < 0.05) this.item = 'ice'; else if (rand < 0.15) this.item = 'bomb'; if (this.item === 'ice') this.cStr = color(200, 80, 100).toString(); else if (this.item === 'bomb') this.cStr = color(10, 90, 100).toString(); else this.cStr = color(this.hue, 80, 100).toString(); } display() { push(); translate(this.x, this.y); noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } if (this.item === 'ice') fill(200, 80, 100); else if (this.item === 'bomb') fill(10, 90, 100); else fill(this.hue, 80, 100); rect(-this.w/2, -this.h/2, this.w, this.h, 5); if (this.item === 'ice') fill(200, 30, 100, 80); else if (this.item === 'bomb') fill(10, 30, 100, 80); else fill(this.hue, 30, 100, 50); rect(-this.w/2 + 3, -this.h/2 + 3, this.w - 6, this.h - 6, 3); if (this.item === 'ice') { push(); stroke(200, 80, 100, 80 + sin(frameCount * 0.3) * 20); strokeWeight(1.5); for(let i=0; i<3; i++) { let a = i * PI / 3; line(cos(a)*-7, sin(a)*-7, cos(a)*7, sin(a)*7); } fill(255, 150); noStroke(); ellipse(0, 0, 3, 3); pop(); } else if (this.item === 'bomb') { push(); fill(10, 80, 20); stroke(10, 90, 100); strokeWeight(1.5); ellipse(0, 2, 12, 12); stroke(40, 100, 100); noFill(); arc(3, -4, 8, 8, PI, PI+HALF_PI); let pulse = 3 + sin(frameCount * 0.4) * 2; fill(10, 100, 100); noStroke(); ellipse(3, -8, pulse, pulse); pop(); } else if (this.item !== 'none') { fill(0, 0, 100, 50 + sin(frameCount * 0.2) * 50); ellipse(0, 0, 10, 10); } drawingContext.shadowBlur = 0; pop(); } }
+
+class WallBar { constructor(y, side, t) { this.y = y; this.side = side; this.t = t; this.wMax = random(120, 260); this.h = random(15, 35); this.phaseOffset = random(TWO_PI); this.speed = random(0.02, 0.08); } display() { let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); push(); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.t.cStr; } fill(this.t.hue, 80, 100, 60); stroke(this.t.hue, 80, 100, 90); strokeWeight(2); if (this.side === 'left') { rect(this.t.left, this.y, extension, this.h, 0, 10, 10, 0); stroke(255, 80); line(this.t.left, this.y + this.h/2, this.t.left + extension, this.y + this.h/2); } else { rect(this.t.right - extension, this.y, extension, this.h, 10, 0, 0, 10); stroke(255, 80); line(this.t.right - extension, this.y + this.h/2, this.t.right, this.y + this.h/2); } drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); let rectLeft, rectRight; if (this.side === 'left') { rectLeft = this.t.left - 50; rectRight = this.t.left + extension; } else { rectLeft = this.t.right - extension; rectRight = this.t.right + 50; } let rectTop = this.y; let rectBottom = this.y + this.h; let closestX = constrain(b.x, rectLeft, rectRight); let closestY = constrain(b.y, rectTop, rectBottom); let d = dist(b.x, b.y, closestX, closestY); if (d < b.r) { let bounceMult = b.extremeBounceTimer > 0 ? 3 : 1; let dx = b.x - closestX; let dy = b.y - closestY; if (abs(dx) > abs(dy)) { b.vx *= -1.2 * bounceMult; b.x = closestX + (dx > 0 ? b.r : -b.r); if (this.side === 'left') b.vx += random(2, 4) * bounceMult; else b.vx -= random(2, 4) * bounceMult; } else { b.vy *= -0.9 * bounceMult; b.y = closestY + (dy > 0 ? b.r : -b.r); if (dy < 0) b.vy -= random(3, 6) * bounceMult; } createParticles(closestX, closestY, b.color, 5); playNormalHit(500, closestX, closestY); } } }
+
+class StaticPin { constructor(x, y, type, group) { this.x = x; this.y = y; this.r = 6; this.type = type; this.group = group; this.pulse = random(TWO_PI); this.isActive = false; if (type === 'fast') this.cStr = color(120, 100, 100).toString(); else if (type === 'slow') this.cStr = color(0, 100, 100).toString(); else this.cStr = color(40, 100, 100).toString(); } display() { this.pulse += 0.05; this.isActive = (floor(frameCount / 75) % 2 === this.group); push(); translate(this.x, this.y); if (!this.isActive) { drawingContext.shadowBlur = 0; fill(255, 10); noStroke(); ellipse(0, 0, this.r * 1.5); pop(); return; } if (this.type === 'fast') { if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(120, 80, 100); noStroke(); beginShape(); vertex(0, -this.r * 1.5); vertex(this.r * 1.2, this.r * 0.5); vertex(0, this.r * 1.2); vertex(-this.r * 1.2, this.r * 0.5); endShape(CLOSE); } else if (this.type === 'slow') { if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(0, 80, 100); noStroke(); rectMode(CENTER); rect(0, 0, this.r * 2.2, this.r * 2.2, 2); } else { let currentR = this.r + sin(this.pulse) * 1.5; if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(40, 80, 100); noStroke(); ellipse(0, 0, currentR * 2); } drawingContext.shadowBlur = 0; pop(); } }
+
+class Spinner { constructor(x, y, w, h, s) { this.x = x; this.y = y; this.w = w; this.h = h; this.angle = 0; this.speed = s; this.cStr = color(280, 80, 100).toString(); } update() { this.angle += this.speed; } display() { push(); translate(this.x, this.y); rotate(this.angle); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.cStr; } fill(280, 80, 100, 80); noStroke(); rect(-this.w/2, -this.h/2, this.w, this.h, 15); fill(280, 20, 100); rect(-this.w/2 + 5, -this.h/4, this.w - 10, this.h/2, 10); stroke(280, 20, 100, 80 + sin(frameCount * 0.5) * 20); strokeWeight(4); line(-this.w/2 - 10, 0, -this.w/2 - 30, 0); line(this.w/2 + 10, 0, this.w/2 + 30, 0); drawingContext.shadowBlur = 0; pop(); } }
+
+class BlackholePad { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.angle = 0; this.swirlColors = []; for (let i = 0; i < 6; i++) { let hueSwirl = (280 + i * 12) % 360; let alp = map(i, 0, 6, 70, 10); this.swirlColors.push({ h: hueSwirl, a: alp, str: color(hueSwirl, 100, 100, alp).toString() }); } this.coreStr = color(280, 100, 20, 100).toString(); } display() { this.angle += 0.05; push(); translate(this.x, this.y); blendMode(ADD); if (!useLightMode) drawingContext.shadowBlur = 30; noFill(); for (let i = 0; i < 6; i++) { let sc = this.swirlColors[i]; let sz = this.w * (1.5 - i * 0.1); if (!useLightMode) drawingContext.shadowColor = sc.str; stroke(sc.h, 100, 100, sc.a); strokeWeight(3 + i); push(); rotate(i * (TWO_PI / 6) + this.angle); ellipse(0, 0, sz * 1.2, sz * 0.7); pop(); } drawingContext.shadowBlur = 0; blendMode(BLEND); noStroke(); fill(0); if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.coreStr; } ellipse(0, 0, this.w * 0.9, this.h * 0.9); drawingContext.shadowBlur = 0; pop(); } applyForce(b) { if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; let d = dist(b.x, b.y, this.x, this.y); if (d < max(this.w, this.h)/1.3 + b.r) { b.vy -= (0.75 + random(-0.15, 0.15)); b.vx += (b.x < this.x ? -map(d, 0, this.w, 0.5, 0.1) : map(d, 0, this.w, 0.5, 0.1)) + random(-0.2, 0.2); } } }
+
+class ShrinkPad { constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.animOffset = 0; this.cStr = color(190, 80, 100).toString(); } display() { this.animOffset = (this.animOffset + 2) % 60; push(); translate(this.x, this.y); noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } fill(190, 80, 100, 30 + sin(frameCount * 0.1) * 10); ellipse(0, 0, this.r); noFill(); stroke(190, 50, 100, 80); strokeWeight(3); let r1 = map(this.animOffset, 0, 60, this.r, 0); let r2 = map((this.animOffset + 30) % 60, 0, 60, this.r, 0); ellipse(0, 0, r1); ellipse(0, 0, r2); drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; if (dist(b.x, b.y, this.x, this.y) < this.r/2 + b.r) { b.targetR = b.baseR * 0.55; b.sizeTimer = 300; } } }
+
+class GrowPad { constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.animOffset = 0; this.cStr = color(30, 80, 100).toString(); } display() { this.animOffset = (this.animOffset + 2) % 60; push(); translate(this.x, this.y); noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } fill(30, 80, 100, 30 + sin(frameCount * 0.1) * 10); ellipse(0, 0, this.r); noFill(); stroke(30, 50, 100, 80); strokeWeight(3); let r1 = map(this.animOffset, 0, 60, 0, this.r); let r2 = map((this.animOffset + 30) % 60, 0, 60, 0, this.r); ellipse(0, 0, r1); ellipse(0, 0, r2); drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; if (dist(b.x, b.y, this.x, this.y) < this.r/2 + b.r) { b.targetR = b.baseR * 2.0; b.sizeTimer = 300; } } }
+
+class SwapPad { constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.used = false; this.angle = random(TWO_PI); this.cStr = color(45, 100, 100).toString(); } display() { if (this.used) return; this.angle += 0.03; push(); translate(this.x, this.y); if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.cStr; } noStroke(); fill(45, 80, 100, 40 + sin(frameCount * 0.1) * 20); ellipse(0, 0, this.r * 2.5); rotate(this.angle); stroke(45, 60, 100, 90); strokeWeight(3); noFill(); ellipse(0, 0, this.r * 1.8); for (let i = 0; i < 3; i++) { push(); rotate(i * TWO_PI / 3); translate(this.r * 0.9, 0); fill(45, 20, 100); noStroke(); ellipse(0, 0, 8); pop(); } rotate(-this.angle * 2); stroke(45, 20, 100, 70); strokeWeight(1.5); rectMode(CENTER); rect(0, 0, this.r * 1.2, this.r * 1.2); drawingContext.shadowBlur = 0; pop(); } applyEffect(b, leadBall) { if (this.used || b.finished || b.hasCatchUpShield || !leadBall || leadBall.finished || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; if (b === leadBall || b.isLastOne) return; let d = dist(b.x, b.y, this.x, this.y); if (d < this.r + b.r) { this.used = true; let tempX = b.x; let tempY = b.y; let tempVx = b.vx; let tempVy = b.vy; b.x = leadBall.x; b.y = leadBall.y; b.vx = leadBall.vx; b.vy = leadBall.vy; leadBall.x = tempX; leadBall.y = tempY; leadBall.vx = tempVx; leadBall.vy = tempVy; playSwapSound(b.x, b.y); specialEffects.push(new SwapFX(b.x, b.y, leadBall.x, leadBall.y)); flashColor = color(45, 100, 100); flashLife = 40; zoomTimer = 60; targetDynamicZoom = 1.6; let t = i18n[currentLang]; addEventLog(b, t.ann_swap(b.name, leadBall.name), color(45, 100, 100), true); } } }
+
+class ElectricTrap { constructor(x, y) { this.x = x; this.y = y; this.r = 30; this.angle = random(TWO_PI); this.cStr1 = color(55, 100, 100).toString(); this.cStr2 = color(180, 100, 100).toString(); } display() { this.angle += 0.2; push(); translate(this.x, this.y); rotate(this.angle); let isC1 = (frameCount % 6 < 3); if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = isC1 ? this.cStr1 : this.cStr2; } if (isC1) stroke(55, 100, 100); else stroke(180, 100, 100); strokeWeight(3 + sin(frameCount * 0.5) * 2); noFill(); beginShape(); for(let i=0; i<8; i++) { let a = i * (TWO_PI/8); let rOff = this.r + random(-10, 10); vertex(cos(a) * rOff, sin(a) * rOff); } endShape(CLOSE); if (isC1) fill(55, 100, 100, 50); else fill(180, 100, 100, 50); ellipse(0, 0, this.r * 0.8); drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.isLastOne || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; if (dist(this.x, this.y, b.x, b.y) < this.r + b.r) { b.trapTimer = 180; b.trapType = 'electric'; b.trapObj = this; playZapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } } }
+
+class SoapBubble { constructor(x, y) { this.x = x; this.y = y; this.r = random(30, 50); this.popped = false; this.wiggle = random(TWO_PI); } update() { this.y -= 1.5; this.wiggle += 0.05; let tIdx = floor(this.y / 40); if (tIdx >= 0 && tIdx < track.length) { this.x = lerp(this.x, track[tIdx].center, 0.015); } this.x += sin(this.wiggle) * 1.5; } display() { if (this.popped) return; push(); translate(this.x, this.y); let hueVal = (frameCount * 2 + this.y) % 360; if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = `hsla(${hueVal}, 60%, 100%, 1)`; } fill(hueVal, 40, 100, 30); stroke(hueVal, 60, 100, 90); strokeWeight(2); beginShape(); for(let a=0; a<TWO_PI; a+=0.5) { let rOff = this.r + sin(a * 3 + frameCount * 0.1) * 3; vertex(cos(a) * rOff, sin(a) * rOff); } endShape(CLOSE); noStroke(); fill(255, 180); ellipse(-this.r*0.4, -this.r*0.4, this.r*0.3, this.r*0.2); drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.isLastOne || this.popped || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; if (dist(this.x, this.y, b.x, b.y) < this.r) { b.trapTimer = 180; b.trapType = 'bubble'; b.trapObj = this; playSwapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } } }
+
+
+
+function mousePressed() { 
+
+  if (!gameStarted) return; 
+
+  if (raceFinished && endingFairyTimer <= 0 && constellationTimer <= 0) { 
+
+    let btn1Y = height/2 + 80; let btn2Y = height/2 + 140; let btn3Y = height/2 + 200;
+
+    if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn1Y && mouseY < btn1Y + 45) { initWorld(); return; } 
+
+    else if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn2Y && mouseY < btn2Y + 45) { gameStarted = false; document.querySelector('canvas').style.display = 'none'; createLangUI(); return; } 
+
+    else if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn3Y && mouseY < btn3Y + 45) { downloadRankings(); return; }
+
+  } 
+
+  if (raceFinished) return;
+
+  let clickedUI = false;
+
+  let sorted = [...balls].sort((a, b) => b.y - a.y);
+
+  let panelWidth = 120; let panelHeight = min(250, sorted.length * 24 + 16); 
+
+  if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) {
+
+    isRankDragging = true; rankDragStartY = mouseY; rankScrollStartY = rankTargetScrollY; rankDragMoved = false; clickedUI = true;
+
+  }
+
+  if (!forceFinishAll && endingFairyTimer <= 0) { 
+
+    let btnX = width - 85, btnY = height - 50, btnW = 75, btnH = 35; 
+
+    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { forceFinishAll = true; let t = i18n[currentLang]; addEventLog(null, t.ann_force_finish, color(190, 80, 100), true); clickedUI = true; } 
+
+  } 
+
+  if (endingFairyTimer <= 0) { 
+
+    let btnX = width - 85, btnY = 90, btnW = 75, btnH = 35; 
+
+    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { speedLevel = (speedLevel + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
+
+    let camBtnX = width - 85, camBtnY = 50, camBtnW = 75, camBtnH = 35;
+
+    if (mouseX >= camBtnX && mouseX <= camBtnX + camBtnW && mouseY >= camBtnY && mouseY <= camBtnY + camBtnH) { cameraMode = (cameraMode + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
+
+  }
+
+  let firstPlaceFinished = balls.some(b => b.finished); 
+
+  if (firstPlaceFinished && endingFairyTimer <= 0) { 
+
+    let mmX = width - 85, mmY = 150, mmW = 75, mmH = height - 250; 
+
+    if (mouseX >= mmX && mouseX <= mmX + mmW && mouseY >= mmY && mouseY <= mmY + mmH) { 
+
+      let clickedPy = mouseY - mmY; let clickedWorldY = map(clickedPy, 0, mmH, 0, WORLD_HEIGHT); let closest = balls[0]; let minDist = abs(balls[0].y - clickedWorldY); 
+
+      for(let b of balls) { let d = abs(b.y - clickedWorldY); if (d < minDist) { minDist = d; closest = b; } } targetBall = closest; manualFocus = true; clickedUI = true;
+
+    } 
+
+  } 
+
+  if (!clickedUI && manualFocus) { manualFocus = false; }
+
+}
+
+
+
+function mouseDragged() {
+
+  if (isRankDragging) { let dy = mouseY - rankDragStartY; if (abs(dy) > 5) rankDragMoved = true; rankTargetScrollY = rankScrollStartY - dy; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); }
+
+}
+
+
+
+function mouseReleased() {
+
+  if (isRankDragging) {
+
+    isRankDragging = false;
+
+    if (!rankDragMoved) {
+
+      let clickY = mouseY - 15 + rankScrollY; let idx = floor((clickY - 5) / 24); let sorted = [...balls].sort((a, b) => b.y - a.y);
+
+      if (idx >= 0 && idx < sorted.length) { let b = sorted[idx]; if (targetBall === b && manualFocus) manualFocus = false; else { targetBall = b; manualFocus = true; } }
+
+    }
+
+  }
+
+}
+
+
+
+function mouseWheel(event) {
+
+  if (!gameStarted || raceFinished) return;
+
+  let panelWidth = 120; let panelHeight = min(250, balls.length * 24 + 16);
+
+  if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) { rankTargetScrollY += event.delta; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); return false; }
+
+}
+
+</script>
+
+</body>
+
+</html>
