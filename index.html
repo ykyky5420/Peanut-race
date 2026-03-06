@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
   <style>
     body {
@@ -166,11 +167,20 @@ document.addEventListener('fullscreenchange', () => {
 document.addEventListener('keydown', (e) => {
   if (e.altKey && (e.key === 'a' || e.key === 'A')) {
     e.preventDefault();
-    let pwd = prompt('개발자 전용 비밀번호 10자리를 입력하세요.');
-    if (pwd === 'zmfflq1!@#') {
-      openDevMode();
-    } else if (pwd !== null) {
-      alert('접근이 거부되었습니다. 비밀번호를 다시 확인해주세요.');
+    // 💡 더 이상 자바스크립트 안에 비밀번호의 정답을 노출해두지 않습니다.
+    let pwd = prompt('창조자의 열쇠(비밀번호)를 입력하세요.');
+    
+    if (pwd) {
+      // 입력받은 비밀번호를 들고 Firebase의 굳게 닫힌 문을 두드립니다.
+      firebase.auth().signInWithEmailAndPassword("lidotoryil@naver.com", pwd)
+        .then((userCredential) => {
+          // 열쇠가 맞아 문이 열리면, 비로소 개발자 모드 창을 띄웁니다.
+          openDevMode(); 
+        })
+        .catch((error) => {
+          // 열쇠가 틀리면 접근을 부드럽게 차단합니다.
+          alert('접근이 거부되었습니다. 세계의 질서를 지키는 열쇠가 맞는지 확인해 주세요.');
+        });
     }
   }
 });
@@ -929,7 +939,7 @@ function createSetupUI() {
   let uiContainer = select('#ui-container');
   setupDiv = createDiv(''); setupDiv.parent(uiContainer); setupDiv.class('glass-panel'); setupDiv.style('width', '100%'); setupDiv.style('height', '100%'); setupDiv.style('padding', '40px'); setupDiv.style('box-sizing', 'border-box'); setupDiv.style('overflow-y', 'auto'); setupDiv.style('overflow-x', 'auto');
   
-  let backBtn = createButton(t.btn_back); backBtn.parent(setupDiv); backBtn.class('ghost-btn'); backBtn.style('position', 'absolute'); backBtn.style('top', '20px'); backBtn.style('left', '20px'); backBtn.style('padding', '8px 12px');
+  let backBtn = createButton(t.btn_back); backBtn.parent(setupDiv); backBtn.class('ghost-btn'); backBtn.style('position', 'absolute'); backBtn.style('top', '10px'); backBtn.style('left', '10px'); backBtn.style('padding', '8px 12px');
   backBtn.mousePressed(() => { setupDiv.remove(); createLangUI(); });
 
   let mainTitle = createElement('h1', t.game_title); mainTitle.parent(setupDiv); mainTitle.class('futuristic-title'); mainTitle.style('text-align', 'center'); mainTitle.style('margin-top', '10px'); mainTitle.style('margin-bottom', '5px'); mainTitle.style('text-shadow', '0 0 20px rgba(0, 229, 255, 0.8)');
@@ -2383,59 +2393,68 @@ class SoapBubble {
     if (dist(this.x, this.y, b.x, b.y) < this.r) { b.trapTimer = 180; b.trapType = 'bubble'; b.trapObj = this; playSwapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } 
   } 
 }
-  function mousePressed() { 
+function mousePressed() { 
   if (!gameStarted) return; 
+
+  // 💡 핵심 1: 모바일 환경에서 갱신이 느린 mouseX 대신, 화면에 닿은 '진짜 손가락의 위치(touches)'를 최우선으로 채스챕니다.
+  let tX = (touches.length > 0) ? touches[0].x : mouseX;
+  let tY = (touches.length > 0) ? touches[0].y : mouseY;
+
   if (raceFinished && endingFairyTimer <= 0 && constellationTimer <= 0) { 
     let panelH = min(height * 0.8, 650);
     let btn1Y = height/2 + panelH/2 - 170; 
     let btn2Y = height/2 + panelH/2 - 115; 
     let btn3Y = height/2 + panelH/2 - 60;
     
-    if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn1Y && mouseY < btn1Y + 45) { initWorld(); return; } 
-    else if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn2Y && mouseY < btn2Y + 45) { gameStarted = false; isPaused = false; document.querySelector('canvas').style.display = 'none'; createLangUI(); return; } 
-    else if (mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > btn3Y && mouseY < btn3Y + 45) { downloadRankings(); return; }
+    if (tX > width/2 - 150 && tX < width/2 + 150 && tY > btn1Y && tY < btn1Y + 45) { initWorld(); return; } 
+    else if (tX > width/2 - 150 && tX < width/2 + 150 && tY > btn2Y && tY < btn2Y + 45) { gameStarted = false; isPaused = false; document.querySelector('canvas').style.display = 'none'; createLangUI(); return; } 
+    else if (tX > width/2 - 150 && tX < width/2 + 150 && tY > btn3Y && tY < btn3Y + 45) { downloadRankings(); return; }
   } 
   if (raceFinished) return;
   
   let clickedUI = false;
   let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; return b.y - a.y; });
   let panelWidth = useCasterMode ? 160 : 120; let panelHeight = min(250, sorted.length * 24 + 16); 
-  if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) {
-    isRankDragging = true; rankDragStartY = mouseY; rankScrollStartY = rankTargetScrollY; rankDragMoved = false; clickedUI = true;
+  if (tX >= 10 && tX <= 10 + panelWidth && tY >= 15 && tY <= 15 + panelHeight) {
+    isRankDragging = true; rankDragStartY = tY; rankScrollStartY = rankTargetScrollY; rankDragMoved = false; clickedUI = true;
   }
   
   if (!forceFinishAll && endingFairyTimer <= 0) { 
     let btnX = width - 85, btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80, btnW = 75, btnH = 60; 
-    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { forceFinishAll = true; isPaused = false; let t = i18n[currentLang]; addEventLog(null, t.ann_force_finish, color(190, 80, 100), true); clickedUI = true; } 
+    if (tX >= btnX && tX <= btnX + btnW && tY >= btnY && tY <= btnY + btnH) { forceFinishAll = true; isPaused = false; let t = i18n[currentLang]; addEventLog(null, t.ann_force_finish, color(190, 80, 100), true); clickedUI = true; } 
   } 
   
   if (endingFairyTimer <= 0) { 
     let btnX = width - 85, btnY = 100, btnW = 75, btnH = 35; 
-    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { speedLevel = (speedLevel + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
+    if (tX >= btnX && tX <= btnX + btnW && tY >= btnY && tY <= btnY + btnH) { speedLevel = (speedLevel + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
     
     let camBtnY = 60;
-    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= camBtnY && mouseY <= camBtnY + btnH) { cameraMode = (cameraMode + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
+    if (tX >= btnX && tX <= btnX + btnW && tY >= camBtnY && tY <= camBtnY + btnH) { cameraMode = (cameraMode + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
     
     let pauseBtnY = 140;
-    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= pauseBtnY && mouseY <= pauseBtnY + btnH) { isPaused = !isPaused; playNormalHit(800, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
+    if (tX >= btnX && tX <= btnX + btnW && tY >= pauseBtnY && tY <= pauseBtnY + btnH) { isPaused = !isPaused; playNormalHit(800, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
     
     let muteBtnY = 180;
-    if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= muteBtnY && mouseY <= muteBtnY + btnH) { isMuted = !isMuted; clickedUI = true; }
+    if (tX >= btnX && tX <= btnX + btnW && tY >= muteBtnY && tY <= muteBtnY + btnH) { isMuted = !isMuted; clickedUI = true; }
   }
   
   if (endingFairyTimer <= 0) { 
-    let mmBtnX = width - 85, mmBtnY = 230, mmBtnW = 75, mmBtnH = 30;
+    // 💡 핵심 2: 스마트폰의 뭉툭한 손가락을 배려하여, 눈에 보이는 버튼보다 보이지 않는 인식 범위(Hitbox)를 훨씬 넉넉하게 넓혀줍니다.
+    let mmHitX = width - 120, mmHitY = 210, mmHitW = 120, mmHitH = 60;
     
-    if (mouseX >= mmBtnX && mouseX <= mmBtnX + mmBtnW && mouseY >= mmBtnY && mouseY <= mmBtnY + mmBtnH) {
+    if (tX >= mmHitX && tX <= mmHitX + mmHitW && tY >= mmHitY && tY <= mmHitY + mmHitH) {
       minimapExpanded = !minimapExpanded;
       clickedUI = true;
     } 
     else if (minimapExpanded) {
       let bottomSpace = (devTickerActive && devTickerText.trim() !== "") ? 130 : 90;
+      let mmBtnY = 230;
       let mmH = height - mmBtnY - bottomSpace;
+      let mmBodyX = width - 85;
+      let mmBodyW = 75;
       
-      if (mouseX >= mmBtnX && mouseX <= mmBtnX + mmBtnW && mouseY > mmBtnY + 25 && mouseY <= mmBtnY + mmH) {
-        let clickedPy = mouseY - (mmBtnY + 25); 
+      if (tX >= mmBodyX && tX <= mmBodyX + mmBodyW && tY > mmBtnY + 25 && tY <= mmBtnY + mmH) {
+        let clickedPy = tY - (mmBtnY + 25); 
         let clickedWorldY = map(clickedPy, 0, mmH - 25, 0, WORLD_HEIGHT); 
         let closest = balls[0]; let minDist = abs(balls[0].y - clickedWorldY); 
         for(let b of balls) { let d = abs(b.y - clickedWorldY); if (d < minDist) { minDist = d; closest = b; } } 
