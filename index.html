@@ -185,6 +185,50 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// 💡 스마트폰 풀스크린 모드용 두 손가락 줌인(Pinch Zoom) 감각 기관
+let uiContainerElt = document.getElementById('ui-container');
+let uiZoomLevel = 1.0;
+let initialPinchDist = null;
+
+uiContainerElt.addEventListener('touchstart', (e) => {
+  // 손가락 두 개가 화면에 닿았을 때, 두 점 사이의 거리를 기억합니다.
+  if (e.touches.length === 2) {
+    initialPinchDist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+  }
+}, { passive: false });
+
+uiContainerElt.addEventListener('touchmove', (e) => {
+  // 두 손가락이 움직일 때
+  if (e.touches.length === 2 && initialPinchDist !== null) {
+    e.preventDefault(); // 기본 스크롤과 충돌하며 화면이 떨리는 현상을 막아줍니다.
+    
+    let currentDist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    
+    // 손가락이 벌어진 비율만큼 창을 부드럽게 부풀립니다. (1배 ~ 최대 3배까지)
+    let scaleChange = currentDist / initialPinchDist;
+    uiZoomLevel = Math.min(Math.max(1.0, uiZoomLevel * scaleChange), 3.0); 
+    
+    // 화면의 중앙을 기준으로 크기를 조율합니다.
+    uiContainerElt.style.transform = `translate(-50%, -50%) scale(${uiZoomLevel})`;
+    
+    // 다음 찰나의 순간을 위해 거리를 갱신합니다.
+    initialPinchDist = currentDist; 
+  }
+}, { passive: false });
+
+uiContainerElt.addEventListener('touchend', (e) => {
+  // 손가락 하나라도 떨어지면 줌인 동작을 멈춥니다. (한 손가락 스크롤을 위해)
+  if (e.touches.length < 2) {
+    initialPinchDist = null;
+  }
+});
+  
 function loadAdItems() {
     adItems = [];
     let adWidth = 70; // 💡 배너의 고정 너비
