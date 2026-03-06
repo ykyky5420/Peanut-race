@@ -55,7 +55,6 @@
 <div id="ui-container"></div>
 
 <script>
-// 💡 흐르는 텍스트 기능 활성화 토글 추가
 let devBgTextActive = localStorage.getItem('devBgTextActive') !== 'false';
 let devBgText = localStorage.getItem('devBgText') !== null ? localStorage.getItem('devBgText') : "PEANUT RACE, MUTANT MODE, AWAKENING";
 let devBgColor = localStorage.getItem('devBgColor') !== null ? localStorage.getItem('devBgColor') : "#00e5ff";
@@ -108,14 +107,24 @@ document.addEventListener('keydown', (e) => {
 
 function loadAdItems() {
     adItems = [];
+    let adWidth = 70; // 💡 배너의 고정 너비
+    
     devAds.forEach((ad) => {
         if (ad.type === 'text') {
             adItems.push({ type: 'text', data: ad.data, h: 250 });
         } else if (ad.type === 'img') {
             let item = { type: 'img', imgObj: null, h: 300 }; 
             loadImage(ad.data, (img) => {
+                // 원본 비율에 맞춰 배너의 길이를 정수로 계산합니다.
+                item.h = Math.floor(80 * (img.width / img.height)); 
+                
+                // 💡 핵심 최적화: 매 프레임 렌더링 부하를 막기 위해,
+                // 메모리에 올릴 때부터 실제로 그려질 크기로 픽셀을 완전히 잘라냅니다.
+                if(img.width > 0 && img.height > 0) {
+                    img.resize(item.h, adWidth); 
+                }
+                
                 item.imgObj = img;
-                item.h = 80 * (img.width / img.height); 
             });
             adItems.push(item);
         }
@@ -203,7 +212,6 @@ function openDevMode() {
   let stTitle = createDiv('🌊 배경 흐름 텍스트 설정'); stTitle.parent(stDiv);
   stTitle.style('color', '#88aaff'); stTitle.style('margin-bottom', '15px'); stTitle.style('font-weight', 'bold');
 
-  // 💡 배경 텍스트 활성화 토글 UI 추가
   let str0 = makeRow(stDiv, '배경 흐름 텍스트 활성화');
   let cbBgText = createCheckbox('', devBgTextActive); cbBgText.parent(str0);
 
@@ -215,12 +223,14 @@ function openDevMode() {
 
   let r3 = makeRow(stDiv, '투명도 (0~100)');
   let opWrapper = createDiv(''); opWrapper.parent(r3); opWrapper.style('display', 'flex'); opWrapper.style('align-items', 'center');
-  let inpOp = createInput(devBgOpacity, 'range'); inpOp.parent(opWrapper); inpOp.attribute('min', '0'); inpOp.attribute('max', '100'); inpOp.style('width', '100px'); inpOp.style('margin-top', '0');
+  // 💡 숫자형 데이터를 문자로 감싸는 오류 수정
+  let inpOp = createInput(devBgOpacity.toString(), 'range'); inpOp.parent(opWrapper); inpOp.attribute('min', '0'); inpOp.attribute('max', '100'); inpOp.style('width', '100px'); inpOp.style('margin-top', '0');
   let opVal = createSpan(devBgOpacity); opVal.parent(opWrapper); opVal.style('color', '#00e5ff'); opVal.style('width', '30px'); opVal.style('text-align', 'right'); opVal.style('margin-left', '10px');
   inpOp.input(() => { opVal.html(inpOp.value()); });
 
   let r4 = makeRow(stDiv, '텍스트 갯수');
-  let inpCount = createInput(devBgCount, 'number'); inpCount.parent(r4); inpCount.class('modern-input'); inpCount.style('width', '60px'); inpCount.attribute('min', '0'); inpCount.attribute('max', '100');
+  // 💡 숫자형 데이터를 문자로 감싸는 오류 수정
+  let inpCount = createInput(devBgCount.toString(), 'number'); inpCount.parent(r4); inpCount.class('modern-input'); inpCount.style('width', '60px'); inpCount.attribute('min', '0'); inpCount.attribute('max', '100');
 
   let tDiv = createDiv(''); tDiv.parent(modal);
   tDiv.style('background', 'rgba(255,255,255,0.03)'); tDiv.style('border', '1px solid rgba(255,255,255,0.1)');
@@ -242,7 +252,8 @@ function openDevMode() {
 
   let tr4 = makeRow(tDiv, '배경 투명도 (0~100)');
   let tOpWrapper = createDiv(''); tOpWrapper.parent(tr4); tOpWrapper.style('display', 'flex'); tOpWrapper.style('align-items', 'center');
-  let inpTickerOp = createInput(devTickerOpacity, 'range'); inpTickerOp.parent(tOpWrapper); inpTickerOp.attribute('min', '0'); inpTickerOp.attribute('max', '100'); inpTickerOp.style('width', '100px'); inpTickerOp.style('margin-top', '0');
+  // 💡 숫자형 데이터를 문자로 감싸는 오류 수정
+  let inpTickerOp = createInput(devTickerOpacity.toString(), 'range'); inpTickerOp.parent(tOpWrapper); inpTickerOp.attribute('min', '0'); inpTickerOp.attribute('max', '100'); inpTickerOp.style('width', '100px'); inpTickerOp.style('margin-top', '0');
   let tOpVal = createSpan(devTickerOpacity); tOpVal.parent(tOpWrapper); tOpVal.style('color', '#ffaa00'); tOpVal.style('width', '30px'); tOpVal.style('text-align', 'right'); tOpVal.style('margin-left', '10px');
   inpTickerOp.input(() => { tOpVal.html(inpTickerOp.value()); });
 
@@ -271,6 +282,7 @@ function openDevMode() {
   
   let closeBtn = createButton('닫기'); closeBtn.parent(modal); closeBtn.class('ghost-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '10px'); closeBtn.mousePressed(() => { modal.remove(); });
 }
+
 function initDevBgTexts() {
   devBgTextsArr = [];
   if (!devBgTextActive || devBgCount <= 0 || !devBgText || devBgText.trim() === "") return;
@@ -322,13 +334,11 @@ function drawDevBgTexts() {
           t.y = Math.min(-100, minY - 250);
       }
       
-      // 💡 현재 텍스트의 화면 좌표를 월드 좌표로 환산하여 트랙 안쪽인지 검사합니다.
       let worldX = (t.x - width/2) / camScale - camX + width/(2*camScale);
       let worldY = (t.y - height/2) / camScale - camY + height/(2*camScale);
       let tIdx = constrain(floor(worldY / 40), 0, track.length - 1);
       let trk = track[tIdx];
       
-      // 💡 트랙의 밖(좌우 여백)일 때만 텍스트를 그려 트랙 내부를 침범하지 않게 합니다.
       if (!trk || worldX < trk.left - 50 || worldX > trk.right + 50) {
           text(t.text, t.x, t.y);
       }
@@ -340,11 +350,18 @@ function drawAdTrack(vTop, vBottom) {
     if (adItems.length === 0 || track.length === 0) return;
     
     let adWidth = 70;  
+    
+    // 💡 광고판들의 전체 높이를 먼저 계산하여, 불필요한 앞선 연산을 건너뜁니다.
+    let totalAdHeight = 0;
+    for (let item of adItems) totalAdHeight += item.h;
+    if (totalAdHeight === 0) return;
 
     for (let side of ['left', 'right']) {
-        let currentY = 0;
-        // 광고판이 별자리를 가리지 않도록 제한
-        while (currentY < WORLD_HEIGHT - 500) {
+        // 💡 화면 꼭대기(vTop)에서 가장 가까운 배너 시작점(수학적 계산)으로 단숨에 이동합니다.
+        let startCycle = Math.max(0, Math.floor(vTop / totalAdHeight));
+        let currentY = startCycle * totalAdHeight;
+        
+        while (currentY < vBottom + 500 && currentY < WORLD_HEIGHT - 500) {
             for (let item of adItems) {
                 let yStart = currentY;
                 let yEnd = currentY + item.h;
@@ -352,7 +369,6 @@ function drawAdTrack(vTop, vBottom) {
                 if (yEnd > vTop && yStart < vBottom) {
                     drawCurvedAdItem(item, side, yStart, yEnd, adWidth);
                 }
-                // 💡 배너 사이의 띄움(gap)을 완전히 없애 선처럼 이어지게 만듭니다.
                 currentY += item.h; 
             }
         }
@@ -365,7 +381,6 @@ function drawCurvedAdItem(item, side, yStart, yEnd, adWidth) {
     let t = track[tIdx];
     if(!t) return;
     
-    // 💡 불규칙한 트랙 경계(left, right) 대신, 완만한 중앙선(center)을 기준으로 넓은 간격 배치
     let smoothOffset = 600; 
     let xPos = side === 'left' ? t.center - smoothOffset : t.center + smoothOffset;
     
@@ -376,7 +391,6 @@ function drawCurvedAdItem(item, side, yStart, yEnd, adWidth) {
     translate(xPos, midY);
     rotate(-angle); 
     
-    // 좌측 광고 배너 반시계방향 180도 회전
     if (side === 'left') {
         rotate(-PI);
     }
@@ -389,19 +403,22 @@ function drawCurvedAdItem(item, side, yStart, yEnd, adWidth) {
         push(); rotate(HALF_PI); text(item.data, 0, 0); pop();
     } else if (item.type === 'img' && item.imgObj) {
         imageMode(CENTER);
-        push(); rotate(HALF_PI); image(item.imgObj, 0, 0, item.h, adWidth); pop();
+        push(); 
+        rotate(HALF_PI); 
+        // 💡 최적화: 이미 로드할 때 크기를 딱 맞췄으므로, 크기 변환(Scaling) 연산 없이 원본 그대로 빠르게 도장 찍듯 그립니다.
+        image(item.imgObj, 0, 0); 
+        pop();
+        
         noFill(); stroke(0, 0, 100, 20); strokeWeight(2); rect(-adWidth/2, -item.h/2, adWidth, item.h);
     }
     
-    // 💡 배너와 배너 사이 이음새에 반투명(50%) 흰색 띠를 덮어 부드럽게 연결
     fill(0, 0, 100, 50); noStroke(); 
-    rect(-adWidth/2, -item.h/2 - 2, adWidth, 4); // 상단 이음새
-    rect(-adWidth/2, item.h/2 - 2, adWidth, 4);  // 하단 이음새
+    rect(-adWidth/2, -item.h/2 - 2, adWidth, 4); 
+    rect(-adWidth/2, item.h/2 - 2, adWidth, 4);  
     
     pop();
 }
-
-function drawTicker() {
+  function drawTicker() {
   if (!devTickerActive || devTickerText.trim() === "") return;
   push();
   let th = 40; 
@@ -424,8 +441,7 @@ function drawTicker() {
   if (tickerX < -tw) { tickerX = width; } 
   pop();
 }
-
-const imgLibraryData = [
+  const imgLibraryData = [
   { category: "동물 얼굴 (Animals)", type: "emoji", items: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦉','🐺','🐴'] },
   { category: "국기 (Flags)", type: "emoji", items: ['🇰🇷','🇺🇸','🇬🇧','🇯🇵','🇨🇳','🇩🇪','🇫🇷','🇧🇷','🇮🇹','🇨🇦','🇪🇸','🇦🇺'] },
   { category: "스포츠 공 (Sports)", type: "emoji", items: ['⚽','⚾','🏀','🏐','🏈','🏉','🎾','🎱','🎳','🏓'] },
@@ -463,6 +479,9 @@ const i18n = {
     cat_personal: "개인 스킬 (공통)",
     cat_teambattle: "개인 스킬 (팀 배틀 전용)",
     cat_teamulti: "팀 단위 스킬 (팀 게이지)",
+    cat_cosmic: "🌌 우주 스킬 (재앙)",
+    cosmic_skill_name: "우주의 핑거스냅",
+    cosmic_skill_desc: "4구간(또는 트랙 80%) 통과 시, 생존자의 절반을 파괴하는 보랏빛 별무리가 솟아오릅니다.",
     skill_desc: [
       "자신 주변의 적들을 얼려버립니다.", "적군 중 한명과 위치를 바꿉니다.", "주변 적들을 빨아들인 후 튕겨내고 자신은 가속합니다.",
       "지나간 자리에 적을 느리게 하는 늪을 남깁니다.", "적들을 끌어당기는 블랙홀이 됩니다.", "자신의 크기가 작아집니다.",
@@ -488,8 +507,9 @@ const i18n = {
     ann_team_shrink: (team) => `🔍 [${team}]이(가) 미시적 관점을 얻어 7초간 크기가 축소됩니다!`,
     ann_team_prism: (team) => `🌈 [${team}]이(가) 프리즘 여과지를 전개하여 적들을 위로 밀어냅니다!`,
     ann_team_guardian: (team) => `🛡️ [${team}]이(가) 최후의 수호자를 각성시켰습니다! 구간을 철통같이 방어합니다!`,
+    ann_cosmic_snap: "🌌 우주의 핑거스냅 발동! 절반의 생명이 사라집니다...",
     section_pass: (sec, name, team) => `🚩 제 ${sec}구간 선두: [${team}] ${name}!`,
-    ann_ending: "✨ 오늘의 엔딩 요정 ✨", minimap_hint: "미니맵을 눌러 대상을 변경하거나\n빈 공간을 눌러 추적을 복귀하세요", score_title: "RACE FINISHED",
+    ann_ending: "✨ 오늘의 엔딩 요정 ✨", minimap_hint: "미니맵을 눌러 대상을 변경하거나\n빈 공간을 눌러 추적을 복귀하세요", score_title: "RACE FINISHED", tag_destroyed: "(파괴됨)",
     btn_restart: "이 멤버로 다시 달리기", btn_new: "처음부터 다시 설정하기", btn_save_txt: "결과 텍스트로 저장",
     skill_names: ["빙결의 파동", "운명의 역전", "인과응보", "집착의 늪", "심연의 인력", "겸손의 미덕", "기억의 파편", "초월의 질주", "별을 미는 순풍", "어둠의 저격수", "통곡의 벽", "추격자", "중력의 배신", "바빌론의 탑", "베스트 드라이버"]
   },
@@ -523,6 +543,9 @@ const i18n = {
     cat_personal: "Personal Skills",
     cat_teambattle: "Team Battle Skills",
     cat_teamulti: "Team Multicasts",
+    cat_cosmic: "🌌 Cosmic Skill (Disaster)",
+    cosmic_skill_name: "Cosmic Snap",
+    cosmic_skill_desc: "Reaching Sector 4 (or 80%) summons purple stars that destroy half the survivors.",
     skill_desc: [
       "Freezes enemies around you.", "Swaps position with an enemy.", "Pulls enemies and bursts them away.",
       "Leaves a sticky slime slowing enemies.", "Becomes a blackhole.", "Shrinks your size.",
@@ -547,8 +570,9 @@ const i18n = {
     ann_team_shrink: (team) => `🔍 [${team}] gained Microscopic Perspective!`,
     ann_team_prism: (team) => `🌈 [${team}] deployed a Prism Filter!`,
     ann_team_guardian: (team) => `🛡️ [${team}] awakened the Last Guardian!`,
+    ann_cosmic_snap: "🌌 Cosmic Snap activated! Half the entities are vanishing...",
     section_pass: (sec, name, team) => `🚩 Section ${sec} Leader: [${team}] ${name}!`,
-    ann_ending: "✨ ENDING FAIRY ✨", minimap_hint: "Click minimap to focus\nClick empty space to auto", score_title: "RACE FINISHED",
+    ann_ending: "✨ ENDING FAIRY ✨", minimap_hint: "Click minimap to focus\nClick empty space to auto", score_title: "RACE FINISHED", tag_destroyed: "(Destroyed)",
     btn_restart: "Race Again", btn_new: "Reset Parameters", btn_save_txt: "Save Results",
     skill_names: ["Glacial Pulse", "Fate Inversion", "Retribution", "Sticky Slime", "Mini Blackhole", "Shrink", "Flare Drop", "Zenith Dash", "Starlight Transfer", "Dark Sniper", "Wailing Wall", "Chaser", "Gravity's Betrayal", "Tower of Babylon", "Best Driver"]
   },
@@ -582,6 +606,9 @@ const i18n = {
     cat_personal: "个人技能",
     cat_teambattle: "团队战专用技能",
     cat_teamulti: "团队技能",
+    cat_cosmic: "🌌 宇宙技能 (灾难)",
+    cosmic_skill_name: "宇宙响指",
+    cosmic_skill_desc: "到达第4赛段(或80%)时召唤紫色星星，摧毁一半的幸存者。",
     skill_desc: [
       "冻结周围的敌人。", "与一名敌人交换位置。", "吸附周围敌人后弹开。",
       "留下减速沼泽。", "化身黑洞。", "体型变小。",
@@ -606,8 +633,9 @@ const i18n = {
     ann_team_shrink: (team) => `🔍 [${team}] 获得了微观视角！`,
     ann_team_prism: (team) => `🌈 [${team}] 展开了棱镜滤网！`,
     ann_team_guardian: (team) => `🛡️ [${team}] 唤醒了最后守护者！`,
+    ann_cosmic_snap: "🌌 宇宙响指发动！一半的生命正在消逝...",
     section_pass: (sec, name, team) => `🚩 第 ${sec} 赛段领先: [${team}] ${name}!`,
-    ann_ending: "✨ 结尾妖精 ✨", minimap_hint: "点击小地图更改目标", score_title: "RACE FINISHED",
+    ann_ending: "✨ 结尾妖精 ✨", minimap_hint: "点击小地图更改目标", score_title: "RACE FINISHED", tag_destroyed: "(已摧毁)",
     btn_restart: "再跑一次", btn_new: "重新设置", btn_save_txt: "保存成绩",
     skill_names: ["冰川脉冲", "命运逆转", "因果报应", "执念沼泽", "深渊引力", "谦逊美德", "记忆碎片", "超越冲刺", "星光引流", "黑暗狙击手", "叹息之墙", "追击者", "重力背叛", "巴比伦塔", "最佳车手"]
   },
@@ -641,6 +669,9 @@ const i18n = {
     cat_personal: "個人スキル",
     cat_teambattle: "個人スキル (チーム用)",
     cat_teamulti: "チームスキル",
+    cat_cosmic: "🌌 宇宙スキル (災い)",
+    cosmic_skill_name: "宇宙の指パッチン",
+    cosmic_skill_desc: "第4区間(または80%)到達時、生存者の半分を破壊する紫の星を召喚します。",
     skill_desc: [
       "周囲の敵を凍らせます。", "敵と位置を入れ替えます。", "敵を吸い寄せて弾き飛ばします。",
       "敵を遅くする沼を残します。", "ブラックホールになります。", "サイズが小さくなります。",
@@ -665,12 +696,14 @@ const i18n = {
     ann_team_shrink: (team) => `🔍 [${team}]が微視的観点を獲得！`,
     ann_team_prism: (team) => `🌈 [${team}]がプリズムを展開！`,
     ann_team_guardian: (team) => `🛡️ [${team}]が守護者を覚醒！`,
+    ann_cosmic_snap: "🌌 宇宙の指パッチン発動！半分の命が消え去ります...",
     section_pass: (sec, name, team) => `🚩 第 ${sec} 区間トップ: [${team}] ${name}!`,
-    ann_ending: "✨ エンディング妖精 ✨", minimap_hint: "ミニマップで対象変更", score_title: "RACE FINISHED",
+    ann_ending: "✨ エンディング妖精 ✨", minimap_hint: "ミニマップで対象変更", score_title: "RACE FINISHED", tag_destroyed: "(破壊済)",
     btn_restart: "再レース", btn_new: "設定し直す", btn_save_txt: "結果を保存",
     skill_names: ["氷結の波動", "運命の逆転", "因果応報", "執着の沼", "深淵の引力", "謙譲の美徳", "記憶の破片", "超越の疾走", "星を押す追い風", "闇の狙撃手", "嘆きの壁", "追跡者", "重力の裏切り", "バビロンの塔", "ベストドライバー"]
   }
 };
+
 let currentLang = 'ko'; 
 let langDiv, setupDiv, playerListDiv;
 let playerRows = []; let customPlayersData = [];
@@ -684,9 +717,13 @@ let teamGaugeThreshold = 30;
 let teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
 let mediaRecorder = null, recordedChunks = [], isRecording = false, forceFinishAll = false;
 let firstWinner = null, endingFairyTimer = 0, constellationTimer = 0, speedLevel = 0, cameraMode = 0; 
+let framesSinceStart = 0; 
 
 let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]; 
 let activeTeamSkills = [true, true, true, true];
+let activeCosmicSnap = false; // 💡 우주 스킬: 핑거스냅 활성화 여부
+let cosmicSnapTriggered = false; // 💡 핑거스냅 발동 여부
+let cosmicStars = []; // 💡 보랏빛 별 배열
 
 let currentEditingRow = null;
 let currentEditingBtn = null;
@@ -771,6 +808,16 @@ function createSkillModal() {
     });
   };
   makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13,14], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
+  
+  // 💡 우주 스킬(재앙) 카테고리 추가
+  let catCosmicTitle = createElement('h4', t.cat_cosmic); catCosmicTitle.parent(modal); 
+  catCosmicTitle.style('color', '#a55eea'); catCosmicTitle.style('margin-top', '15px'); 
+  catCosmicTitle.style('margin-bottom', '10px'); catCosmicTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)'); catCosmicTitle.style('padding-bottom', '5px');
+  
+  let rCosmic = createDiv(''); rCosmic.parent(modal); rCosmic.style('display', 'flex'); rCosmic.style('align-items', 'flex-start'); rCosmic.style('margin-bottom', '10px');
+  let cbCosmic = createCheckbox('', activeCosmicSnap); cbCosmic.parent(rCosmic); cbCosmic.style('margin-top', '2px'); cbCosmic.changed(() => { activeCosmicSnap = cbCosmic.checked(); });
+  let lblCosmic = createDiv(`<b>${t.cosmic_skill_name}</b><br><span style="color:#aaa; font-size:12px;">${t.cosmic_skill_desc}</span>`); lblCosmic.parent(rCosmic); lblCosmic.style('color', '#fff'); lblCosmic.style('font-size', '14px'); lblCosmic.style('margin-left', '8px'); lblCosmic.style('line-height', '1.4');
+
   let closeBtn = createButton(t.modal_close); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '30px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
 }
 
@@ -931,6 +978,10 @@ function startGameFromUI() {
   useCasterMode = cbCaster.checked(); 
   useElectricTrap = true; useBubbleTrap = true; useFirstPlaceOnly = cbFirstOnly.checked(); isRecording = cbRecord.checked();
   
+  // 💡 매 경기마다 핑거스냅 관련 설정 초기화
+  cosmicSnapTriggered = false;
+  cosmicStars = [];
+
   customPlayersData = [];
   for (let r of playerRows) { 
     let count = parseInt(r.countInput.value()) || 1; let baseName = r.nameInput.value() || t.default_name; let teamPref = r.teamSelect.value();
@@ -959,13 +1010,17 @@ function startGameFromUI() {
   initWorld(); 
   if (isRecording) { startRecording(); }
 }
-  function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
+  
+function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
 function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
 function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
 function getTeamName(team, t) { if (team === 'RED') return t.opt_red; if (team === 'BLUE') return t.opt_blue; if (team === 'GREEN') return t.opt_green; if (team === 'YELLOW') return t.opt_yellow; if (team === 'PURPLE') return t.opt_purple; if (team === 'ORANGE') return t.opt_orange; if (team === 'CYAN') return t.opt_cyan; if (team === 'PINK') return t.opt_pink; return ''; }
 
 function downloadRankings() { 
+  // 💡 파괴된 영웅들은 가장 아래에 기록되도록 정렬 규칙 추가
   let sorted = [...balls].sort((a, b) => {
+    if(a.destroyed && !b.destroyed) return 1;
+    if(!a.destroyed && b.destroyed) return -1;
     if(a.finished && b.finished) return a.finishOrder - b.finishOrder;
     if(a.finished) return -1;
     if(b.finished) return 1;
@@ -981,13 +1036,19 @@ function downloadRankings() {
     } 
     if (tiedTeams.length === 1) { winningTeam = tiedTeams[0]; } 
     else { 
-      let tieSorted = [...balls].sort((a, b) => { if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); 
+      let tieSorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); 
       for(let b of tieSorted) { if(tiedTeams.includes(b.team)) { winningTeam = b.team; break; } } 
     } 
     if(!winningTeam) winningTeam = firstWinner.team; 
     txt += `*** ${t.team_win(getTeamName(winningTeam, t), maxWins)} ***\n\n`; 
   } 
-  sorted.forEach((b, i) => { let teamPrefix = useTeamBattle ? `[${getTeamPrefix(b.team).trim()}] ` : ''; txt += `${i + 1}. ${teamPrefix}${b.name}\n`; }); 
+  
+  sorted.forEach((b, i) => { 
+      let teamPrefix = useTeamBattle ? `[${getTeamPrefix(b.team).trim()}] ` : ''; 
+      let status = b.destroyed ? ` ${t.tag_destroyed}` : '';
+      txt += `${i + 1}. ${teamPrefix}${b.name}${status}\n`; 
+  }); 
+  
   let blob = new Blob([txt], { type: 'text/plain' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let fileDate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Rankings_${fileDate}.txt`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); 
 }
 
@@ -1008,7 +1069,10 @@ function drawFinalScoreboard() {
   text(t.score_title, width/2, height/2 - panelH/2 + 50);
   drawingContext.shadowBlur = 0;
 
+  // 💡 파괴된 공들을 아래로 내리는 정렬
   let sortedBalls = [...balls].sort((a, b) => {
+    if(a.destroyed && !b.destroyed) return 1;
+    if(!a.destroyed && b.destroyed) return -1;
     if(a.finished && b.finished) return a.finishOrder - b.finishOrder;
     if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y;
   });
@@ -1063,16 +1127,28 @@ function drawFinalScoreboard() {
     textSize(24);
     for(let i=0; i<min(sortedBalls.length, 3); i++) {
        let b = sortedBalls[i];
-       fill(b.color);
-       text(`${i+1}. ${getTeamPrefix(b.team)}${b.name}`, width/2, startY + 35 + i*30);
+       let nameTxt = `${i+1}. ${getTeamPrefix(b.team)}${b.name}`;
+       if (b.destroyed) {
+           fill(100);
+           text(`❌ ${nameTxt}`, width/2, startY + 35 + i*30);
+       } else {
+           fill(b.color);
+           text(nameTxt, width/2, startY + 35 + i*30);
+       }
     }
 
   } else {
     textAlign(CENTER, CENTER);
     for(let i=0; i<min(sortedBalls.length, 8); i++) {
        let b = sortedBalls[i];
-       fill(b.color); textSize(28);
-       text(`${i+1}. ${b.name}`, width/2, startY + i * 45);
+       textSize(28);
+       if (b.destroyed) {
+           fill(100);
+           text(`❌ ${i+1}. ${b.name}`, width/2, startY + i * 45);
+       } else {
+           fill(b.color); 
+           text(`${i+1}. ${b.name}`, width/2, startY + i * 45);
+       }
     }
   }
 
@@ -1093,8 +1169,7 @@ function drawFinalScoreboard() {
   drawBtn(btn3Y, t.btn_save_txt, '#ffff00');
   pop();
 }
-
-function isBrickZone(yRatio) { for (let z of BRICK_ZONES) { if (yRatio >= z.start && yRatio <= z.end) return true; } return false; }
+  function isBrickZone(yRatio) { for (let z of BRICK_ZONES) { if (yRatio >= z.start && yRatio <= z.end) return true; } return false; }
 function getScatteredX(t, padding) { return random(t.left + padding, t.right - padding); }
 function getVolume(x, y, maxVol = 0.5) { if (!targetBall || isMuted) return 0; let d = dist(targetBall.x, targetBall.y, x, y); return map(d, 0, 1500, maxVol, 0, true); }
 function playNormalHit(freq, x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.5); if (vol < 0.01) return; osc.setType('sine'); osc.freq(freq + random(-30, 30)); env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(vol, 0); env.play(osc); }
@@ -1104,19 +1179,32 @@ function playSwapSound(x, y) { if (isMuted || getAudioContext().state !== 'runni
 function playZapSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.4); if (vol < 0.01) return; osc.setType('sawtooth'); osc.freq(300); env.setADSR(0.01, 0.1, 0.2, 0.1); env.setRange(vol, 0); env.play(osc); }
 function playHealSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.6); if (vol < 0.01) return; osc.setType('sine'); osc.freq(800); env.setADSR(0.1, 0.4, 0.4, 1.2); env.setRange(vol, 0); env.play(osc); }
 
-function addEventLog(ball, text, col, isMajor = false) { if (!isMajor && ball !== targetBall) { let unfinished = balls.filter(b => !b.finished).sort((a, b) => b.y - a.y); let isLeader = (unfinished.length > 0 && unfinished[0] === ball); if (!isLeader) return; } announcements.push({ text: text, color: col, life: 240, maxLife: 240 }); if (announcements.length > 5) announcements.shift(); }
+function addEventLog(ball, text, col, isMajor = false) { if (!isMajor && ball !== targetBall) { let unfinished = balls.filter(b => !b.finished && !b.destroyed).sort((a, b) => b.y - a.y); let isLeader = (unfinished.length > 0 && unfinished[0] === ball); if (!isLeader) return; } announcements.push({ text: text, color: col, life: 240, maxLife: 240 }); if (announcements.length > 5) announcements.shift(); }
 function sweepThePast(lastY) { let threshold = lastY - 2000; wallBars = wallBars.filter(o => o.y > threshold); staticPins = staticPins.filter(o => o.y > threshold); spinners = spinners.filter(o => o.y > threshold); blackholePads = blackholePads.filter(o => o.y > threshold); shrinkPads = shrinkPads.filter(o => o.y > threshold); growPads = growPads.filter(o => o.y > threshold); swapPads = swapPads.filter(o => o.y > threshold); electricTraps = electricTraps.filter(o => o.y > threshold); bubbleZones = bubbleZones.filter(o => o.yEnd > threshold); bricks = bricks.filter(o => o.y > threshold); wailingWalls = wailingWalls.filter(o => o.y > threshold); }
 function drawBackgroundGrid(vTop, vBottom) { noStroke(); bgStars.forEach(s => { s.blink += s.speed; if (s.y < vTop - 500 || s.y > vBottom + 500) return; let a = map(sin(s.blink), -1, 1, 10, 80); fill(0, 0, 100, a); ellipse(s.x, s.y, s.r); }); stroke(260, 50, 15, 60); strokeWeight(1); for (let i = -4000; i < 4000; i += 200) line(i, vTop - 500, i, vBottom + 500); let yStartGrid = floor((vTop - 500) / 200) * 200; for (let j = yStartGrid; j < vBottom + 500; j += 200) line(-4000, j, 4000, j); }
-function drawSegments(vTop, vBottom) { if (!useTeamBattle) return; for (let i = 1; i <= numSegments; i++) { let sy = i * segmentLength; if (sy < vTop - 500 || sy > vBottom + 500) continue; push(); stroke(255, 80); strokeWeight(4); drawingContext.setLineDash([20, 20]); line(-10000, sy, 10000, sy); drawingContext.setLineDash([]); let tIdx = constrain(floor(sy/40), 0, track.length - 1); let cx = track[tIdx] ? track[tIdx].center : 0; noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 10; drawingContext.shadowColor = '#fff'; } fill(255, 200); textFont('Orbitron'); textSize(36); textAlign(CENTER, BOTTOM); text(`SECTION ${i}`, cx, sy - 10); drawingContext.shadowBlur = 0; pop(); } }
+function drawSegments(vTop, vBottom) { 
+  if (!useTeamBattle) return; 
+  let isAction = (cameraMode !== 0); // 💡 액션캠 최적화
+  for (let i = 1; i <= numSegments; i++) { 
+    let sy = i * segmentLength; if (sy < vTop - 500 || sy > vBottom + 500) continue; 
+    push(); stroke(255, 80); strokeWeight(4); drawingContext.setLineDash([20, 20]); line(-10000, sy, 10000, sy); drawingContext.setLineDash([]); 
+    let tIdx = constrain(floor(sy/40), 0, track.length - 1); let cx = track[tIdx] ? track[tIdx].center : 0; 
+    noStroke(); 
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 10; drawingContext.shadowColor = '#fff'; } 
+    fill(255, 200); textFont('Orbitron'); textSize(36); textAlign(CENTER, BOTTOM); text(`SECTION ${i}`, cx, sy - 10); 
+    drawingContext.shadowBlur = 0; pop(); 
+  } 
+}
 
 function drawTrack(vTop, vBottom) { 
   noFill(); 
+  let isAction = (cameraMode !== 0); // 💡 줌인 상태일 때 과도한 연산을 줄이는 시각적 타협
   for (let i = 1; i < track.length; i++) { 
     let p1 = track[i-1]; let p2 = track[i]; 
     if (p2.y < vTop - 500 || p1.y > vBottom + 500) continue; 
     let isInView = (p2.y > vTop && p2.y < vBottom); 
     strokeWeight(15); 
-    if (isInView && !useLightMode) { 
+    if (isInView && !useLightMode && !isAction) { 
       drawingContext.shadowBlur = 5; 
       drawingContext.shadowColor = p2.cStr; 
       stroke(p2.hue, 80, 100, 90); 
@@ -1128,7 +1216,7 @@ function drawTrack(vTop, vBottom) {
     line(p1.right, p1.y, p2.right, p2.y); 
     if (p2.isBump) { 
       drawingContext.shadowBlur = 0; 
-      if (!useLightMode) { 
+      if (!useLightMode && !isAction) { 
         fill(p2.hue, 80, 100, 80); noStroke(); 
         triangle(p2.left, p2.y, p2.left - 25, p2.y - 20, p2.left - 25, p2.y + 20); 
         triangle(p2.right, p2.y, p2.right + 25, p2.y - 20, p2.right + 25, p2.y + 20); 
@@ -1161,24 +1249,19 @@ function drawAnnouncements() {
 }
 
 function drawRankings() { 
-  let sorted = [...balls].sort((a, b) => b.y - a.y); 
+  let sorted = [...balls].sort((a, b) => {
+      if(a.destroyed && !b.destroyed) return 1;
+      if(!a.destroyed && b.destroyed) return -1;
+      return b.y - a.y;
+  }); 
   let panelWidth = useCasterMode ? 160 : 120; 
   let contentHeight = sorted.length * 24 + 16; 
   let panelHeight = min(250, contentHeight); 
   let maxScroll = max(0, contentHeight - panelHeight); 
   rankScrollY = lerp(rankScrollY, rankTargetScrollY, 0.15); 
-  fill(10, 12, 20, 80); 
-  stroke(255, 10); 
-  strokeWeight(1); 
-  rect(10, 15, panelWidth, panelHeight, 8); 
-  push(); 
-  drawingContext.save(); 
-  drawingContext.beginPath(); 
-  drawingContext.rect(10, 15, panelWidth, panelHeight); 
-  drawingContext.clip(); 
-  translate(0, -rankScrollY); 
-  textAlign(LEFT, CENTER); 
-  textSize(12); 
+  fill(10, 12, 20, 80); stroke(255, 10); strokeWeight(1); rect(10, 15, panelWidth, panelHeight, 8); 
+  push(); drawingContext.save(); drawingContext.beginPath(); drawingContext.rect(10, 15, panelWidth, panelHeight); drawingContext.clip(); 
+  translate(0, -rankScrollY); textAlign(LEFT, CENTER); textSize(12); 
   
   let leadY = sorted.length > 0 ? sorted[0].y : 0;
   
@@ -1186,26 +1269,27 @@ function drawRankings() {
     let yPos = 30 + i * 24; 
     if (b === targetBall) { noStroke(); fill(255, 40); rect(12, yPos - 11, panelWidth - 4, 22, 4); } 
     if (b.finished) { fill(255); textSize(10); text(`🏁`, panelWidth - 5, yPos); textSize(12); } 
+    else if (b.destroyed) { fill(255); textSize(10); text(`❌`, panelWidth - 5, yPos); textSize(12); }
+
     let displayName = b.name.length > 5 ? b.name.substring(0, 5) + '..' : b.name; 
     let teamPrefix = useTeamBattle ? getTeamPrefix(b.team) : ''; 
-    fill(b.color); 
+    
+    if (b.destroyed) { fill(100); } else { fill(b.color); }
+    
     let distText = "";
-    if (useCasterMode && i > 0 && !b.finished && sorted[0] && !sorted[0].finished) {
+    if (useCasterMode && i > 0 && !b.finished && !b.destroyed && sorted[0] && !sorted[0].finished) {
       let gap = Math.floor((leadY - b.y) / 10);
       distText = ` (-${gap}m)`;
     }
     text(`${i+1}. ${teamPrefix}${displayName}${distText}`, 18, yPos); 
   }); 
-  drawingContext.restore(); 
-  pop(); 
+  drawingContext.restore(); pop(); 
   if (maxScroll > 0) { let scrollBarY = map(rankScrollY, 0, maxScroll, 18, 15 + panelHeight - 20); noStroke(); fill(255, 50); rect(10 + panelWidth - 5, scrollBarY, 3, 15, 2); } 
 }
 
 function drawForceFinishButton(t) { 
   if (forceFinishAll) return; 
-  let btnX = width - 85; 
-  let btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80; 
-  let btnW = 75; let btnH = 60; 
+  let btnX = width - 85; let btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80; let btnW = 75; let btnH = 60; 
   let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); 
   drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; 
   fill(isHover ? color(190, 80, 100, 80) : color(10, 12, 20, 180)); stroke(190, 80, 100, 80); strokeWeight(1); 
@@ -1239,7 +1323,12 @@ function drawMinimap(t) {
   noStroke(); fill(0, 100, 100, 30); for (let z of BRICK_ZONES) { let yStart = mmY + 25 + z.start * (mmH - 25); let yHeight = (z.end - z.start) * (mmH - 25); rect(mmX + 2, yStart, mmW - 4, yHeight, 4); } 
   noStroke(); staticPins.forEach(p => { if (!p.isActive) return; if (p.type === 'fast') { fill(120, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else if (p.type === 'slow') { fill(0, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else { fill(40, 100, 100, 40); ellipse(getX(p.x), getY(p.y), 1.5); } }); 
   fill(280, 100, 80, 90); blackholePads.forEach(bh => ellipse(getX(bh.x), getY(bh.y), 4)); fill(55, 100, 100, 90); electricTraps.forEach(et => ellipse(getX(et.x), getY(et.y), 3)); fill(180, 60, 100, 90); soapBubbles.forEach(sb => ellipse(getX(sb.x), getY(sb.y), 3)); 
-  balls.forEach(b => { let px = getX(b.x); let py = getY(b.y); if (b === targetBall) { stroke(190, 80, 100, 90); strokeWeight(2); fill(b.color); ellipse(px, py, 9); } else { noStroke(); fill(b.color); ellipse(px, py, 5); } }); 
+  balls.forEach(b => { 
+      if(b.destroyed) return;
+      let px = getX(b.x); let py = getY(b.y); 
+      if (b === targetBall) { stroke(190, 80, 100, 90); strokeWeight(2); fill(b.color); ellipse(px, py, 9); } 
+      else { noStroke(); fill(b.color); ellipse(px, py, 5); } 
+  }); 
   
   if (!raceFinished) { fill(100); textAlign(RIGHT); textSize(11); text(t.minimap_hint, mmX - 10, mmY + 35); } 
 }
@@ -1267,6 +1356,8 @@ function getTeamHue(team) { if (team === 'RED') return 355; if (team === 'BLUE')
 
 function initWorld() {
   forceFinishAll = false; firstWinner = null; endingFairyTimer = 0; constellationTimer = 0; speedLevel = 0; cameraMode = 0;
+  framesSinceStart = 0; 
+  cosmicSnapTriggered = false; cosmicStars = []; // 💡 우주의 핑거스냅 초기화
   teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
   balls = []; spinners = []; staticPins = []; track = []; blackholePads = []; bricks = []; particles = []; shrinkPads = []; growPads = []; ripples = []; swapPads = []; specialEffects = []; announcements = []; electricTraps = []; soapBubbles = []; bubbleZones = []; wallBars = []; mutantFlares = []; wailingWalls = []; prisms = []; guardians = [];
   globalGuardianActive = false; globalGuardianTeam = null; globalGuardianTimer = 0; globalGuardianColor = null; flashColor = null; flashLife = 0; cameraShake = 0; zoomTimer = 0; targetDynamicZoom = 1.0; 
@@ -1306,7 +1397,6 @@ function initWorld() {
   constellationSpots = []; constellationEdges = []; let n = balls.length;
   for (let i = 0; i < n; i++) {
     let angle = map(i, 0, n, -HALF_PI, TWO_PI - HALF_PI); let r = (i % 2 === 0 && n > 4) ? 140 : 70; if (n <= 4) r = 100; 
-    // 💡 광고판과 겹치지 않게 별자리를 깊은 곳으로 배치
     constellationSpots.push({ x: 0 + cos(angle) * r, y: WORLD_HEIGHT + 600 + sin(angle) * r });
     constellationEdges.push([i, (i + 1) % n]); if (n > 4) constellationEdges.push([i, (i + 2) % n]); 
   }
@@ -1356,14 +1446,14 @@ function draw() {
   background(260, 80, 5); 
   if (!gameStarted) return; 
   
-  // 💡 수정된 백그라운드 텍스트 렌더링 호출
   drawDevBgTexts(); 
 
   let t = i18n[currentLang];
-  let unfinishedBalls = balls.filter(b => !b.finished); let lastBallRemaining = unfinishedBalls.length === 1 ? unfinishedBalls[0] : null;
+  let unfinishedBalls = balls.filter(b => !b.finished && !b.destroyed); let lastBallRemaining = unfinishedBalls.length === 1 ? unfinishedBalls[0] : null;
   let activeRunners = [...unfinishedBalls].sort((a, b) => b.y - a.y);
   
   if (!isPaused) {
+    framesSinceStart++; 
     if (frameCount % 60 === 0 && activeRunners.length > 0) { let lastY = activeRunners[activeRunners.length - 1].y; sweepThePast(lastY); }
     if (globalGuardianTimer > 0) { globalGuardianTimer--; if (globalGuardianTimer <= 0) globalGuardianActive = false; }
     for (let i = 1; i < activeRunners.length; i++) {
@@ -1374,15 +1464,39 @@ function draw() {
     if(activeRunners.length > 0) activeRunners[0].hasCatchUpShield = false;
   }
 
-  let leadBall = activeRunners.length > 0 ? activeRunners[0] : balls[0]; 
+  let leadBall = activeRunners.length > 0 ? activeRunners[0] : balls.find(b => !b.destroyed); 
   if (endingFairyTimer > 0 && firstWinner) { targetBall = firstWinner; if(!isPaused) endingFairyTimer--; }
   else if (leadBall && !manualFocus) { targetBall = leadBall; }
+
+  // 💡 우주의 핑거스냅 발동 검사
+  if (!isPaused && activeCosmicSnap && !cosmicSnapTriggered && leadBall) {
+      let triggerY = (WORLD_HEIGHT / numSegments) * 4; // 4구간 지점
+      if (leadBall.y >= triggerY) {
+          cosmicSnapTriggered = true;
+          addEventLog(null, t.ann_cosmic_snap, color(280, 100, 100), true);
+          sectionBannerTimer = 180; 
+          sectionBannerColor = color(280, 100, 100); 
+          sectionBannerText = t.ann_cosmic_snap; 
+          playBombSound(leadBall.x, leadBall.y);
+          
+          let aliveBalls = balls.filter(b => !b.destroyed && !b.finished);
+          let starCount = Math.floor(aliveBalls.length / 2);
+          if (starCount < 1 && aliveBalls.length > 1) starCount = 1; // 최소 1개는 생성
+          
+          for (let i = 0; i < starCount; i++) {
+              let tIdx = constrain(floor((leadBall.y + 1500) / 40), 0, track.length - 1);
+              let spawnX = track[tIdx] ? track[tIdx].center + random(-200, 200) : 0;
+              // 선두보다 한참 먼 밑바닥(우주)에서부터 역방향으로 치솟아 오릅니다.
+              cosmicStars.push(new CosmicStar(spawnX, leadBall.y + random(1000, 2500)));
+          }
+      }
+  }
 
   if (!isPaused && useTeamBattle && !raceFinished) {
     for (let i = 1; i < numSegments; i++) {
       let segY = i * segmentLength;
       if (!segmentCrossed[i]) {
-        let crossedBalls = balls.filter(b => b.y >= segY).sort((a,b) => b.y - a.y);
+        let crossedBalls = balls.filter(b => b.y >= segY && !b.destroyed).sort((a,b) => b.y - a.y);
         if (crossedBalls.length > 0) {
           let winnerOfSection = crossedBalls[0]; 
           segmentCrossed[i] = true; 
@@ -1394,7 +1508,7 @@ function draw() {
     }
   }
 
-  let allDone = balls.every(b => b.finished);
+  let allDone = balls.every(b => b.finished || b.destroyed);
   if (allDone && !raceFinished) { raceFinished = true; constellationTimer = 120; } 
   if (!isPaused && raceFinished && constellationTimer > 0) { constellationTimer--; }
 
@@ -1437,13 +1551,12 @@ function draw() {
   let viewTop = targetBall ? targetBall.y - (height / camScale) * 1.5 : 0; let viewBottom = targetBall ? targetBall.y + (height / camScale) * 1.5 : WORLD_HEIGHT;
   
   drawAdTrack(viewTop, viewBottom);
-  
   drawBackgroundGrid(viewTop, viewBottom); drawTrack(viewTop, viewBottom); drawSegments(viewTop, viewBottom);
 
   guardians.forEach(g => { if(!isPaused) g.update(balls); if (g.y > viewTop - 500 && g.y < viewBottom + 500) g.display(); if(!isPaused) g.applyEffect(balls); });
   wallBars.forEach(wb => { if (wb.y > viewTop && wb.y < viewBottom) wb.display(); });
 
-  if (useBubbleTrap && !isPaused) { bubbleZones.forEach(zone => { let anyBallInZone = balls.some(b => b.y >= zone.yStart && b.y <= zone.yEnd); if (anyBallInZone && frameCount % 150 === 0 && soapBubbles.length < 8) { let tIdx = floor(zone.yEnd / 40); if(tIdx >= 0 && tIdx < track.length) soapBubbles.push(new SoapBubble(random(track[tIdx].left + 50, track[tIdx].right - 50), zone.yEnd)); } }); }
+  if (useBubbleTrap && !isPaused) { bubbleZones.forEach(zone => { let anyBallInZone = balls.some(b => !b.destroyed && b.y >= zone.yStart && b.y <= zone.yEnd); if (anyBallInZone && frameCount % 150 === 0 && soapBubbles.length < 8) { let tIdx = floor(zone.yEnd / 40); if(tIdx >= 0 && tIdx < track.length) soapBubbles.push(new SoapBubble(random(track[tIdx].left + 50, track[tIdx].right - 50), zone.yEnd)); } }); }
 
   blackholePads.forEach(bh => { if (bh.y > viewTop && bh.y < viewBottom) bh.display(); }); shrinkPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); growPads.forEach(gp => { if (gp.y > viewTop && gp.y < viewBottom) gp.display(); }); swapPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); bricks.forEach(br => { if (br.y > viewTop && br.y < viewBottom) br.display(); }); staticPins.forEach(p => { if (p.y > viewTop && p.y < viewBottom) p.display(); }); spinners.forEach(s => { if(!isPaused) s.update(); if (s.y > viewTop && s.y < viewBottom) s.display(); }); electricTraps.forEach(et => { if (et.y > viewTop && et.y < viewBottom) et.display(); });
   
@@ -1452,6 +1565,21 @@ function draw() {
   for (let i = ripples.length - 1; i >= 0; i--) { let r = ripples[i]; if(!isPaused) r.update(); r.display(); if (r.isDead()) ripples.splice(i, 1); }
   for (let i = mutantFlares.length - 1; i >= 0; i--) { let f = mutantFlares[i]; if(!isPaused) f.update(); if (f.y > viewTop && f.y < viewBottom) f.display(); if (f.life <= 0) mutantFlares.splice(i, 1); }
   for (let i = wailingWalls.length - 1; i >= 0; i--) { let w = wailingWalls[i]; if(!isPaused) w.update(); if (w.y > viewTop && w.y < viewBottom) w.display(); if (w.isDead()) wailingWalls.splice(i, 1); }
+
+  // 💡 우주의 핑거스냅 별 렌더링 및 충돌 계산
+  for (let i = cosmicStars.length - 1; i >= 0; i--) {
+      let cs = cosmicStars[i];
+      if (!isPaused) {
+          cs.update();
+          cs.checkTrackCollision();
+          cs.checkPinCollision(staticPins);
+          cs.checkBallCollision(balls);
+      }
+      if (cs.y > viewTop - 500 && cs.y < viewBottom + 500) {
+          cs.display();
+      }
+      if (cs.life <= 0) cosmicStars.splice(i, 1);
+  }
 
   blendMode(ADD);
   for (let i = specialEffects.length - 1; i >= 0; i--) { let fx = specialEffects[i]; if(!isPaused) fx.update(); fx.display(); if (fx.isDead()) specialEffects.splice(i, 1); }
@@ -1462,6 +1590,8 @@ function draw() {
   let triggerShieldForAll = useFirstPlaceOnly && balls.some(b => b.finished);
 
   balls.forEach(b => {
+    if (b.destroyed) { b.display(); return; } // 💡 파괴된 공은 유령처럼 껍데기만 그리고 연산은 통과
+    
     b.cosmicBoost = (!b.finished && leadBall && leadBall.y - b.y > 2500); b.isLastOne = (b === lastBallRemaining && !b.finished) || (triggerShieldForAll && !b.finished) || (forceFinishAll && !b.finished);
     if(!isPaused) {
       b.update();
@@ -1491,8 +1621,8 @@ function draw() {
           if (b.checkBrickCollision(bricks[i])) {
             let hitBrick = bricks[i]; bricks.splice(i, 1); 
             if (b.isDashing || b.divineShieldTimer > 0) { createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 15); continue; } 
-            if (hitBrick.item === 'ice') { playIceSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(200, 80, 100), 40); specialEffects.push(new IceFX(hitBrick.x, hitBrick.y)); flashColor = color(200, 80, 100); flashLife = 40; zoomTimer = 45; targetDynamicZoom = 1.3; addEventLog(b, t.ann_ice(b.name), b.color, false); balls.forEach(other => { if (other !== b && !other.finished && other.y > b.y && !other.hasCatchUpShield && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== b.team)) other.frozenTimer = 120; }); } 
-            else if (hitBrick.item === 'bomb') { playBombSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(10, 90, 100), 50); specialEffects.push(new BombFX(hitBrick.x, hitBrick.y)); flashColor = color(10, 100, 100); flashLife = 40; cameraShake = 20; zoomTimer = 50; targetDynamicZoom = 1.4; addEventLog(b, t.ann_bomb(b.name), b.color, false); for (let j = bricks.length - 1; j >= 0; j--) { if (dist(hitBrick.x, hitBrick.y, bricks[j].x, bricks[j].y) < 160) { createParticles(bricks[j].x, bricks[j].y, color(bricks[j].hue, 80, 100), 5); bricks.splice(j, 1); } } } 
+            if (hitBrick.item === 'ice') { playIceSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(200, 80, 100), 40); specialEffects.push(new IceFX(hitBrick.x, hitBrick.y)); addEventLog(b, t.ann_ice(b.name), b.color, false); balls.forEach(other => { if (other !== b && !other.destroyed && !other.finished && other.y > b.y && !other.hasCatchUpShield && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== b.team)) other.frozenTimer = 120; }); } 
+            else if (hitBrick.item === 'bomb') { playBombSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(10, 90, 100), 50); specialEffects.push(new BombFX(hitBrick.x, hitBrick.y)); cameraShake = 20; zoomTimer = 50; targetDynamicZoom = 1.4; addEventLog(b, t.ann_bomb(b.name), b.color, false); for (let j = bricks.length - 1; j >= 0; j--) { if (dist(hitBrick.x, hitBrick.y, bricks[j].x, bricks[j].y) < 160) { createParticles(bricks[j].x, bricks[j].y, color(bricks[j].hue, 80, 100), 5); bricks.splice(j, 1); } } } 
             else { playNormalHit(1200, hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 10); } break; 
           }
         }
@@ -1504,12 +1634,14 @@ function draw() {
   stroke(30, 100, 100, 50); strokeWeight(10); line(-5000, WORLD_HEIGHT - 100, 5000, WORLD_HEIGHT - 100); pop();
 
   if (endingFairyTimer > 0 && firstWinner) { let alpha = min(150 - endingFairyTimer, 20) * 5; push(); fill(firstWinner.colorH, firstWinner.colorS, firstWinner.colorB, alpha * 0.2); rect(0, 0, width, height); textAlign(CENTER, CENTER); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = firstWinner.cStr; } fill(255, alpha); textSize(30); text(t.ann_ending, width/2, height - 200); textSize(60); text(firstWinner.name, width/2, height - 120); drawingContext.shadowBlur = 0; pop(); }
-  if (flashLife > 0 && flashColor) { noStroke(); fill(hue(flashColor), saturation(flashColor), brightness(flashColor), flashLife * 2); rect(0, 0, width, height); if(!isPaused) flashLife--; }
+  
+  // 💡 전체 화면 플래시 조명 효과 삭제 (타이머만 유지)
+  if (flashLife > 0 && flashColor) { if(!isPaused) flashLife--; }
+  
   if (sectionBannerTimer > 0) { push(); let alpha = min(sectionBannerTimer, 20) * 12; let yOffset = map(sectionBannerTimer, 180, 160, -100, height/3, true); if (sectionBannerTimer < 20) yOffset = map(sectionBannerTimer, 20, 0, height/3, -100); fill(10, 15, 25, alpha * 0.4); rectMode(CENTER); rect(width/2, yOffset, width, 100); textAlign(CENTER, CENTER); textSize(26); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = sectionBannerColor.toString(); } stroke(sectionBannerColor.levels[0], sectionBannerColor.levels[1], sectionBannerColor.levels[2], alpha); strokeWeight(2); fill(255, alpha); text(sectionBannerText, width/2, yOffset); drawingContext.shadowBlur = 0; pop(); if(!isPaused) sectionBannerTimer--; }
 
   drawAnnouncements(); 
   if (useCasterMode && !raceFinished) drawCasterOverlay(t);
-  
   drawTicker();
 
   if (isPaused) { push(); fill(0, 0, 0, 60); rect(0, 0, width, height); textAlign(CENTER, CENTER); textSize(40); textFont('Orbitron'); fill(255); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = '#00e5ff'; } text("PAUSED", width/2, height/2); drawingContext.shadowBlur = 0; pop(); }
@@ -1519,33 +1651,136 @@ function draw() {
     drawFinalScoreboard(); 
   }
   else if (endingFairyTimer <= 0 && !raceFinished) { 
-    // 💡 수정: 경기 시작과 동시에 미니맵은 항상 그려집니다.
-    drawMinimap(t); 
-    drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawPauseButton(t); drawMuteButton(t); drawForceFinishButton(t); 
+    drawMinimap(t); drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawPauseButton(t); drawMuteButton(t); drawForceFinishButton(t); 
   }
 
   if (manualFocus && !raceFinished && endingFairyTimer <= 0) { push(); fill(255, 150); textAlign(CENTER, TOP); textSize(13); let txt = currentLang==='ko'?"빈 공간 클릭 시 선두 자동 추적":currentLang==='en'?"Click empty space to auto-focus leader":currentLang==='zh'?"点击空白处自动追踪第一名":"空白をクリックで先頭を自動追跡"; text(txt, width/2, 20); pop(); }
 }
-  class GuardianRobot {
+
+function mouseDragged() {
+  if (isRankDragging) { let dy = mouseY - rankDragStartY; if (abs(dy) > 5) rankDragMoved = true; rankTargetScrollY = rankScrollStartY - dy; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); }
+}
+
+function mouseReleased() {
+  if (isRankDragging) {
+    isRankDragging = false;
+    if (!rankDragMoved) {
+      let clickY = mouseY - 15 + rankScrollY; let idx = floor((clickY - 5) / 24); let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; return b.y - a.y; });
+      if (idx >= 0 && idx < sorted.length) { let b = sorted[idx]; if (targetBall === b && manualFocus) manualFocus = false; else { targetBall = b; manualFocus = true; } }
+    }
+  }
+}
+
+function mouseWheel(event) {
+  if (!gameStarted || raceFinished) return;
+  let panelWidth = useCasterMode ? 160 : 120; let panelHeight = min(250, balls.length * 24 + 16);
+  if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) { rankTargetScrollY += event.delta; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); return false; }
+}
+  class CosmicStar {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.r = 15; // 공과 비슷한 크기의 별
+    this.vx = random(-6, 6);
+    this.vy = random(-9, -22); // 💡 아래에서 위로(역방향) 치솟습니다.
+    this.life = 800; // 충분히 긴 시간 동안 트랙을 역주행합니다.
+    this.angle = random(TWO_PI);
+    this.cStr = color(280, 100, 100).toString(); // 매혹적인 보랏빛
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.angle += 0.2;
+    this.life--;
+  }
+
+  checkTrackCollision() {
+    let idx = constrain(floor(this.y / 40), 0, track.length - 1);
+    let t = track[idx];
+    if (t) {
+      if (this.x < t.left + this.r) { this.x = t.left + this.r; this.vx *= -1; createParticles(this.x, this.y, color(280,100,100), 5); }
+      if (this.x > t.right - this.r) { this.x = t.right - this.r; this.vx *= -1; createParticles(this.x, this.y, color(280,100,100), 5); }
+    }
+  }
+
+   checkPinCollision(pins) {
+    for (let i = 0; i < pins.length; i++) {
+      let p = pins[i];
+      // 💡 최적화: 트랙 위 수많은 핀들 중, 별과 매우 가까운(Y축 반경 50) 핀들만 골라내어 복잡한 충돌(dist) 연산을 최소화합니다.
+      if (abs(this.y - p.y) > 50) continue;
+      if (!p.isActive) continue;
+      
+      let d = dist(this.x, this.y, p.x, p.y);
+      let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5;
+      
+      if (d < this.r + hitRadius) {
+        this.vx = (this.x > p.x) ? abs(this.vx) : -abs(this.vx);
+        this.vy = -abs(this.vy); 
+        
+        createParticles(this.x, this.y, color(280,100,100), 3);
+      }
+    }
+  }
+
+  checkBallCollision(balls) {
+    for (let b of balls) {
+      // 💡 무적 상태이거나 이미 파괴된/완주한 공은 피해갑니다.
+      if (b.finished || b.destroyed || b.divineShieldTimer > 0) continue;
+      let d = dist(this.x, this.y, b.x, b.y);
+      if (d < this.r + b.r) {
+        // 💡 충돌 시 즉시 파괴
+        b.destroyed = true;
+        playBombSound(b.x, b.y);
+        createParticles(b.x, b.y, color(280, 100, 100), 40);
+        specialEffects.push(new BombFX(b.x, b.y));
+        
+        let t = i18n[currentLang];
+        addEventLog(b, `🌌 ${b.name} ${t.tag_destroyed}`, color(280, 100, 100), true);
+        
+        this.life = 0; // 별도 목적을 달성하고 소멸합니다.
+        break;
+      }
+    }
+  }
+
+  display() {
+    push(); translate(this.x, this.y); rotate(this.angle);
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; }
+    fill(280, 80, 100); stroke(255, 150); strokeWeight(2);
+    
+    beginShape();
+    for (let i = 0; i < 10; i++) {
+      let a = i * TWO_PI / 10;
+      let r = (i % 2 === 0) ? this.r * 1.5 : this.r * 0.6;
+      vertex(cos(a) * r, sin(a) * r);
+    }
+    endShape(CLOSE);
+    drawingContext.shadowBlur = 0; pop();
+  }
+}
+
+class GuardianRobot {
   constructor(y) { this.y = y; this.w = 80; this.h = 32; this.vx = 0; this.maxSpeed = 7; this.x = 0; }
   update(balls) {
     if (!globalGuardianActive) return; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t && this.x === 0 && this.vx === 0) this.x = t.center;
     let target = null; let minDist = 800; 
-    for(let b of balls) { if(b.finished || b.team === globalGuardianTeam || b.divineShieldTimer > 0 || b.isDashing || b.isJumping || b.isLastOne) continue; let dy = this.y - b.y; if(dy > 0 && dy < minDist) { minDist = dy; target = b; } }
+    for(let b of balls) { if(b.finished || b.destroyed || b.team === globalGuardianTeam || b.divineShieldTimer > 0 || b.isDashing || b.isJumping || b.isLastOne) continue; let dy = this.y - b.y; if(dy > 0 && dy < minDist) { minDist = dy; target = b; } }
     if (target) { let dx = target.x - this.x; this.vx = constrain(dx, -this.maxSpeed, this.maxSpeed); } else { this.vx *= 0.9; }
     this.x += this.vx; if (t) { this.x = constrain(this.x, t.left + this.w/2, t.right - this.w/2); }
   }
   display() {
     push(); translate(this.x, this.y);
-    if (globalGuardianActive) { if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = globalGuardianColor.toString(); } fill(globalGuardianColor); stroke(255, 100); strokeWeight(3); } else { fill(40); stroke(80); strokeWeight(2); }
+    if (globalGuardianActive) { fill(globalGuardianColor); stroke(255, 100); strokeWeight(3); } else { fill(40); stroke(80); strokeWeight(2); }
     rectMode(CENTER); rect(0, 0, this.w, this.h, 8); 
     if (globalGuardianActive) { fill(255); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); } else { fill(20); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); }
-    drawingContext.shadowBlur = 0; pop();
+    pop();
   }
   applyEffect(balls) {
     if (!globalGuardianActive) return;
     for(let b of balls) {
-        if (b.finished || b.team === globalGuardianTeam || b.isLastOne || b.isJumping) continue;
+        if (b.finished || b.destroyed || b.team === globalGuardianTeam || b.isLastOne || b.isJumping) continue;
         let closestX = constrain(b.x, this.x - this.w/2, this.x + this.w/2); let closestY = constrain(b.y, this.y - this.h/2, this.y + this.h/2);
         if (dist(b.x, b.y, closestX, closestY) < b.r) {
             if (b.isDashing || b.divineShieldTimer > 0) { createParticles(closestX, closestY, color(255), 10); continue; }
@@ -1558,21 +1793,20 @@ function draw() {
 class PrismFilter {
   constructor(x, y, team, col) { this.x = x; this.y = y; this.team = team; this.col = col; this.life = 300; this.maxLife = 300; this.w = 1500; }
   update() { 
-    // 💡 위로 솟구치며 항상 트랙의 가운데 정렬을 유지합니다.
     let tIdx = constrain(floor(this.y / 40), 0, track.length - 1);
     if(track[tIdx]) this.x = track[tIdx].center; 
     this.y -= 4; this.life--; 
   }
-  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); drawingContext.shadowBlur = 0; pop(); }
-  applyEffect(b) { if (b.finished || b.divineShieldTimer > 0 || b.team === this.team || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 20) { b.y = this.y - b.r - 20; b.vy = -6; b.vx += random(-1, 1); createParticles(b.x, b.y, this.col, 3); } }
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); pop(); }
+  applyEffect(b) { if (b.finished || b.destroyed || b.divineShieldTimer > 0 || b.team === this.team || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 20) { b.y = this.y - b.r - 20; b.vy = -6; b.vx += random(-1, 1); createParticles(b.x, b.y, this.col, 3); } }
   isDead() { return this.life <= 0; }
 }
 
 class WailingWall {
   constructor(y, life, col) { this.y = y; this.life = life; this.maxLife = life; this.col = col; this.tIdx = constrain(floor(y / 40), 0, track.length - 1); this.w = track[this.tIdx] ? track[this.tIdx].right - track[this.tIdx].left : 600; this.x = track[this.tIdx] ? track[this.tIdx].center : 0; }
   update() { this.life--; }
-  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } fill(hue(this.col), saturation(this.col), brightness(this.col), alpha); stroke(255, alpha); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.w, 20, 10); drawingContext.shadowBlur = 0; pop(); }
-  applyEffect(b) { if (b.finished || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 15) { if (b.y < this.y) { b.y = this.y - b.r - 15; b.vy = (-abs(b.vy) * 0.8 - 2); b.vx += random(-2, 2); createParticles(b.x, b.y, this.col, 5); playNormalHit(800, b.x, b.y); } } }
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); fill(hue(this.col), saturation(this.col), brightness(this.col), alpha); stroke(255, alpha); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.w, 20, 10); pop(); }
+  applyEffect(b) { if (b.finished || b.destroyed || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 15) { if (b.y < this.y) { b.y = this.y - b.r - 15; b.vy = (-abs(b.vy) * 0.8 - 2); b.vx += random(-2, 2); createParticles(b.x, b.y, this.col, 5); playNormalHit(800, b.x, b.y); } } }
   isDead() { return this.life <= 0; }
 }
 
@@ -1589,10 +1823,11 @@ class RacingBall {
     this.divineShieldTimer = 0; this.chaserTimer = 0; this.chaseTarget = null;
     this.reverseGravityTimer = 0; this.isJumping = false; this.jumpTimer = 0;
     this.isBestDriver = false; 
+    this.destroyed = false; // 💡 핑거스냅 파괴 여부
   }
   
   incrementGauge() { 
-    if (this.finished || this.isLastOne) return; 
+    if (this.finished || this.destroyed || this.isLastOne) return; 
     if (useMutantMode && !this.skillActive) { this.collisionGauge++; if (this.collisionGauge >= gaugeThreshold) { this.activateMutantSkill(); } }
     if (useTeamBattle && this.team) { teamGauges[this.team]++; if (teamGauges[this.team] >= teamGaugeThreshold) { this.activateTeamSkill(); teamGauges[this.team] = 0; } }
   }
@@ -1600,10 +1835,10 @@ class RacingBall {
   activateTeamSkill() {
     let t = i18n[currentLang]; let skillPool = []; for(let i=0; i<4; i++) { if(activeTeamSkills[i]) skillPool.push(i); } if (skillPool.length === 0) return;
     let teamSkillType = random(skillPool);
-    if (teamSkillType === 0) { playHealSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished) { ally.frozenTimer = 0; ally.slowTimer = 0; ally.trapTimer = 0; ally.trapObj = null; ally.fastTimer = 0; ally.isDashing = false; ally.hasRetribution = false; ally.isSticky = false; ally.isBlackhole = false; ally.reverseGravityTimer = 0; ally.divineShieldTimer = 150; createParticles(ally.x, ally.y, color(60, 100, 100), 15); } }); flashColor = color(60, 50, 100); flashLife = 20; addEventLog(this, t.ann_heal(getTeamName(this.team, t)), color(60, 100, 100), true); } 
-    else if (teamSkillType === 1) { playIceSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished) { ally.targetR = ally.baseR * 0.4; ally.sizeTimer = 420; createParticles(ally.x, ally.y, color(190, 80, 100), 15); } }); flashColor = color(190, 50, 100); flashLife = 20; addEventLog(this, t.ann_team_shrink(getTeamName(this.team, t)), color(190, 100, 100), true); } 
-    else if (teamSkillType === 2) { let leadingAlly = balls.filter(b => b.team === this.team && !b.finished).sort((a,b)=>b.y - a.y)[0] || this; prisms.push(new PrismFilter(leadingAlly.x, leadingAlly.y, this.team, this.color)); playIceSound(this.x, this.y); flashColor = this.color; flashLife = 20; addEventLog(this, t.ann_team_prism(getTeamName(this.team, t)), this.color, true); } 
-    else { playIceSound(this.x, this.y); globalGuardianActive = true; globalGuardianTeam = this.team; globalGuardianColor = this.color; globalGuardianTimer = 600; flashColor = this.color; flashLife = 20; addEventLog(this, t.ann_team_guardian(getTeamName(this.team, t)), this.color, true); }
+    if (teamSkillType === 0) { playHealSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished && !ally.destroyed) { ally.frozenTimer = 0; ally.slowTimer = 0; ally.trapTimer = 0; ally.trapObj = null; ally.fastTimer = 0; ally.isDashing = false; ally.hasRetribution = false; ally.isSticky = false; ally.isBlackhole = false; ally.reverseGravityTimer = 0; ally.divineShieldTimer = 150; createParticles(ally.x, ally.y, color(60, 100, 100), 15); } }); addEventLog(this, t.ann_heal(getTeamName(this.team, t)), color(60, 100, 100), true); } 
+    else if (teamSkillType === 1) { playIceSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished && !ally.destroyed) { ally.targetR = ally.baseR * 0.4; ally.sizeTimer = 420; createParticles(ally.x, ally.y, color(190, 80, 100), 15); } }); addEventLog(this, t.ann_team_shrink(getTeamName(this.team, t)), color(190, 100, 100), true); } 
+    else if (teamSkillType === 2) { let leadingAlly = balls.filter(b => b.team === this.team && !b.finished && !b.destroyed).sort((a,b)=>b.y - a.y)[0] || this; prisms.push(new PrismFilter(leadingAlly.x, leadingAlly.y, this.team, this.color)); playIceSound(this.x, this.y); addEventLog(this, t.ann_team_prism(getTeamName(this.team, t)), this.color, true); } 
+    else { playIceSound(this.x, this.y); globalGuardianActive = true; globalGuardianTeam = this.team; globalGuardianColor = this.color; globalGuardianTimer = 600; addEventLog(this, t.ann_team_guardian(getTeamName(this.team, t)), this.color, true); }
   }
 
   activateMutantSkill() {
@@ -1616,25 +1851,27 @@ class RacingBall {
     if (this.mutantType !== 1) { addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); }
 
     switch(this.mutantType) {
-      case 0: balls.forEach(other => { if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 400) { other.vx = 0; other.vy = 0; other.frozenTimer = 240; createParticles(other.x, other.y, color(200, 80, 100), 10); } }); specialEffects.push(new IceFX(this.x, this.y)); this.skillActive = false; break;
-      case 1: flashColor = this.color; flashLife = 20; let targets = balls.filter(b => !b.finished && b !== this && b.divineShieldTimer <= 0 && !b.isJumping && (!useTeamBattle || b.team !== this.team)).sort((a,b) => b.y - a.y); let target = targets[0]; if (!target && useTeamBattle) target = balls.filter(b => !b.finished && b !== this && b.divineShieldTimer <= 0 && !b.isJumping).sort((a,b) => b.y - a.y)[0]; if(target && target !== this) { let tx = this.x, ty = this.y, tvx = this.vx, tvy = this.vy; this.x = target.x; this.y = target.y; this.vx = target.vx; this.vy = target.vy; target.x = tx; target.y = ty; target.vx = tvx; target.vy = tvy; specialEffects.push(new SwapFX(this.x, this.y, target.x, target.y)); playSwapSound(this.x, this.y); addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); addEventLog(this, t.ann_swap(this.name, target.name), color(45, 100, 100), true); } this.skillActive = false; break;
+      case 0: balls.forEach(other => { if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 400) { other.vx = 0; other.vy = 0; other.frozenTimer = 240; createParticles(other.x, other.y, color(200, 80, 100), 10); } }); specialEffects.push(new IceFX(this.x, this.y)); this.skillActive = false; break;
+      case 1: let targets = balls.filter(b => !b.finished && !b.destroyed && b !== this && b.divineShieldTimer <= 0 && !b.isJumping && (!useTeamBattle || b.team !== this.team)).sort((a,b) => b.y - a.y); let target = targets[0]; if (!target && useTeamBattle) target = balls.filter(b => !b.finished && !b.destroyed && b !== this && b.divineShieldTimer <= 0 && !b.isJumping).sort((a,b) => b.y - a.y)[0]; if(target && target !== this) { let tx = this.x, ty = this.y, tvx = this.vx, tvy = this.vy; this.x = target.x; this.y = target.y; this.vx = target.vx; this.vy = target.vy; target.x = tx; target.y = ty; target.vx = tvx; target.vy = tvy; specialEffects.push(new SwapFX(this.x, this.y, target.x, target.y)); playSwapSound(this.x, this.y); addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); addEventLog(this, t.ann_swap(this.name, target.name), color(45, 100, 100), true); } this.skillActive = false; break;
       case 2: this.hasRetribution = true; this.mutantTimer = 150; break;
       case 3: this.isSticky = true; this.mutantTimer = 240; break;
       case 4: this.isBlackhole = true; this.mutantTimer = 300; break;
       case 5: this.targetR = this.baseR * 0.5; this.mutantTimer = 300; break;
       case 6: for(let j=0; j<8; j++) { let ang = random(TWO_PI); let speed = random(15, 25); mutantFlares.push(new FlareTrap(this.x, this.y, cos(ang)*speed, sin(ang)*speed, this.cStr, this)); } this.skillActive = false; break;
       case 7: this.isDashing = true; this.mutantTimer = 120; break;
-      case 8: let leadingAlly = balls.filter(b => (!useTeamBattle || b.team === this.team) && !b.finished && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingAlly) { leadingAlly.fastTimer = 180; leadingAlly.vy += 5; leadingAlly.hasCatchUpShield = true; this.frozenTimer = 60; specialEffects.push(new NovaFX(leadingAlly.x, leadingAlly.y, color(60, 100, 100))); addEventLog(this, t.ann_starlight(this.name, leadingAlly.name), color(60, 100, 100), true); } this.skillActive = false; break;
-      case 9: let leadingEnemy = balls.filter(b => (!useTeamBattle || b.team !== this.team) && !b.finished && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingEnemy) { leadingEnemy.vy = 0; leadingEnemy.frozenTimer = 180; this.frozenTimer = 180; specialEffects.push(new NovaFX(leadingEnemy.x, leadingEnemy.y, color(280, 100, 50))); addEventLog(this, t.ann_anchor(this.name, leadingEnemy.name), color(280, 100, 50), true); } this.skillActive = false; break;
+      case 8: let leadingAlly = balls.filter(b => (!useTeamBattle || b.team === this.team) && !b.finished && !b.destroyed && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingAlly) { leadingAlly.fastTimer = 180; leadingAlly.vy += 5; leadingAlly.hasCatchUpShield = true; this.frozenTimer = 60; specialEffects.push(new NovaFX(leadingAlly.x, leadingAlly.y, color(60, 100, 100))); addEventLog(this, t.ann_starlight(this.name, leadingAlly.name), color(60, 100, 100), true); } this.skillActive = false; break;
+      case 9: let leadingEnemy = balls.filter(b => (!useTeamBattle || b.team !== this.team) && !b.finished && !b.destroyed && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingEnemy) { leadingEnemy.vy = 0; leadingEnemy.frozenTimer = 180; this.frozenTimer = 180; specialEffects.push(new NovaFX(leadingEnemy.x, leadingEnemy.y, color(280, 100, 50))); addEventLog(this, t.ann_anchor(this.name, leadingEnemy.name), color(280, 100, 50), true); } this.skillActive = false; break;
       case 10: wailingWalls.push(new WailingWall(this.y - 80, 180, this.color)); addEventLog(this, t.ann_wall(this.name), this.color, true); this.skillActive = false; break;
-      case 11: let unfinished = balls.filter(b => !b.finished && !b.isJumping).sort((a,b)=>b.y - a.y); let chaseObj = unfinished[0]; if (chaseObj && chaseObj !== this) { this.chaseTarget = chaseObj; this.chaserTimer = 180; addEventLog(this, t.ann_chaser(this.name, chaseObj.name), this.color, true); } else { this.skillActive = false; } break;
-      case 12: let applied = false; let teams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK']; teams.forEach(tm => { if(tm !== this.team) { let enemyLeader = balls.filter(b => b.team === tm && !b.finished).sort((a,b)=>b.y - a.y)[0]; if(enemyLeader && enemyLeader.divineShieldTimer <= 0) { enemyLeader.reverseGravityTimer = 300; applied = true; specialEffects.push(new NovaFX(enemyLeader.x, enemyLeader.y, color(280, 100, 100))); } } }); if(applied) addEventLog(this, t.ann_gravity(this.name), color(280, 100, 100), true); this.skillActive = false; break;
+      case 11: let unfinished = balls.filter(b => !b.finished && !b.destroyed && !b.isJumping).sort((a,b)=>b.y - a.y); let chaseObj = unfinished[0]; if (chaseObj && chaseObj !== this) { this.chaseTarget = chaseObj; this.chaserTimer = 180; addEventLog(this, t.ann_chaser(this.name, chaseObj.name), this.color, true); } else { this.skillActive = false; } break;
+      case 12: let applied = false; let teams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK']; teams.forEach(tm => { if(tm !== this.team) { let enemyLeader = balls.filter(b => b.team === tm && !b.finished && !b.destroyed).sort((a,b)=>b.y - a.y)[0]; if(enemyLeader && enemyLeader.divineShieldTimer <= 0) { enemyLeader.reverseGravityTimer = 300; applied = true; specialEffects.push(new NovaFX(enemyLeader.x, enemyLeader.y, color(280, 100, 100))); } } }); if(applied) addEventLog(this, t.ann_gravity(this.name), color(280, 100, 100), true); this.skillActive = false; break;
       case 13: this.isJumping = true; this.jumpTimer = 150; this.vy = 18; playIceSound(this.x, this.y); addEventLog(this, t.ann_babel(this.name), color(200, 20, 100), true); break;
       case 14: this.isBestDriver = true; this.mutantTimer = 420; playIceSound(this.x, this.y); break; 
     }
   }
 
   update() {
+    if (this.destroyed) return; // 💡 파괴된 경우 연산을 멈춥니다.
+    
     if (this.cooldown > 0) this.cooldown--; if (this.trapCooldown > 0) this.trapCooldown--;
     if (this.reverseGravityTimer > 0) { this.reverseGravityTimer--; if (frameCount % 4 === 0) createParticles(this.x, this.y - 10, color(280, 80, 100), 2); if (this.divineShieldTimer > 0) this.reverseGravityTimer = 0; }
     if (this.divineShieldTimer > 0) { this.divineShieldTimer--; this.frozenTimer = 0; this.slowTimer = 0; this.fastTimer = 0; this.trapTimer = 0; this.isDashing = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.chaserTimer = 0; this.trapObj = null; }
@@ -1649,29 +1886,36 @@ class RacingBall {
       if (frameCount % 3 === 0) createParticles(this.x, this.y + 20, color(0, 0, 100), 2);
       if (this.jumpTimer <= 0) {
         this.isJumping = false; this.skillActive = false; playBombSound(this.x, this.y); specialEffects.push(new NovaFX(this.x, this.y, color(255)));
-        balls.forEach(other => { if (other !== this && !other.finished && !other.isJumping && dist(this.x, this.y, other.x, other.y) < 150) { let pushDir = (other.x > this.x) ? 1 : -1; other.vx = pushDir * 12; other.vy = 6; } });
+        balls.forEach(other => { if (other !== this && !other.finished && !other.destroyed && !other.isJumping && dist(this.x, this.y, other.x, other.y) < 150) { let pushDir = (other.x > this.x) ? 1 : -1; other.vx = pushDir * 12; other.vy = 6; } });
       }
     }
 
     if (this.skillActive && this.mutantTimer > 0) {
       this.mutantTimer--;
       
-      // 💡 베스트 드라이버: 함정과 트랙 벽면을 요리조리 피하며 폭풍 질주
       if (this.isBestDriver) {
           let dodgeForce = 0;
-          let checkDodge = (obs, safeDist) => {
-             if (obs.y > this.y && obs.y < this.y + 250) {
-                 if (dist(this.x, this.y, obs.x, obs.y) < safeDist) {
-                     dodgeForce += (this.x < obs.x ? -2.0 : 2.0); // 장애물 반대 방향으로 회피
-                 }
-             }
-          };
-          staticPins.forEach(p => checkDodge(p, 80));
-          electricTraps.forEach(et => checkDodge(et, 100));
-          soapBubbles.forEach(sb => checkDodge(sb, 100));
-          mutantFlares.forEach(f => checkDodge(f, 80));
           
-          // 트랙 벽면 회피
+          // 💡 최적화: 수천 개의 장애물을 전부 확인하지 않고, 시야 반경(Y축 300 이내)에 들어온 위협만 빠르게 훑고 지나갑니다.
+          let checkDodgeList = (obsList, safeDist, isSorted) => {
+              for (let i = 0; i < obsList.length; i++) {
+                  let obs = obsList[i];
+                  if (obs.y < this.y) continue; 
+                  // 핀처럼 위에서 아래로 순서대로 깔린 배열은, 시야를 벗어나면 그 즉시 뒤쪽 탐색을 완전히 포기(break)합니다.
+                  if (isSorted && obs.y > this.y + 300) break; 
+                  if (obs.y > this.y + 300) continue;
+                  
+                  if (dist(this.x, this.y, obs.x, obs.y) < safeDist) {
+                      dodgeForce += (this.x < obs.x ? -2.0 : 2.0); 
+                  }
+              }
+          };
+          
+          checkDodgeList(staticPins, 80, true);
+          checkDodgeList(electricTraps, 100, false);
+          checkDodgeList(soapBubbles, 100, false);
+          checkDodgeList(mutantFlares, 80, false);
+          
           let tIdx = constrain(floor(this.y / 40), 0, track.length - 1);
           let t = track[tIdx];
           if (t) {
@@ -1682,21 +1926,21 @@ class RacingBall {
           }
           
           this.vx += dodgeForce; 
-          this.vy += 0.35; // 속도 부스트
+          this.vy += 0.35; 
           if(frameCount % 4 === 0) createParticles(this.x, this.y, color(50, 100, 100), 3);
       }
 
-      if (this.isSticky) { if(frameCount % 5 === 0) createParticles(this.x, this.y, color(100, 80, 80), 3); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 300) { other.slowTimer = 360; } }); }
-      if (this.isBlackhole) { if(frameCount % 3 === 0) createParticles(this.x, this.y, color(280, 100, 50), 4); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 3.0, 0.5); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; } }); }
+      if (this.isSticky) { if(frameCount % 5 === 0) createParticles(this.x, this.y, color(100, 80, 80), 3); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 300) { other.slowTimer = 360; } }); }
+      if (this.isBlackhole) { if(frameCount % 3 === 0) createParticles(this.x, this.y, color(280, 100, 50), 4); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 3.0, 0.5); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; } }); }
       if (this.hasRetribution) {
-        if (this.mutantTimer > 1) { if (frameCount % 3 === 0) createParticles(this.x, this.y, color(0, 100, 50), 2); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 6.0, 1.0); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; other.vx *= 0.8; other.vy *= 0.8; } }); } 
-        else if (this.mutantTimer === 1) { playBombSound(this.x, this.y); specialEffects.push(new BombFX(this.x, this.y)); createParticles(this.x, this.y, color(0, 100, 100), 50); balls.forEach(other => { if (abs(this.y - other.y) > 350) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 350) { let angle = random(TWO_PI); let forceX = cos(angle) * random(15, 25); let forceY = sin(angle) * random(15, 25); other.vx = forceX; other.vy = forceY; other.frozenTimer = 60; createParticles(other.x, other.y, color(0, 100, 100), 15); } }); this.vy += 18; }
+        if (this.mutantTimer > 1) { if (frameCount % 3 === 0) createParticles(this.x, this.y, color(0, 100, 50), 2); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 6.0, 1.0); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; other.vx *= 0.8; other.vy *= 0.8; } }); } 
+        else if (this.mutantTimer === 1) { playBombSound(this.x, this.y); specialEffects.push(new BombFX(this.x, this.y)); createParticles(this.x, this.y, color(0, 100, 100), 50); balls.forEach(other => { if (abs(this.y - other.y) > 350) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 350) { let angle = random(TWO_PI); let forceX = cos(angle) * random(15, 25); let forceY = sin(angle) * random(15, 25); other.vx = forceX; other.vy = forceY; other.frozenTimer = 60; createParticles(other.x, other.y, color(0, 100, 100), 15); } }); this.vy += 18; }
       }
-      if (this.isDashing) { this.vy = 18; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx].center; this.x = lerp(this.x, tCenter, 0.15); if(frameCount % 2 === 0) createParticles(this.x, this.y, color(180, 100, 100), 3); balls.forEach(other => { if (abs(this.y - other.y) > 150) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && d < this.r * 8) { let pushDir = (other.x > tCenter) ? 1 : -1; other.vx = pushDir * 15; createParticles(other.x, other.y, color(180, 30, 100), 2); } }); }
+      if (this.isDashing) { this.vy = 18; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx].center; this.x = lerp(this.x, tCenter, 0.15); if(frameCount % 2 === 0) createParticles(this.x, this.y, color(180, 100, 100), 3); balls.forEach(other => { if (abs(this.y - other.y) > 150) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isJumping && d < this.r * 8) { let pushDir = (other.x > tCenter) ? 1 : -1; other.vx = pushDir * 15; createParticles(other.x, other.y, color(180, 30, 100), 2); } }); }
       if (this.mutantTimer <= 0) { this.skillActive = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.isDashing = false; this.isBestDriver = false; this.targetR = this.baseR; }
     }
 
-    if (this.chaserTimer > 0 && this.chaseTarget && !this.chaseTarget.finished) {
+    if (this.chaserTimer > 0 && this.chaseTarget && !this.chaseTarget.finished && !this.chaseTarget.destroyed) {
       this.chaserTimer--; let dx = this.chaseTarget.x - this.x; let dy = this.chaseTarget.y - this.y; let d = dist(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y);
       if (d > 20) { this.vx += (dx / d) * 1.0; this.vy += (dy / d) * 1.5; if (this.chaseTarget.divineShieldTimer <= 0 && !this.chaseTarget.isJumping) { this.chaseTarget.vx -= (dx / d) * 0.3; this.chaseTarget.vy -= (dy / d) * 0.8; if (frameCount % 4 === 0) createParticles(this.chaseTarget.x, this.chaseTarget.y, color(210, 100, 100), 2); } }
       if (this.chaserTimer <= 0) { this.skillActive = false; this.chaseTarget = null; }
@@ -1740,9 +1984,13 @@ class RacingBall {
   }
 
   checkBallCollision(others) {
-    if (this.finished || this.cooldown > 0 || this.isJumping) return;
+    if (this.finished || this.destroyed || this.cooldown > 0 || this.isJumping) return;
+    
+    // 💡 레이스 시작 직후 3초(약 180프레임)간 고스팅(평화의 시간) 부여
+    if (framesSinceStart < 180) return;
+    
     for (let other of others) {
-      if (other === this || other.finished || other.cooldown > 0 || other.frozenTimer > 0 || other.trapTimer > 0 || other.isJumping) continue;
+      if (other === this || other.finished || other.destroyed || other.cooldown > 0 || other.frozenTimer > 0 || other.trapTimer > 0 || other.isJumping) continue;
       if (abs(this.y - other.y) > 50 || abs(this.x - other.x) > 50) continue; 
       let d = dist(this.x, this.y, other.x, other.y);
       if (d < this.r + other.r) { 
@@ -1753,18 +2001,38 @@ class RacingBall {
     }
   }
 
-  checkTrackCollision() {
-    if (this.finished) return false; let idx = floor(this.y / 40);
+   checkTrackCollision() {
+    if (this.finished || this.destroyed) return false; let idx = floor(this.y / 40);
     if (idx >= 0 && idx < track.length) {
       let t = track[idx];
-      if (this.x < t.left + this.r) { this.x = t.left + this.r; if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = abs(this.vx) * 0.5 + basePush; this.incrementGauge(); } if (!this.isJumping) createParticles(this.x, this.y, this.color); return true; }
-      if (this.x > t.right - this.r) { this.x = t.right - this.r; if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = -(abs(this.vx) * 0.5 + basePush); this.incrementGauge(); } if (!this.isJumping) createParticles(this.x, this.y, this.color); return true; }
+      if (this.x < t.left + this.r) { 
+        this.x = t.left + this.r; 
+        if (!this.isDashing && !this.isJumping) { 
+          let basePush = random(1.5, 3); 
+          this.vx = abs(this.vx) * 0.5 + basePush; 
+          this.incrementGauge(); 
+        } 
+        // 💡 찰나의 숨 고르기: 프레임이 5로 나누어떨어질 때만 파편을 흩뿌려 과부하를 막습니다.
+        if (!this.isJumping && frameCount % 5 === 0) createParticles(this.x, this.y, this.color, 3); 
+        return true; 
+      }
+      if (this.x > t.right - this.r) { 
+        this.x = t.right - this.r; 
+        if (!this.isDashing && !this.isJumping) { 
+          let basePush = random(1.5, 3); 
+          this.vx = -(abs(this.vx) * 0.5 + basePush); 
+          this.incrementGauge(); 
+        } 
+        // 💡 찰나의 숨 고르기
+        if (!this.isJumping && frameCount % 5 === 0) createParticles(this.x, this.y, this.color, 3); 
+        return true; 
+      }
     }
     return false;
   }
 
   checkPinCollision(p, t) {
-    if (this.isLastOne || this.finished || !p.isActive || this.isDashing || this.isJumping || this.isBestDriver) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
+    if (this.isLastOne || this.finished || this.destroyed || !p.isActive || this.isDashing || this.isJumping || this.isBestDriver) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
     let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5; let d = dist(this.x, this.y, p.x, p.y);
     if (d < this.r + hitRadius) {
       this.incrementGauge(); addEventLog(this, t.ann_fast(this.name), color(120, 80, 100), false); addEventLog(this, t.ann_slow(this.name), color(0, 80, 100), false);
@@ -1775,43 +2043,58 @@ class RacingBall {
   }
 
   checkSpinnerCollision(s) {
-    if (this.isLastOne || this.finished || this.hasCatchUpShield || this.isDashing || this.divineShieldTimer > 0 || this.isJumping) return false;
+    if (this.isLastOne || this.finished || this.destroyed || this.hasCatchUpShield || this.isDashing || this.divineShieldTimer > 0 || this.isJumping) return false;
     let dx = this.x - s.x; let dy = this.y - s.y; let rx = dx * cos(-s.angle) - dy * sin(-s.angle); let ry = dx * sin(-s.angle) + dy * cos(-s.angle);
     if (abs(rx) < s.w/2 + this.r && abs(ry) < s.h/2 + this.r) { let force = s.speed * rx * (1.5 + random(-0.2, 0.2)); this.vx += cos(s.angle) * force; this.vy = -abs(this.vy) * 0.6 - abs(force); createParticles(this.x, this.y, this.color); return true; }
     return false;
   }
 
   checkBrickCollision(brick) {
-    if (this.isLastOne || this.finished || this.hasCatchUpShield || this.isJumping) return false; 
+    if (this.isLastOne || this.finished || this.destroyed || this.hasCatchUpShield || this.isJumping) return false; 
     let closestX = constrain(this.x, brick.x - brick.w/2, brick.x + brick.w/2); let closestY = constrain(this.y, brick.y - brick.h/2, brick.y + brick.h/2); let d = dist(this.x, this.y, closestX, closestY);
     if (d < this.r) { if (this.isDashing || this.divineShieldTimer > 0) return true; let dx = this.x - closestX; let dy = this.y - closestY; if (abs(dx) > abs(dy)) { this.vx *= -0.8; this.x = closestX + (dx > 0 ? this.r : -this.r); } else { this.vy *= -0.8; this.y = closestY + (dy > 0 ? this.r : -this.r); } return true; }
     return false; 
   }
 
   display() {
+    // 💡 파괴된 영웅은 스킬 효과 없이 어두운 잔해로만 묘사합니다.
+    if (this.destroyed) {
+        push(); translate(this.x, this.y);
+        fill(50, 50, 50, 100); noStroke(); ellipse(0, 0, this.r * 2);
+        stroke(255, 100, 100, 150); strokeWeight(3);
+        line(-this.r, -this.r, this.r, this.r); line(-this.r, this.r, this.r, -this.r);
+        fill(100); noStroke(); textAlign(CENTER); textSize(14/camScale);
+        text(this.name, 0, -18);
+        pop();
+        return;
+    }
+
     let jumpScale = 1.0; let jumpOffsetY = 0;
     if (this.isJumping) { let progress = 1 - (this.jumpTimer / 150); let z = sin(progress * Math.PI); jumpScale = 1.0 + z * 4.5; jumpOffsetY = -z * 150; push(); translate(this.x, this.y); noStroke(); fill(0, 0, 0, 80 * (1 - z * 0.8)); ellipse(0, z * 20, this.r * 2.5 * (1 - z * 0.4)); pop(); }
     if (this.chaserTimer > 0 && this.chaseTarget && !this.isJumping) { push(); stroke(210, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(4); drawingContext.setLineDash([10, 15]); line(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y); drawingContext.setLineDash([]); pop(); }
+    
+    let isAction = (cameraMode !== 0);
     blendMode(ADD); noStroke();
-    for (let i = 0; i < this.history.length; i++) { let pos = this.history[i]; let pct = i / this.history.length; let alpha = pct * 80; let histZ = pos.z || 0; let histScale = 1.0 + histZ * 4.5; let histOffsetY = -histZ * 150; let size = map(pct, 0, 1, this.r * 0.4, this.r * 2.2) * histScale; fill(this.colorH, this.colorS, this.colorB, alpha); ellipse(pos.x, pos.y + histOffsetY, size); }
+    for (let i = 0; i < this.history.length; i++) { let pos = this.history[i]; let pct = i / this.history.length; let alpha = isAction ? pct * 40 : pct * 80; let histZ = pos.z || 0; let histScale = 1.0 + histZ * 4.5; let histOffsetY = -histZ * 150; let size = map(pct, 0, 1, this.r * 0.4, this.r * (isAction ? 1.5 : 2.2)) * histScale; fill(this.colorH, this.colorS, this.colorB, alpha); ellipse(pos.x, pos.y + histOffsetY, size); }
     blendMode(BLEND);
     noStroke(); 
-    if (this.isLastOne) { if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'hsla(50, 100%, 100%, 1)'; } stroke(50, 80, 100, 60 + sin(frameCount * 0.1) * 40); strokeWeight(4); ellipse(this.x, this.y, this.r * 2.8); noStroke(); } else { if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.cStr; } }
+    
+    if (this.isLastOne) { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'hsla(50, 100%, 100%, 1)'; } stroke(50, 80, 100, 60 + sin(frameCount * 0.1) * 40); strokeWeight(4); ellipse(this.x, this.y, this.r * 2.8); noStroke(); } 
+    else { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.cStr; } }
+    
     if (this.reverseGravityTimer > 0) { push(); translate(this.x, this.y); rotate(frameCount*0.1); stroke(280, 100, 100, 90 + sin(frameCount)*50); strokeWeight(3); noFill(); let pulse = this.r * 2.5 + random(-2,2); ellipse(0,0,pulse); pop(); }
     if (this.isSticky) { push(); translate(this.x, this.y); noFill(); stroke(100, 80, 50, 60); strokeWeight(40 + sin(frameCount*0.5)*15); ellipse(0, 0, 300); stroke(100, 100, 30, 40); strokeWeight(10); ellipse(0, 0, 250 + cos(frameCount*0.3)*20); pop(); }
     if (this.isBlackhole) { push(); translate(this.x, this.y); rotate(frameCount*0.1); noFill(); stroke(280, 100, 20, 80); strokeWeight(30); ellipse(0, 0, 300 + sin(frameCount*0.3)*20); stroke(280, 60, 80, 50); strokeWeight(8); for(let i=0; i<4; i++) { rotate(PI/2); arc(0, 0, 260, 260, 0, PI/2 - 0.2); } fill(0, 0, 0, 80); noStroke(); ellipse(0,0,this.r*4); pop(); }
     if (this.hasRetribution) { push(); translate(this.x, this.y); let speedRot = map(this.mutantTimer, 150, 0, 0.1, 0.8); rotate(-frameCount * speedRot); let pullR = map(this.mutantTimer, 150, 0, 350, 10); fill(0, 100, 50, 40); stroke(0, 100, 100, 90); strokeWeight(4); beginShape(); for(let i=0; i<16; i++) { let a = i*TWO_PI/16; let rOff = pullR + (i%2===0 ? 25 : 0); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); }
     if (this.isDashing) { push(); translate(this.x, this.y); noStroke(); fill(180, 100, 100, 80); triangle(0, this.r*7, -this.r*3, -this.r*2, this.r*3, -this.r*2); stroke(180, 100, 100, 60); strokeWeight(3); line(-this.r*2, 0, -this.r*7, 0); line(this.r*2, 0, this.r*7, 0); pop(); }
-    
-    // 💡 베스트 드라이버 효과 연출
     if (this.isBestDriver) { push(); translate(this.x, this.y); noFill(); stroke(50, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(3); ellipse(0, 0, this.r * 2.8 + sin(frameCount*0.4)*5); pop(); }
 
     if (this.img) { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(255); drawingContext.beginPath(); drawingContext.arc(0, 0, this.r, 0, Math.PI * 2); drawingContext.clip(); imageMode(CENTER); image(this.img, 0, 0, this.r * 2.2, this.r * 2.2); pop(); } else { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(this.color); ellipse(-this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); ellipse(this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); pop(); }
     if (!this.finished && !this.skillActive && this.collisionGauge > 0 && useMutantMode && !this.isJumping) { push(); translate(this.x, this.y); rotate(-HALF_PI); noFill(); stroke(255, 60); strokeWeight(2); ellipse(0, 0, this.r * 2.8); stroke(this.color); let arcEnd = map(this.collisionGauge, 0, gaugeThreshold, 0, TWO_PI); arc(0, 0, this.r * 2.8, this.r * 2.8, 0, arcEnd); pop(); }
-    if (this.hasCatchUpShield && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle * 0.5); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = color(160, 80, 100).toString(); } stroke(160, 80, 100, 70 + sin(frameCount * 0.2) * 30); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<6; i++) { let a = i * TWO_PI/6; vertex(cos(a) * this.r * 2.5, sin(a) * this.r * 2.5); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
-    if (this.divineShieldTimer > 0 && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(-this.angle * 0.5); if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = color(60, 100, 100).toString(); } fill(60, 50, 100, 30); stroke(60, 100, 100, 80 + sin(frameCount * 0.3) * 40); strokeWeight(3); ellipse(0, 0, this.r * 3.5); drawingContext.shadowBlur = 0; pop(); }
+    if (this.hasCatchUpShield && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle * 0.5); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = color(160, 80, 100).toString(); } stroke(160, 80, 100, 70 + sin(frameCount * 0.2) * 30); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<6; i++) { let a = i * TWO_PI/6; vertex(cos(a) * this.r * 2.5, sin(a) * this.r * 2.5); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
+    if (this.divineShieldTimer > 0 && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(-this.angle * 0.5); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = color(60, 100, 100).toString(); } fill(60, 50, 100, 30); stroke(60, 100, 100, 80 + sin(frameCount * 0.3) * 40); strokeWeight(3); ellipse(0, 0, this.r * 3.5); drawingContext.shadowBlur = 0; pop(); }
     if (this.frozenTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle); fill(200, 20, 100, 90); stroke(200, 80, 100, 100); strokeWeight(2); rect(-this.r*1.5, -this.r*1.5, this.r*3, this.r*3, 4); pop(); } else if (this.trapTimer > 0 && this.trapType === 'electric' && !this.isJumping) { push(); translate(this.x, this.y); let c = (frameCount % 4 < 2) ? color(55, 100, 100) : color(180, 100, 100); stroke(c); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<10; i++) { let a = i * (TWO_PI/10); let rOff = this.r + random(5, 15); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); } else if (this.trapCooldown > 0 && !this.isLastOne && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 0, 100, 60 + sin(frameCount * 0.2) * 40); strokeWeight(2); ellipse(0, 0, this.r * 2.5); pop(); } else if (this.fastTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(120, 80, 100, 80); strokeWeight(3); ellipse(0, 0, this.r * 2 + sin(frameCount * 0.5) * 5); pop(); } else if (this.slowTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 80, 100, 80); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.r * 2.5, this.r * 2.5, 4); pop(); }
-    drawingContext.shadowBlur = 0; fill(this.isLastOne ? color(50, 50, 100) : 100); textAlign(CENTER); textSize(14/camScale); if (!useLightMode) { drawingContext.shadowBlur = 5; drawingContext.shadowColor = 'black'; } text(this.name, this.x, this.y + jumpOffsetY - 18 * jumpScale); drawingContext.shadowBlur = 0;
+    drawingContext.shadowBlur = 0; fill(this.isLastOne ? color(50, 50, 100) : 100); textAlign(CENTER); textSize(14/camScale); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 5; drawingContext.shadowColor = 'black'; } text(this.name, this.x, this.y + jumpOffsetY - 18 * jumpScale); drawingContext.shadowBlur = 0;
   }
 }
 
@@ -1837,16 +2120,16 @@ class SwapFX {
   } 
   isDead() { return this.life <= 0; } 
 }
-class NovaFX { constructor(x, y, col) { this.x = x; this.y = y; this.col = col; this.r = 10; this.life = 255; } update() { this.r += 25; this.life -= 15; } display() { push(); translate(this.x, this.y); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.col.toString(); } fill(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*30); stroke(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*100); strokeWeight(15); ellipse(0,0,this.r*2); drawingContext.shadowBlur = 0; pop(); } isDead() { return this.life <= 0; } }
-class FlareTrap { constructor(x, y, vx, vy, colorStr, owner) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.r = 10; this.life = 600; this.cStr = colorStr; this.owner = owner; } update() { this.x += this.vx; this.y += this.vy; this.vx *= 0.92; this.vy *= 0.92; this.life--; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t) { if (this.x < t.left + this.r) { this.x = t.left + this.r + 2; this.vx *= -1; } if (this.x > t.right - this.r) { this.x = t.right - this.r - 2; this.vx *= -1; } } } display() { push(); translate(this.x, this.y); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(10, 80, 100, (this.life/600)*255); noStroke(); let pulseR = this.r + sin(frameCount * 0.3) * 3; ellipse(0, 0, pulseR * 2); fill(255, (this.life/600)*200); ellipse(0, 0, this.r); drawingContext.shadowBlur = 0; pop(); } }
+class NovaFX { constructor(x, y, col) { this.x = x; this.y = y; this.col = col; this.r = 10; this.life = 255; } update() { this.r += 25; this.life -= 15; } display() { push(); translate(this.x, this.y); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.col.toString(); } fill(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*30); stroke(hue(this.col), saturation(this.col), brightness(this.col), (this.life/255)*100); strokeWeight(15); ellipse(0,0,this.r*2); drawingContext.shadowBlur = 0; pop(); } isDead() { return this.life <= 0; } }
+class FlareTrap { constructor(x, y, vx, vy, colorStr, owner) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.r = 10; this.life = 600; this.cStr = colorStr; this.owner = owner; } update() { this.x += this.vx; this.y += this.vy; this.vx *= 0.92; this.vy *= 0.92; this.life--; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t) { if (this.x < t.left + this.r) { this.x = t.left + this.r + 2; this.vx *= -1; } if (this.x > t.right - this.r) { this.x = t.right - this.r - 2; this.vx *= -1; } } } display() { push(); translate(this.x, this.y); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(10, 80, 100, (this.life/600)*255); noStroke(); let pulseR = this.r + sin(frameCount * 0.3) * 3; ellipse(0, 0, pulseR * 2); fill(255, (this.life/600)*200); ellipse(0, 0, this.r); drawingContext.shadowBlur = 0; pop(); } }
 class Confetti { constructor(x, y) { this.x = x; this.y = y; this.c = color(random(360), 80, 100); let angle = random(TWO_PI); let speed = random(5, 20); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed - 8; this.life = 150 + random(50); this.size = random(6, 15); this.rot = random(TWO_PI); this.rotSpeed = random(-0.3, 0.3); } update() { this.x += this.vx; this.y += this.vy; this.vy += 0.4; this.vx *= 0.94; this.life -= 1.5; this.rot += this.rotSpeed; } display() { push(); translate(this.x, this.y); rotate(this.rot); noStroke(); fill(hue(this.c), saturation(this.c), brightness(this.c), this.life); rect(-this.size/2, -this.size/2, this.size, this.size); pop(); } isDead() { return this.life <= 0; } }
 class Ripple { constructor(x, y) { this.x = x; this.y = y; this.r = 15; this.life = 200; } update() { this.r += 3; this.life -= 15; } display() { noFill(); stroke(50, 40, 100, (this.life / 200) * 80); strokeWeight(3); ellipse(this.x, this.y, this.r * 2); } isDead() { return this.life <= 0; } }
 class Particle { constructor(x, y, col) { this.x = x; this.y = y; this.colorH = hue(col); this.colorS = saturation(col); this.colorB = brightness(col); let angle = random(TWO_PI); let speed = random(2, 12); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed; this.life = 100; this.r = random(3, 8); } update() { this.vx *= 0.92; this.vy *= 0.92; this.vy += 0.15; this.x += this.vx; this.y += this.vy; this.life -= 4; this.r *= 0.95; } display() { noStroke(); fill(this.colorH, this.colorS, this.colorB, this.life); ellipse(this.x, this.y, this.r * 2); } isDead() { return this.life <= 0; } }
 function createParticles(x, y, col, num = 8) { let finalNum = useLightMode ? floor(num / 3) + 1 : floor(num * 0.5) + 1; for (let i = 0; i < finalNum; i++) { particles.push(new Particle(x, y, col)); } }
 
-class Brick { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.hue = random(360); this.item = 'none'; let rand = random(1); if (rand < 0.05) this.item = 'ice'; else if (rand < 0.15) this.item = 'bomb'; if (this.item === 'ice') this.cStr = color(200, 80, 100).toString(); else if (this.item === 'bomb') this.cStr = color(10, 90, 100).toString(); else this.cStr = color(this.hue, 80, 100).toString(); } display() { push(); translate(this.x, this.y); noStroke(); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } if (this.item === 'ice') fill(200, 80, 100); else if (this.item === 'bomb') fill(10, 90, 100); else fill(this.hue, 80, 100); rect(-this.w/2, -this.h/2, this.w, this.h, 5); if (this.item === 'ice') fill(200, 30, 100, 80); else if (this.item === 'bomb') fill(10, 30, 100, 80); else fill(this.hue, 30, 100, 50); rect(-this.w/2 + 3, -this.h/2 + 3, this.w - 6, this.h - 6, 3); if (this.item === 'ice') { push(); stroke(200, 80, 100, 80 + sin(frameCount * 0.3) * 20); strokeWeight(1.5); for(let i=0; i<3; i++) { let a = i * PI / 3; line(cos(a)*-7, sin(a)*-7, cos(a)*7, sin(a)*7); } fill(255, 150); noStroke(); ellipse(0, 0, 3, 3); pop(); } else if (this.item === 'bomb') { push(); fill(10, 80, 20); stroke(10, 90, 100); strokeWeight(1.5); ellipse(0, 2, 12, 12); stroke(40, 100, 100); noFill(); arc(3, -4, 8, 8, PI, PI+HALF_PI); let pulse = 3 + sin(frameCount * 0.4) * 2; fill(10, 100, 100); noStroke(); ellipse(3, -8, pulse, pulse); pop(); } else if (this.item !== 'none') { fill(0, 0, 100, 50 + sin(frameCount * 0.2) * 50); ellipse(0, 0, 10, 10); } drawingContext.shadowBlur = 0; pop(); } }
-class WallBar { constructor(y, side, t) { this.y = y; this.side = side; this.t = t; this.wMax = random(120, 260); this.h = random(15, 35); this.phaseOffset = random(TWO_PI); this.speed = random(0.02, 0.08); } display() { let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); push(); if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.t.cStr; } fill(this.t.hue, 80, 100, 60); stroke(this.t.hue, 80, 100, 90); strokeWeight(2); if (this.side === 'left') { rect(this.t.left, this.y, extension, this.h, 0, 10, 10, 0); stroke(255, 80); line(this.t.left, this.y + this.h/2, this.t.left + extension, this.y + this.h/2); } else { rect(this.t.right - extension, this.y, extension, this.h, 10, 0, 0, 10); stroke(255, 80); line(this.t.right - extension, this.y + this.h/2, this.t.right, this.y + this.h/2); } drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); let rectLeft, rectRight; if (this.side === 'left') { rectLeft = this.t.left - 50; rectRight = this.t.left + extension; } else { rectLeft = this.t.right - extension; rectRight = this.t.right + 50; } let rectTop = this.y; let rectBottom = this.y + this.h; let closestX = constrain(b.x, rectLeft, rectRight); let closestY = constrain(b.y, rectTop, rectBottom); let d = dist(b.x, b.y, closestX, closestY); if (d < b.r) { let bounceMult = b.extremeBounceTimer > 0 ? 3 : 1; let dx = b.x - closestX; let dy = b.y - closestY; if (abs(dx) > abs(dy)) { b.vx *= -1.2 * bounceMult; b.x = closestX + (dx > 0 ? b.r : -b.r); if (this.side === 'left') b.vx += random(2, 4) * bounceMult; else b.vx -= random(2, 4) * bounceMult; } else { b.vy *= -0.9 * bounceMult; b.y = closestY + (dy > 0 ? b.r : -b.r); if (dy < 0) b.vy -= random(3, 6) * bounceMult; } createParticles(closestX, closestY, b.color, 5); playNormalHit(500, closestX, closestY); } } }
-class StaticPin { constructor(x, y, type, group) { this.x = x; this.y = y; this.r = 6; this.type = type; this.group = group; this.pulse = random(TWO_PI); this.isActive = false; if (type === 'fast') this.cStr = color(120, 100, 100).toString(); else if (type === 'slow') this.cStr = color(0, 100, 100).toString(); else this.cStr = color(40, 100, 100).toString(); } display() { this.pulse += 0.05; this.isActive = (floor(frameCount / 75) % 2 === this.group); push(); translate(this.x, this.y); if (!this.isActive) { drawingContext.shadowBlur = 0; fill(255, 10); noStroke(); ellipse(0, 0, this.r * 1.5); pop(); return; } if (this.type === 'fast') { if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(120, 80, 100); noStroke(); beginShape(); vertex(0, -this.r * 1.5); vertex(this.r * 1.2, this.r * 0.5); vertex(0, this.r * 1.2); vertex(-this.r * 1.2, this.r * 0.5); endShape(CLOSE); } else if (this.type === 'slow') { if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(0, 80, 100); noStroke(); rectMode(CENTER); rect(0, 0, this.r * 2.2, this.r * 2.2, 2); } else { let currentR = this.r + sin(this.pulse) * 1.5; if (!useLightMode) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(40, 80, 100); noStroke(); ellipse(0, 0, currentR * 2); } drawingContext.shadowBlur = 0; pop(); } }
+class Brick { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.hue = random(360); this.item = 'none'; let rand = random(1); if (rand < 0.05) this.item = 'ice'; else if (rand < 0.15) this.item = 'bomb'; if (this.item === 'ice') this.cStr = color(200, 80, 100).toString(); else if (this.item === 'bomb') this.cStr = color(10, 90, 100).toString(); else this.cStr = color(this.hue, 80, 100).toString(); } display() { push(); translate(this.x, this.y); noStroke(); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } if (this.item === 'ice') fill(200, 80, 100); else if (this.item === 'bomb') fill(10, 90, 100); else fill(this.hue, 80, 100); rect(-this.w/2, -this.h/2, this.w, this.h, 5); if (this.item === 'ice') fill(200, 30, 100, 80); else if (this.item === 'bomb') fill(10, 30, 100, 80); else fill(this.hue, 30, 100, 50); rect(-this.w/2 + 3, -this.h/2 + 3, this.w - 6, this.h - 6, 3); if (this.item === 'ice') { push(); stroke(200, 80, 100, 80 + sin(frameCount * 0.3) * 20); strokeWeight(1.5); for(let i=0; i<3; i++) { let a = i * PI / 3; line(cos(a)*-7, sin(a)*-7, cos(a)*7, sin(a)*7); } fill(255, 150); noStroke(); ellipse(0, 0, 3, 3); pop(); } else if (this.item === 'bomb') { push(); fill(10, 80, 20); stroke(10, 90, 100); strokeWeight(1.5); ellipse(0, 2, 12, 12); stroke(40, 100, 100); noFill(); arc(3, -4, 8, 8, PI, PI+HALF_PI); let pulse = 3 + sin(frameCount * 0.4) * 2; fill(10, 100, 100); noStroke(); ellipse(3, -8, pulse, pulse); pop(); } else if (this.item !== 'none') { fill(0, 0, 100, 50 + sin(frameCount * 0.2) * 50); ellipse(0, 0, 10, 10); } drawingContext.shadowBlur = 0; pop(); } }
+class WallBar { constructor(y, side, t) { this.y = y; this.side = side; this.t = t; this.wMax = random(120, 260); this.h = random(15, 35); this.phaseOffset = random(TWO_PI); this.speed = random(0.02, 0.08); } display() { let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); push(); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.t.cStr; } fill(this.t.hue, 80, 100, 60); stroke(this.t.hue, 80, 100, 90); strokeWeight(2); if (this.side === 'left') { rect(this.t.left, this.y, extension, this.h, 0, 10, 10, 0); stroke(255, 80); line(this.t.left, this.y + this.h/2, this.t.left + extension, this.y + this.h/2); } else { rect(this.t.right - extension, this.y, extension, this.h, 10, 0, 0, 10); stroke(255, 80); line(this.t.right - extension, this.y + this.h/2, this.t.right, this.y + this.h/2); } drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.finished || b.destroyed || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); let rectLeft, rectRight; if (this.side === 'left') { rectLeft = this.t.left - 50; rectRight = this.t.left + extension; } else { rectLeft = this.t.right - extension; rectRight = this.t.right + 50; } let rectTop = this.y; let rectBottom = this.y + this.h; let closestX = constrain(b.x, rectLeft, rectRight); let closestY = constrain(b.y, rectTop, rectBottom); let d = dist(b.x, b.y, closestX, closestY); if (d < b.r) { let bounceMult = b.extremeBounceTimer > 0 ? 3 : 1; let dx = b.x - closestX; let dy = b.y - closestY; if (abs(dx) > abs(dy)) { b.vx *= -1.2 * bounceMult; b.x = closestX + (dx > 0 ? b.r : -b.r); if (this.side === 'left') b.vx += random(2, 4) * bounceMult; else b.vx -= random(2, 4) * bounceMult; } else { b.vy *= -0.9 * bounceMult; b.y = closestY + (dy > 0 ? b.r : -b.r); if (dy < 0) b.vy -= random(3, 6) * bounceMult; } createParticles(closestX, closestY, b.color, 5); playNormalHit(500, closestX, closestY); } } }
+class StaticPin { constructor(x, y, type, group) { this.x = x; this.y = y; this.r = 6; this.type = type; this.group = group; this.pulse = random(TWO_PI); this.isActive = false; if (type === 'fast') this.cStr = color(120, 100, 100).toString(); else if (type === 'slow') this.cStr = color(0, 100, 100).toString(); else this.cStr = color(40, 100, 100).toString(); } display() { this.pulse += 0.05; this.isActive = (floor(frameCount / 75) % 2 === this.group); push(); translate(this.x, this.y); let isAction = (cameraMode !== 0); if (!this.isActive) { drawingContext.shadowBlur = 0; fill(255, 10); noStroke(); ellipse(0, 0, this.r * 1.5); pop(); return; } if (this.type === 'fast') { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(120, 80, 100); noStroke(); beginShape(); vertex(0, -this.r * 1.5); vertex(this.r * 1.2, this.r * 0.5); vertex(0, this.r * 1.2); vertex(-this.r * 1.2, this.r * 0.5); endShape(CLOSE); } else if (this.type === 'slow') { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(0, 80, 100); noStroke(); rectMode(CENTER); rect(0, 0, this.r * 2.2, this.r * 2.2, 2); } else { let currentR = this.r + sin(this.pulse) * 1.5; if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(40, 80, 100); noStroke(); ellipse(0, 0, currentR * 2); } drawingContext.shadowBlur = 0; pop(); } }
 class Spinner { 
   constructor(x, y, w, h, s) { 
     this.x = x; this.y = y; this.w = w; this.h = h; this.angle = 0; this.speed = s; this.cStr = color(280, 80, 100).toString(); 
@@ -1856,7 +2139,8 @@ class Spinner {
   } 
   display() { 
     push(); translate(this.x, this.y); rotate(this.angle); 
-    if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.cStr; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.cStr; } 
     fill(280, 80, 100, 80); noStroke(); 
     rect(-this.w/2, -this.h/2, this.w, this.h, 15); 
     fill(280, 20, 100); rect(-this.w/2 + 5, -this.h/4, this.w - 10, this.h/2, 10); 
@@ -1877,20 +2161,21 @@ class BlackholePad {
   } 
   display() { 
     this.angle += 0.05; push(); translate(this.x, this.y); blendMode(ADD); 
-    if (!useLightMode) drawingContext.shadowBlur = 30; 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) drawingContext.shadowBlur = 30; 
     noFill(); 
     for (let i = 0; i < 6; i++) { 
       let sc = this.swirlColors[i]; let sz = this.w * (1.5 - i * 0.1); 
-      if (!useLightMode) drawingContext.shadowColor = sc.str; 
+      if (!useLightMode && !isAction) drawingContext.shadowColor = sc.str; 
       stroke(sc.h, 100, 100, sc.a); strokeWeight(3 + i); 
       push(); rotate(i * (TWO_PI / 6) + this.angle); ellipse(0, 0, sz * 1.2, sz * 0.7); pop(); 
     } 
     drawingContext.shadowBlur = 0; blendMode(BLEND); noStroke(); fill(0); 
-    if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.coreStr; } 
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.coreStr; } 
     ellipse(0, 0, this.w * 0.9, this.h * 0.9); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyForce(b) { 
-    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (b.isLastOne || b.finished || b.destroyed || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
     let d = dist(b.x, b.y, this.x, this.y); 
     if (d < max(this.w, this.h)/1.3 + b.r) { 
       b.vy -= (0.75 + random(-0.15, 0.15)); 
@@ -1903,13 +2188,14 @@ class ShrinkPad {
   constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.animOffset = 0; this.cStr = color(190, 80, 100).toString(); } 
   display() { 
     this.animOffset = (this.animOffset + 2) % 60; push(); translate(this.x, this.y); noStroke(); 
-    if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } 
     fill(190, 80, 100, 30 + sin(frameCount * 0.1) * 10); ellipse(0, 0, this.r); noFill(); stroke(190, 50, 100, 80); strokeWeight(3); 
     let r1 = map(this.animOffset, 0, 60, this.r, 0); let r2 = map((this.animOffset + 30) % 60, 0, 60, this.r, 0); 
     ellipse(0, 0, r1); ellipse(0, 0, r2); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (b.isLastOne || b.finished || b.destroyed || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
     if (dist(b.x, b.y, this.x, this.y) < this.r/2 + b.r) { b.targetR = b.baseR * 0.55; b.sizeTimer = 300; } 
   } 
 }
@@ -1918,13 +2204,14 @@ class GrowPad {
   constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.animOffset = 0; this.cStr = color(30, 80, 100).toString(); } 
   display() { 
     this.animOffset = (this.animOffset + 2) % 60; push(); translate(this.x, this.y); noStroke(); 
-    if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } 
     fill(30, 80, 100, 30 + sin(frameCount * 0.1) * 10); ellipse(0, 0, this.r); noFill(); stroke(30, 50, 100, 80); strokeWeight(3); 
     let r1 = map(this.animOffset, 0, 60, 0, this.r); let r2 = map((this.animOffset + 30) % 60, 0, 60, 0, this.r); 
     ellipse(0, 0, r1); ellipse(0, 0, r2); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (b.isLastOne || b.finished || b.destroyed || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
     if (dist(b.x, b.y, this.x, this.y) < this.r/2 + b.r) { b.targetR = b.baseR * 2.0; b.sizeTimer = 300; } 
   } 
 }
@@ -1933,20 +2220,21 @@ class SwapPad {
   constructor(x, y, r) { this.x = x; this.y = y; this.r = r; this.used = false; this.angle = random(TWO_PI); this.cStr = color(45, 100, 100).toString(); } 
   display() { 
     if (this.used) return; this.angle += 0.03; push(); translate(this.x, this.y); 
-    if (!useLightMode) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.cStr; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = this.cStr; } 
     noStroke(); fill(45, 80, 100, 40 + sin(frameCount * 0.1) * 20); ellipse(0, 0, this.r * 2.5); rotate(this.angle); stroke(45, 60, 100, 90); strokeWeight(3); noFill(); ellipse(0, 0, this.r * 1.8); 
     for (let i = 0; i < 3; i++) { push(); rotate(i * TWO_PI / 3); translate(this.r * 0.9, 0); fill(45, 20, 100); noStroke(); ellipse(0, 0, 8); pop(); } 
     rotate(-this.angle * 2); stroke(45, 20, 100, 70); strokeWeight(1.5); rectMode(CENTER); rect(0, 0, this.r * 1.2, this.r * 1.2); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b, leadBall) { 
-    if (this.used || b.finished || b.hasCatchUpShield || !leadBall || leadBall.finished || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (this.used || b.finished || b.destroyed || b.hasCatchUpShield || !leadBall || leadBall.finished || leadBall.destroyed || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
     if (b === leadBall || b.isLastOne) return; 
     let d = dist(b.x, b.y, this.x, this.y); 
     if (d < this.r + b.r) { 
       this.used = true; let tempX = b.x; let tempY = b.y; let tempVx = b.vx; let tempVy = b.vy; 
       b.x = leadBall.x; b.y = leadBall.y; b.vx = leadBall.vx; b.vy = leadBall.vy; 
       leadBall.x = tempX; leadBall.y = tempY; leadBall.vx = tempVx; leadBall.vy = tempVy; 
-      playSwapSound(b.x, b.y); specialEffects.push(new SwapFX(b.x, b.y, leadBall.x, leadBall.y)); flashColor = color(45, 100, 100); flashLife = 40; zoomTimer = 60; targetDynamicZoom = 1.6; let t = i18n[currentLang]; addEventLog(b, t.ann_swap(b.name, leadBall.name), color(45, 100, 100), true); 
+      playSwapSound(b.x, b.y); specialEffects.push(new SwapFX(b.x, b.y, leadBall.x, leadBall.y)); zoomTimer = 60; targetDynamicZoom = 1.6; let t = i18n[currentLang]; addEventLog(b, t.ann_swap(b.name, leadBall.name), color(45, 100, 100), true); 
     } 
   } 
 }
@@ -1955,7 +2243,8 @@ class ElectricTrap {
   constructor(x, y) { this.x = x; this.y = y; this.r = 30; this.angle = random(TWO_PI); this.cStr1 = color(55, 100, 100).toString(); this.cStr2 = color(180, 100, 100).toString(); } 
   display() { 
     this.angle += 0.2; push(); translate(this.x, this.y); rotate(this.angle); let isC1 = (frameCount % 6 < 3); 
-    if (!useLightMode) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = isC1 ? this.cStr1 : this.cStr2; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = isC1 ? this.cStr1 : this.cStr2; } 
     if (isC1) stroke(55, 100, 100); else stroke(180, 100, 100); 
     strokeWeight(3 + sin(frameCount * 0.5) * 2); noFill(); beginShape(); 
     for(let i=0; i<8; i++) { let a = i * (TWO_PI/8); let rOff = this.r + random(-10, 10); vertex(cos(a) * rOff, sin(a) * rOff); } 
@@ -1963,7 +2252,7 @@ class ElectricTrap {
     if (isC1) fill(55, 100, 100, 50); else fill(180, 100, 100, 50); ellipse(0, 0, this.r * 0.8); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
+    if (b.isLastOne || b.finished || b.destroyed || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
     if (dist(this.x, this.y, b.x, b.y) < this.r + b.r) { b.trapTimer = 180; b.trapType = 'electric'; b.trapObj = this; playZapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } 
   } 
 }
@@ -1977,18 +2266,18 @@ class SoapBubble {
   } 
   display() { 
     if (this.popped) return; push(); translate(this.x, this.y); let hueVal = (frameCount * 2 + this.y) % 360; 
-    if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = `hsla(${hueVal}, 60%, 100%, 1)`; } 
+    let isAction = (cameraMode !== 0);
+    if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = `hsla(${hueVal}, 60%, 100%, 1)`; } 
     fill(hueVal, 40, 100, 30); stroke(hueVal, 60, 100, 90); strokeWeight(2); beginShape(); 
     for(let a=0; a<TWO_PI; a+=0.5) { let rOff = this.r + sin(a * 3 + frameCount * 0.1) * 3; vertex(cos(a) * rOff, sin(a) * rOff); } 
     endShape(CLOSE); noStroke(); fill(255, 180); ellipse(-this.r*0.4, -this.r*0.4, this.r*0.3, this.r*0.2); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || this.popped || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
+    if (b.isLastOne || this.popped || b.finished || b.destroyed || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
     if (dist(this.x, this.y, b.x, b.y) < this.r) { b.trapTimer = 180; b.trapType = 'bubble'; b.trapObj = this; playSwapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } 
   } 
 }
-
-function mousePressed() { 
+  function mousePressed() { 
   if (!gameStarted) return; 
   if (raceFinished && endingFairyTimer <= 0 && constellationTimer <= 0) { 
     let panelH = min(height * 0.8, 650);
@@ -2003,7 +2292,7 @@ function mousePressed() {
   if (raceFinished) return;
   
   let clickedUI = false;
-  let sorted = [...balls].sort((a, b) => b.y - a.y);
+  let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; return b.y - a.y; });
   let panelWidth = useCasterMode ? 160 : 120; let panelHeight = min(250, sorted.length * 24 + 16); 
   if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) {
     isRankDragging = true; rankDragStartY = mouseY; rankScrollStartY = rankTargetScrollY; rankDragMoved = false; clickedUI = true;
@@ -2028,7 +2317,6 @@ function mousePressed() {
     if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= muteBtnY && mouseY <= muteBtnY + btnH) { isMuted = !isMuted; clickedUI = true; }
   }
   
-  // 💡 미니맵 클릭은 경기 시작 후 언제든 가능하도록 수정
   if (endingFairyTimer <= 0) { 
     let mmBtnX = width - 85, mmBtnY = 230, mmBtnW = 75, mmBtnH = 30;
     
@@ -2061,7 +2349,7 @@ function mouseReleased() {
   if (isRankDragging) {
     isRankDragging = false;
     if (!rankDragMoved) {
-      let clickY = mouseY - 15 + rankScrollY; let idx = floor((clickY - 5) / 24); let sorted = [...balls].sort((a, b) => b.y - a.y);
+      let clickY = mouseY - 15 + rankScrollY; let idx = floor((clickY - 5) / 24); let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; return b.y - a.y; });
       if (idx >= 0 && idx < sorted.length) { let b = sorted[idx]; if (targetBall === b && manualFocus) manualFocus = false; else { targetBall = b; manualFocus = true; } }
     }
   }
