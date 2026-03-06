@@ -76,6 +76,34 @@ let devAds = localStorage.getItem('devAds') ? JSON.parse(localStorage.getItem('d
 ];
 let adItems = []; 
 
+// 💡 과거에 저장되어 있던 무거운 원본 배너 이미지들을 찾아내어 자동으로 압축합니다.
+devAds.forEach((ad, idx) => {
+  // 데이터 길이가 100,000자(약 100KB)를 넘어가면 무거운 원본으로 간주하고 압축을 실행합니다.
+  if (ad.type === 'img' && ad.data.length > 100000) {
+    let domImg = new Image();
+    domImg.onload = () => {
+      let offC = document.createElement('canvas');
+      let targetW = 300; // 배너에 맞게 너비를 300px로 축소
+      let targetH = targetW * (domImg.height / domImg.width);
+      offC.width = targetW; 
+      offC.height = targetH;
+      let ctx = offC.getContext('2d');
+      ctx.drawImage(domImg, 0, 0, targetW, targetH);
+      
+      // 용량이 적은 JPEG 포맷(품질 85%)으로 재인코딩
+      let compressedBase64 = offC.toDataURL('image/jpeg', 0.85); 
+      devAds[idx].data = compressedBase64; // 기존 무거운 데이터를 가벼운 데이터로 교체
+      
+      // 가벼워진 상태를 로컬스토리지에 영구적으로 덮어씁니다.
+      localStorage.setItem('devAds', JSON.stringify(devAds));
+      
+      // 압축된 이미지로 다시 로드합니다.
+      loadAdItems(); 
+    };
+    domImg.src = ad.data;
+  }
+});
+
 document.getElementById('fsBtn').addEventListener('click', () => {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen();
@@ -971,7 +999,7 @@ function addPlayerRow() {
 function startGameFromUI() {
   if (playerRows.length === 0) return; let t = i18n[currentLang];
   let totalP = 0; for (let r of playerRows) { totalP += parseInt(r.countInput.value()) || 1; }
-  if (!cbLight.checked() && totalP > 7) { alert(t.alert_light_mode); return; }
+  if (!cbLight.checked() && totalP > 10) { alert(t.alert_light_mode); return; }
 
   WORLD_HEIGHT = parseInt(lenSlider.value());
   useLightMode = cbLight.checked(); useMutantMode = cbMutant.checked(); useTeamBattle = cbTeam.checked();
@@ -1389,7 +1417,10 @@ function initWorld() {
   }
 
   customPlayersData.forEach((pData, i) => {
-    let startX = 0 + (i - customPlayersData.length/2) * 20 + random(-5, 5);
+    // 💡 최적화: 인원이 많을수록 출발선의 간격을 넓게 벌려, 서로 짓눌려 멈추는 현상을 방지합니다.
+    let startSpread = max(20, 600 / customPlayersData.length); 
+    let startX = 0 + (i - customPlayersData.length/2) * startSpread + random(-5, 5);
+    
     let newBall = new RacingBall(startX, 250 + random(-20, 20), pData.name, i, customPlayersData.length, pData.assignedTeam);
     if (pData.img) newBall.img = pData.img; balls.push(newBall);
   });
@@ -1974,7 +2005,10 @@ class RacingBall {
     if (this.sizeTimer > 0) { this.sizeTimer--; if (this.sizeTimer <= 0 && !this.skillActive) this.targetR = this.baseR; }
     this.r = lerp(this.r, this.targetR, 0.1);
     
-    let maxHist = useLightMode ? 5 : 12; this.history.push({x: this.x, y: this.y, z: currentZ}); if (this.history.length > maxHist) this.history.shift();
+// 💡 꼬리(history)의 길이를 예전처럼 넉넉하게 복구합니다.
+    let maxHist = useLightMode ? 10 : 25; 
+    this.history.push({x: this.x, y: this.y, z: currentZ}); 
+    if (this.history.length > maxHist) this.history.shift();
     let gravities = [0.12, 0.18, 0.26]; 
     if (!this.isJumping) { if (this.reverseGravityTimer > 0) { this.vy -= 0.8; } else { this.vy += gravities[speedLevel]; } }
     
@@ -2074,10 +2108,28 @@ class RacingBall {
     if (this.chaserTimer > 0 && this.chaseTarget && !this.isJumping) { push(); stroke(210, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(4); drawingContext.setLineDash([10, 15]); line(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y); drawingContext.setLineDash([]); pop(); }
     
     let isAction = (cameraMode !== 0);
-    blendMode(ADD); noStroke();
-    for (let i = 0; i < this.history.length; i++) { let pos = this.history[i]; let pct = i / this.history.length; let alpha = isAction ? pct * 40 : pct * 80; let histZ = pos.z || 0; let histScale = 1.0 + histZ * 4.5; let histOffsetY = -histZ * 150; let size = map(pct, 0, 1, this.r * 0.4, this.r * (isAction ? 1.5 : 2.2)) * histScale; fill(this.colorH, this.colorS, this.colorB, alpha); ellipse(pos.x, pos.y + histOffsetY, size); }
-    blendMode(BLEND);
-    noStroke(); 
+    // 💡 액션캠에서도 화려함을 유지하되, ADD 혼합 연산은 렉이 걸리지 않도록 제한적으로 사용합니다.
+    if (!isAction) blendMode(ADD); 
+    noStroke();
+    
+    for (let i = 0; i < this.history.length; i++) { 
+        let pos = this.history[i]; 
+        let pct = i / this.history.length; 
+        
+        // 💡 꼬리가 자연스럽게 사라지도록 투명도(alpha) 곡선을 다듬었습니다.
+        let alpha = isAction ? (pct * pct) * 50 : (pct * pct) * 90; 
+        
+        let histZ = pos.z || 0; 
+        let histScale = 1.0 + histZ * 4.5; 
+        let histOffsetY = -histZ * 150; 
+        let size = map(pct, 0, 1, this.r * 0.2, this.r * 2.2) * histScale; 
+        
+        fill(this.colorH, this.colorS, this.colorB, alpha); 
+        ellipse(pos.x, pos.y + histOffsetY, size); 
+    }
+    
+    if (!isAction) blendMode(BLEND);
+    noStroke();
     
     if (this.isLastOne) { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'hsla(50, 100%, 100%, 1)'; } stroke(50, 80, 100, 60 + sin(frameCount * 0.1) * 40); strokeWeight(4); ellipse(this.x, this.y, this.r * 2.8); noStroke(); } 
     else { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.cStr; } }
