@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -44,7 +45,6 @@
     #fsBtn { position: fixed; right: 10px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; }
     #fsBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
 
-    /* 광고 리스트 스타일 */
     .ad-item-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05); }
     .ad-item-text { color: #ccc; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
   </style>
@@ -55,9 +55,8 @@
 <div id="ui-container"></div>
 
 <script>
-// ==========================================
-// 💡 개발자 모드: 다중 텍스트, 자막 뉴스 & 광고 트랙
-// ==========================================
+// 💡 흐르는 텍스트 기능 활성화 토글 추가
+let devBgTextActive = localStorage.getItem('devBgTextActive') !== 'false';
 let devBgText = localStorage.getItem('devBgText') !== null ? localStorage.getItem('devBgText') : "PEANUT RACE, MUTANT MODE, AWAKENING";
 let devBgColor = localStorage.getItem('devBgColor') !== null ? localStorage.getItem('devBgColor') : "#00e5ff";
 let devBgOpacity = localStorage.getItem('devBgOpacity') !== null ? parseInt(localStorage.getItem('devBgOpacity')) : 15;
@@ -71,14 +70,12 @@ let devTickerBgColor = localStorage.getItem('devTickerBgColor') || "#aa0000";
 let devTickerOpacity = localStorage.getItem('devTickerOpacity') !== null ? parseInt(localStorage.getItem('devTickerOpacity')) : 80;
 let tickerX = 0; 
 
-// 💡 양옆 광고 트랙 설정
 let devAds = localStorage.getItem('devAds') ? JSON.parse(localStorage.getItem('devAds')) : [
     {type: 'text', data: '🥜 PEANUT RACE 🥜'},
     {type: 'text', data: '⚡ MUTANT MODE ⚡'},
     {type: 'text', data: '🏆 ULTIMATE RUN 🏆'}
 ];
-let adItems = []; // p5.js에서 실제 그릴 때 사용할 객체 배열
-let adScrollY = 0;
+let adItems = []; 
 
 document.getElementById('fsBtn').addEventListener('click', () => {
   if (!document.fullscreenElement) {
@@ -97,12 +94,11 @@ document.addEventListener('fullscreenchange', () => {
   }
 });
 
-// Alt + A 개발자 모드 진입
 document.addEventListener('keydown', (e) => {
   if (e.altKey && (e.key === 'a' || e.key === 'A')) {
     e.preventDefault();
-    let pwd = prompt('개발자 전용 비밀번호 9자리를 입력하세요.');
-    if (pwd === '123456789') {
+    let pwd = prompt('개발자 전용 비밀번호 10자리를 입력하세요.');
+    if (pwd === 'zmfflq1!@#') {
       openDevMode();
     } else if (pwd !== null) {
       alert('접근이 거부되었습니다. 비밀번호를 다시 확인해주세요.');
@@ -110,17 +106,16 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// 💡 저장된 광고(devAds)를 바탕으로 캔버스용(adItems)으로 변환 (이미지 로드 포함)
 function loadAdItems() {
     adItems = [];
     devAds.forEach((ad) => {
         if (ad.type === 'text') {
-            adItems.push({ type: 'text', data: ad.data, h: 200 });
+            adItems.push({ type: 'text', data: ad.data, h: 250 });
         } else if (ad.type === 'img') {
-            let item = { type: 'img', imgObj: null, h: 250 }; // 기본 높이 설정
+            let item = { type: 'img', imgObj: null, h: 300 }; 
             loadImage(ad.data, (img) => {
                 item.imgObj = img;
-                item.h = 250 * (img.height / img.width); // 폭 250px 기준 비율 유지
+                item.h = 80 * (img.width / img.height); 
             });
             adItems.push(item);
         }
@@ -144,7 +139,6 @@ function openDevMode() {
       return r;
   }
 
-  // --- 1. 양옆 광고 트랙 설정 컨테이너 ---
   let adDiv = createDiv(''); adDiv.parent(modal);
   adDiv.style('background', 'rgba(255,255,255,0.03)'); adDiv.style('border', '1px solid rgba(255,255,255,0.1)');
   adDiv.style('padding', '20px'); adDiv.style('border-radius', '8px'); adDiv.style('margin-bottom', '15px');
@@ -159,15 +153,14 @@ function openDevMode() {
   let fileAdLabel = createSpan('배너 이미지 첨부: '); fileAdLabel.parent(fileAdWrap); fileAdLabel.style('color', '#ccc'); fileAdLabel.style('font-size', '12px');
   let fileAdInp = createFileInput((file) => {
       if (file.type === 'image') {
-          // 용량 최적화를 위해 이미지를 임시 캔버스에 그려 압축된 Base64로 저장합니다.
           let domImg = new Image();
           domImg.onload = () => {
               let offC = document.createElement('canvas');
-              let targetW = 250; let targetH = targetW * (domImg.height / domImg.width);
+              let targetW = 300; let targetH = targetW * (domImg.height / domImg.width);
               offC.width = targetW; offC.height = targetH;
               let ctx = offC.getContext('2d');
               ctx.drawImage(domImg, 0, 0, targetW, targetH);
-              let base64 = offC.toDataURL('image/jpeg', 0.85); // JPEG 압축
+              let base64 = offC.toDataURL('image/jpeg', 0.85); 
               devAds.push({type: 'img', data: base64});
               localStorage.setItem('devAds', JSON.stringify(devAds));
               loadAdItems(); renderAdList();
@@ -204,12 +197,15 @@ function openDevMode() {
   });
   renderAdList();
 
-  // --- 2. 배경 텍스트 설정 컨테이너 ---
   let stDiv = createDiv(''); stDiv.parent(modal);
   stDiv.style('background', 'rgba(255,255,255,0.03)'); stDiv.style('border', '1px solid rgba(255,255,255,0.1)');
   stDiv.style('padding', '20px'); stDiv.style('border-radius', '8px'); stDiv.style('margin-bottom', '15px');
   let stTitle = createDiv('🌊 배경 흐름 텍스트 설정'); stTitle.parent(stDiv);
   stTitle.style('color', '#88aaff'); stTitle.style('margin-bottom', '15px'); stTitle.style('font-weight', 'bold');
+
+  // 💡 배경 텍스트 활성화 토글 UI 추가
+  let str0 = makeRow(stDiv, '배경 흐름 텍스트 활성화');
+  let cbBgText = createCheckbox('', devBgTextActive); cbBgText.parent(str0);
 
   let r1 = makeRow(stDiv, '텍스트 문구<br><span style="font-size:10px;color:#aaa;">(쉼표로 구분하여 여러 개 등록)</span>');
   let inpText = createInput(devBgText); inpText.parent(r1); inpText.class('modern-input'); inpText.style('width', '220px');
@@ -226,7 +222,6 @@ function openDevMode() {
   let r4 = makeRow(stDiv, '텍스트 갯수');
   let inpCount = createInput(devBgCount, 'number'); inpCount.parent(r4); inpCount.class('modern-input'); inpCount.style('width', '60px'); inpCount.attribute('min', '0'); inpCount.attribute('max', '100');
 
-  // --- 3. 하단 자막 뉴스 설정 컨테이너 ---
   let tDiv = createDiv(''); tDiv.parent(modal);
   tDiv.style('background', 'rgba(255,255,255,0.03)'); tDiv.style('border', '1px solid rgba(255,255,255,0.1)');
   tDiv.style('padding', '20px'); tDiv.style('border-radius', '8px'); tDiv.style('margin-bottom', '20px');
@@ -251,10 +246,10 @@ function openDevMode() {
   let tOpVal = createSpan(devTickerOpacity); tOpVal.parent(tOpWrapper); tOpVal.style('color', '#ffaa00'); tOpVal.style('width', '30px'); tOpVal.style('text-align', 'right'); tOpVal.style('margin-left', '10px');
   inpTickerOp.input(() => { tOpVal.html(inpTickerOp.value()); });
 
-  // 저장 버튼
   let saveBtn = createButton('💾 설정 저장 및 캔버스 적용'); saveBtn.parent(modal); saveBtn.class('modern-btn');
   saveBtn.style('padding', '12px');
   saveBtn.mousePressed(() => {
+      devBgTextActive = cbBgText.checked();
       devBgText = inpText.value();
       devBgColor = inpColor.value();
       devBgOpacity = parseInt(inpOp.value());
@@ -266,20 +261,19 @@ function openDevMode() {
       devTickerBgColor = inpTickerBgColor.value();
       devTickerOpacity = parseInt(inpTickerOp.value());
 
-      localStorage.setItem('devBgText', devBgText); localStorage.setItem('devBgColor', devBgColor); localStorage.setItem('devBgOpacity', devBgOpacity); localStorage.setItem('devBgCount', devBgCount);
+      localStorage.setItem('devBgTextActive', devBgTextActive); localStorage.setItem('devBgText', devBgText); localStorage.setItem('devBgColor', devBgColor); localStorage.setItem('devBgOpacity', devBgOpacity); localStorage.setItem('devBgCount', devBgCount);
       localStorage.setItem('devTickerActive', devTickerActive); localStorage.setItem('devTickerText', devTickerText); localStorage.setItem('devTickerTextColor', devTickerTextColor); localStorage.setItem('devTickerBgColor', devTickerBgColor); localStorage.setItem('devTickerOpacity', devTickerOpacity);
 
       initDevBgTexts(); 
-      tickerX = width; // 티커 위치 초기화
+      tickerX = width; 
       alert('개발자 설정이 성공적으로 반영되었습니다.');
   });
   
   let closeBtn = createButton('닫기'); closeBtn.parent(modal); closeBtn.class('ghost-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '10px'); closeBtn.mousePressed(() => { modal.remove(); });
 }
-
 function initDevBgTexts() {
   devBgTextsArr = [];
-  if (devBgCount <= 0 || !devBgText || devBgText.trim() === "") return;
+  if (!devBgTextActive || devBgCount <= 0 || !devBgText || devBgText.trim() === "") return;
   
   let txts = devBgText.split(',').map(s => s.trim()).filter(s => s !== "");
   if (txts.length === 0) return;
@@ -310,7 +304,7 @@ function initDevBgTexts() {
 }
 
 function drawDevBgTexts() {
-  if (devBgTextsArr.length === 0) return;
+  if (!devBgTextActive || devBgTextsArr.length === 0) return;
   push();
   textAlign(CENTER, CENTER);
   textFont('Orbitron'); 
@@ -327,62 +321,83 @@ function drawDevBgTexts() {
           for(let other of devBgTextsArr) { if (other.lane === t.lane && other !== t) { if (other.y < minY) minY = other.y; } }
           t.y = Math.min(-100, minY - 250);
       }
-      text(t.text, t.x, t.y);
+      
+      // 💡 현재 텍스트의 화면 좌표를 월드 좌표로 환산하여 트랙 안쪽인지 검사합니다.
+      let worldX = (t.x - width/2) / camScale - camX + width/(2*camScale);
+      let worldY = (t.y - height/2) / camScale - camY + height/(2*camScale);
+      let tIdx = constrain(floor(worldY / 40), 0, track.length - 1);
+      let trk = track[tIdx];
+      
+      // 💡 트랙의 밖(좌우 여백)일 때만 텍스트를 그려 트랙 내부를 침범하지 않게 합니다.
+      if (!trk || worldX < trk.left - 50 || worldX > trk.right + 50) {
+          text(t.text, t.x, t.y);
+      }
   }
   pop();
 }
 
-// 💡 양옆 광고 트랙을 부드럽게 무한 루프시키는 로직
 function drawAdTrack(vTop, vBottom) {
-    if (adItems.length === 0) return;
+    if (adItems.length === 0 || track.length === 0) return;
     
-    if(!isPaused) adScrollY += 4; // 흐르는 속도
-    let trackWidth = 250;
-    // 트랙 최대폭(약 900) 바깥쪽의 고정된 좌표
-    let leftX = -1000;
-    let rightX = 1000;
+    let adWidth = 70;  
 
-    let totalH = 0;
-    adItems.forEach(item => totalH += item.h);
-    if (totalH === 0) return;
-
-    // 광고를 가둘 투명한 기둥 배경
-    noStroke(); fill(10, 15, 25, 120);
-    rect(leftX - trackWidth/2, vTop, trackWidth, vBottom - vTop);
-    rect(rightX - trackWidth/2, vTop, trackWidth, vBottom - vTop);
-
-    // vTop 위쪽 어디에서 시작해야 무한 루프처럼 보일지 계산
-    let startY = vTop - ((vTop + adScrollY) % totalH) - totalH;
-    let currentY = startY;
-
-    // 화면 밑으로 내려갈 때까지 타일처럼 반복해서 그립니다.
-    while (currentY < vBottom + totalH) {
-        for (let item of adItems) {
-            // 화면 범위 안에 들어올 때만 실제로 그립니다.
-            if (currentY + item.h > vTop && currentY < vBottom) {
-                drawAdItem(item, leftX, currentY, trackWidth);
-                drawAdItem(item, rightX, currentY, trackWidth);
+    for (let side of ['left', 'right']) {
+        let currentY = 0;
+        // 광고판이 별자리를 가리지 않도록 제한
+        while (currentY < WORLD_HEIGHT - 500) {
+            for (let item of adItems) {
+                let yStart = currentY;
+                let yEnd = currentY + item.h;
+                
+                if (yEnd > vTop && yStart < vBottom) {
+                    drawCurvedAdItem(item, side, yStart, yEnd, adWidth);
+                }
+                // 💡 배너 사이의 띄움(gap)을 완전히 없애 선처럼 이어지게 만듭니다.
+                currentY += item.h; 
             }
-            currentY += item.h;
         }
     }
 }
 
-function drawAdItem(item, x, y, w) {
+function drawCurvedAdItem(item, side, yStart, yEnd, adWidth) {
+    let midY = (yStart + yEnd) / 2;
+    let tIdx = constrain(floor(midY / 40), 0, track.length - 1);
+    let t = track[tIdx];
+    if(!t) return;
+    
+    // 💡 불규칙한 트랙 경계(left, right) 대신, 완만한 중앙선(center)을 기준으로 넓은 간격 배치
+    let smoothOffset = 600; 
+    let xPos = side === 'left' ? t.center - smoothOffset : t.center + smoothOffset;
+    
+    let tNext = track[constrain(tIdx + 1, 0, track.length - 1)];
+    let angle = atan2(tNext.center - t.center, 40); 
+    
     push();
-    translate(x, y);
+    translate(xPos, midY);
+    rotate(-angle); 
+    
+    // 좌측 광고 배너 반시계방향 180도 회전
+    if (side === 'left') {
+        rotate(-PI);
+    }
+    
     if (item.type === 'text') {
-        fill(30, 20, 30, 180); stroke(255, 30); strokeWeight(2);
-        rect(-w/2, 0, w, item.h);
-        fill(255); noStroke(); textAlign(CENTER, CENTER);
-        textSize(26); textFont('Orbitron');
-        text(item.data, 0, item.h/2);
+        fill(30, 20, 30, 180); stroke(0, 0, 100, 30); strokeWeight(2);
+        rect(-adWidth/2, -item.h/2, adWidth, item.h);
+        fill(0, 0, 100); noStroke(); textAlign(CENTER, CENTER);
+        textSize(24); textFont('Orbitron');
+        push(); rotate(HALF_PI); text(item.data, 0, 0); pop();
     } else if (item.type === 'img' && item.imgObj) {
         imageMode(CENTER);
-        image(item.imgObj, 0, item.h/2, w, item.h);
-        // 경계선
-        noFill(); stroke(255, 20); strokeWeight(2); rect(-w/2, 0, w, item.h);
+        push(); rotate(HALF_PI); image(item.imgObj, 0, 0, item.h, adWidth); pop();
+        noFill(); stroke(0, 0, 100, 20); strokeWeight(2); rect(-adWidth/2, -item.h/2, adWidth, item.h);
     }
+    
+    // 💡 배너와 배너 사이 이음새에 반투명(50%) 흰색 띠를 덮어 부드럽게 연결
+    fill(0, 0, 100, 50); noStroke(); 
+    rect(-adWidth/2, -item.h/2 - 2, adWidth, 4); // 상단 이음새
+    rect(-adWidth/2, item.h/2 - 2, adWidth, 4);  // 하단 이음새
+    
     pop();
 }
 
@@ -453,7 +468,8 @@ const i18n = {
       "지나간 자리에 적을 느리게 하는 늪을 남깁니다.", "적들을 끌어당기는 블랙홀이 됩니다.", "자신의 크기가 작아집니다.",
       "여러 갈래로 튕기는 파편을 흩뿌립니다.", "트랙 중앙으로 이동하여 앞의 적을 밀치며 돌진합니다.", "아군 선두에게 가속과 보호막을 부여합니다.",
       "적군 선두를 멈추게 합니다.", "자신 뒤에 거대한 벽을 세워 길을 막습니다.", "목표(1등)를 자석처럼 끌어당겨 거리를 좁힙니다.",
-      "적 선두들의 중력을 5초간 역전시켜 뒤로 솟구치게 만듭니다.", "높이 도약하여 모든 장애물과 적을 뛰어넘어 전진합니다." 
+      "적 선두들의 중력을 5초간 역전시켜 뒤로 솟구치게 만듭니다.", "높이 도약하여 모든 장애물과 적을 뛰어넘어 전진합니다.",
+      "요리조리 피하며 결승선으로 쏜살같이 질주합니다." 
     ],
     team_skill_names: ["정화의 성역", "미시적 관점", "프리즘 여과지", "최후의 수호자"],
     team_skill_desc: [
@@ -463,7 +479,7 @@ const i18n = {
     ann_swap: (name, target) => `✨ 운명의 장난! ${name}님이 적군 ${target}와 자리를 바꿨습니다!`, ann_fast: (name) => `💨 ${name}님이 순풍을 타고 질주합니다!`,
     ann_slow: (name) => `늪에 빠진 ${name}님, 발걸음이 무거워집니다...`, ann_force_finish: "✨ 창조자의 자비로 모두가 보호받으며 결승선으로 이끌립니다! ✨",
     ann_starlight: (name, target) => `✨ ${name}님이 ${target}님에게 모든 힘을 실어줍니다!`,
-    ann_anchor: (name, target) => `⚓ ${name}님이 적군 선두 ${target}의 발목을 잡았습니다!`,
+    ann_anchor: (name, target) => `⚓ 어둠의 저격수! ${name}님이 적군 선두 ${target}의 발목을 잡았습니다!`,
     ann_wall: (name) => `🧱 ${name}님이 거대한 통곡의 벽을 세웠습니다!`,
     ann_chaser: (name, target) => `🧲 ${name}님이 선두 ${target}님을 무자비하게 끌어당깁니다!`,
     ann_gravity: (name) => `🌌 ${name}님이 적 선두들에게 중력의 배신을 선사합니다!`,
@@ -475,7 +491,7 @@ const i18n = {
     section_pass: (sec, name, team) => `🚩 제 ${sec}구간 선두: [${team}] ${name}!`,
     ann_ending: "✨ 오늘의 엔딩 요정 ✨", minimap_hint: "미니맵을 눌러 대상을 변경하거나\n빈 공간을 눌러 추적을 복귀하세요", score_title: "RACE FINISHED",
     btn_restart: "이 멤버로 다시 달리기", btn_new: "처음부터 다시 설정하기", btn_save_txt: "결과 텍스트로 저장",
-    skill_names: ["빙결의 파동", "운명의 역전", "인과응보", "집착의 늪", "심연의 인력", "겸손의 미덕", "기억의 파편", "초월의 질주", "별을 미는 순풍", "심연의 닻", "통곡의 벽", "추격자", "중력의 배신", "바빌론의 탑"]
+    skill_names: ["빙결의 파동", "운명의 역전", "인과응보", "집착의 늪", "심연의 인력", "겸손의 미덕", "기억의 파편", "초월의 질주", "별을 미는 순풍", "어둠의 저격수", "통곡의 벽", "추격자", "중력의 배신", "바빌론의 탑", "베스트 드라이버"]
   },
   en: {
     game_title: "PEANUT RACE", lang_title: "Select Language", setup_title: "Journey Preparation", obs_title: "Obstacles & Rules",
@@ -512,7 +528,7 @@ const i18n = {
       "Leaves a sticky slime slowing enemies.", "Becomes a blackhole.", "Shrinks your size.",
       "Drops bouncing flares.", "Dashes through the center.", "Grants shield and speed to the leading ally.",
       "Stuns the leading enemy.", "Summons a huge wall.", "Magnetically pulls the 1st place target.",
-      "Reverses gravity for enemy leaders.", "Leaps high to bypass obstacles."
+      "Reverses gravity for enemy leaders.", "Leaps high to bypass obstacles.", "Dodges obstacles and dashes forward."
     ],
     team_skill_names: ["Cleansing Sanctuary", "Microscopic View", "Prism Filter", "Last Guardian"],
     team_skill_desc: [
@@ -522,7 +538,7 @@ const i18n = {
     ann_swap: (name, target) => `✨ Fate inverted! ${name} swapped with ${target}!`, ann_fast: (name) => `💨 ${name} speeds up!`,
     ann_slow: (name) => `${name} slowing down...`, ann_force_finish: "✨ All entities safely guided! ✨",
     ann_starlight: (name, target) => `✨ ${name} transferred power to ${target}!`,
-    ann_anchor: (name, target) => `⚓ ${name} anchored down ${target}!`,
+    ann_anchor: (name, target) => `⚓ Dark Sniper! ${name} anchored down ${target}!`,
     ann_wall: (name) => `🧱 ${name} summoned the Wailing Wall!`,
     ann_chaser: (name, target) => `🧲 ${name} pulls down ${target}!`,
     ann_gravity: (name) => `🌌 ${name} casted Gravity's Betrayal!`,
@@ -534,7 +550,7 @@ const i18n = {
     section_pass: (sec, name, team) => `🚩 Section ${sec} Leader: [${team}] ${name}!`,
     ann_ending: "✨ ENDING FAIRY ✨", minimap_hint: "Click minimap to focus\nClick empty space to auto", score_title: "RACE FINISHED",
     btn_restart: "Race Again", btn_new: "Reset Parameters", btn_save_txt: "Save Results",
-    skill_names: ["Glacial Pulse", "Fate Inversion", "Retribution", "Sticky Slime", "Mini Blackhole", "Shrink", "Flare Drop", "Zenith Dash", "Starlight Transfer", "Abyssal Anchor", "Wailing Wall", "Chaser", "Gravity's Betrayal", "Tower of Babylon"]
+    skill_names: ["Glacial Pulse", "Fate Inversion", "Retribution", "Sticky Slime", "Mini Blackhole", "Shrink", "Flare Drop", "Zenith Dash", "Starlight Transfer", "Dark Sniper", "Wailing Wall", "Chaser", "Gravity's Betrayal", "Tower of Babylon", "Best Driver"]
   },
   zh: {
     game_title: "PEANUT RACE", lang_title: "选择语言", setup_title: "旅程准备", obs_title: "障碍与规则设置",
@@ -571,7 +587,7 @@ const i18n = {
       "留下减速沼泽。", "化身黑洞。", "体型变小。",
       "散布弹跳的碎片。", "向前冲刺并推开敌人。", "给予领跑队友加速和护盾。",
       "定身敌方领先者。", "召唤不可逾越的高墙。", "强力拉扯第一名。",
-      "反转敌方领先者的重力。", "跨越所有障碍物冲刺。"
+      "反转敌方领先者的重力。", "跨越所有障碍物冲刺。", "巧妙躲避障碍并冲刺。"
     ],
     team_skill_names: ["净化圣域", "微观视角", "棱镜滤网", "最后守卫者"],
     team_skill_desc: [
@@ -581,7 +597,7 @@ const i18n = {
     ann_swap: (name, target) => `✨ 命运逆转！${name} 与 ${target} 交换了位置！`, ann_fast: (name) => `💨 ${name} 加速前进！`,
     ann_slow: (name) => `${name} 步伐沉重...`, ann_force_finish: "✨ 全员直达终点！ ✨",
     ann_starlight: (name, target) => `✨ ${name} 力量传递给了 ${target}！`,
-    ann_anchor: (name, target) => `⚓ ${name} 拖住了 ${target}！`,
+    ann_anchor: (name, target) => `⚓ 黑暗狙击手！${name} 拖住了 ${target}！`,
     ann_wall: (name) => `🧱 ${name} 召唤了叹息之墙！`,
     ann_chaser: (name, target) => `🧲 ${name} 吸向了 ${target}！`,
     ann_gravity: (name) => `🌌 ${name} 施加了重力背叛！`,
@@ -593,7 +609,7 @@ const i18n = {
     section_pass: (sec, name, team) => `🚩 第 ${sec} 赛段领先: [${team}] ${name}!`,
     ann_ending: "✨ 结尾妖精 ✨", minimap_hint: "点击小地图更改目标", score_title: "RACE FINISHED",
     btn_restart: "再跑一次", btn_new: "重新设置", btn_save_txt: "保存成绩",
-    skill_names: ["冰川脉冲", "命运逆转", "因果报应", "执念沼泽", "深渊引力", "谦逊美德", "记忆碎片", "超越冲刺", "星光引流", "深渊之锚", "叹息之墙", "追击者", "重力背叛", "巴比伦塔"]
+    skill_names: ["冰川脉冲", "命运逆转", "因果报应", "执念沼泽", "深渊引力", "谦逊美德", "记忆碎片", "超越冲刺", "星光引流", "黑暗狙击手", "叹息之墙", "追击者", "重力背叛", "巴比伦塔", "最佳车手"]
   },
   ja: {
     game_title: "PEANUT RACE", lang_title: "言語設定", setup_title: "旅の準備", obs_title: "障害物とルールの設定",
@@ -630,7 +646,7 @@ const i18n = {
       "敵を遅くする沼を残します。", "ブラックホールになります。", "サイズが小さくなります。",
       "破片をばらまきます。", "トラック中央を突進します。", "味方に加速とシールドを与えます。",
       "敵の先頭を足止めします。", "巨大な壁を出現させます。", "ターゲットを引き寄せます。",
-      "敵の重力を反転させます。", "障害物を飛び越えます。"
+      "敵の重力を反転させます。", "障害物を飛び越えます。", "巧みに障害物を避けて疾走します。"
     ],
     team_skill_names: ["浄化の聖域", "微視的観点", "プリズムフィルター", "最後の守護者"],
     team_skill_desc: [
@@ -640,7 +656,7 @@ const i18n = {
     ann_swap: (name, target) => `✨ 運命の逆転！${name}が ${target} と入れ替わりました！`, ann_fast: (name) => `💨 ${name}が加速！`,
     ann_slow: (name) => `${name}の足取りが重くなります...`, ann_force_finish: "✨ 全員完走！ ✨",
     ann_starlight: (name, target) => `✨ ${name}が${target}に力を託しました！`,
-    ann_anchor: (name, target) => `⚓ ${name}が${target}の足を引っ張りました！`,
+    ann_anchor: (name, target) => `⚓ 闇の狙撃手！${name}が${target}の足を引っ張りました！`,
     ann_wall: (name) => `🧱 ${name}が嘆きの壁を築きました！`,
     ann_chaser: (name, target) => `🧲 ${name}が${target}を引き寄せます！`,
     ann_gravity: (name) => `🌌 ${name}が重力の裏切りをかけました！`,
@@ -652,10 +668,9 @@ const i18n = {
     section_pass: (sec, name, team) => `🚩 第 ${sec} 区間トップ: [${team}] ${name}!`,
     ann_ending: "✨ エンディング妖精 ✨", minimap_hint: "ミニマップで対象変更", score_title: "RACE FINISHED",
     btn_restart: "再レース", btn_new: "設定し直す", btn_save_txt: "結果を保存",
-    skill_names: ["氷結の波動", "運命の逆転", "因果応報", "執着の沼", "深淵の引力", "謙譲の美徳", "記憶の破片", "超越の疾走", "星を押す追い風", "深淵の錨", "嘆きの壁", "追跡者", "重力の裏切り", "バビロンの塔"]
+    skill_names: ["氷結の波動", "運命の逆転", "因果応報", "執着の沼", "深淵の引力", "謙譲の美徳", "記憶の破片", "超越の疾走", "星を押す追い風", "闇の狙撃手", "嘆きの壁", "追跡者", "重力の裏切り", "バビロンの塔", "ベストドライバー"]
   }
 };
-
 let currentLang = 'ko'; 
 let langDiv, setupDiv, playerListDiv;
 let playerRows = []; let customPlayersData = [];
@@ -670,7 +685,7 @@ let teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, C
 let mediaRecorder = null, recordedChunks = [], isRecording = false, forceFinishAll = false;
 let firstWinner = null, endingFairyTimer = 0, constellationTimer = 0, speedLevel = 0, cameraMode = 0; 
 
-let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true]; 
+let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]; 
 let activeTeamSkills = [true, true, true, true];
 
 let currentEditingRow = null;
@@ -704,7 +719,6 @@ let sectionBannerColor = null;
 let rankScrollY = 0, rankTargetScrollY = 0, isRankDragging = false, rankDragStartY = 0, rankScrollStartY = 0, rankDragMoved = false;
 let osc, env;
 
-// 💡 미니맵 접기 상태
 let minimapExpanded = true;
 
 function setup() {
@@ -717,7 +731,7 @@ function setup() {
   env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(0.5, 0);
   createLangUI();
   
-  loadAdItems(); // 💡 미리 저장된 이미지를 변환합니다.
+  loadAdItems(); 
   initDevBgTexts(); 
 }
 
@@ -756,7 +770,7 @@ function createSkillModal() {
       let label = createDiv(`<b>${name}</b><br><span style="color:#aaa; font-size:12px;">${desc}</span>`); label.parent(row); label.style('color', '#fff'); label.style('font-size', '14px'); label.style('margin-left', '8px'); label.style('line-height', '1.4');
     });
   };
-  makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
+  makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13,14], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
   let closeBtn = createButton(t.modal_close); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '30px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
 }
 
@@ -828,7 +842,6 @@ function createSetupUI() {
   let addBtn = createButton(t.btn_add); addBtn.parent(btnRow); addBtn.class('ghost-btn'); addBtn.style('padding', '12px 20px'); addBtn.style('margin-right', '15px'); addBtn.mousePressed(addPlayerRow);
   let startBtn = createButton(t.btn_start); startBtn.parent(btnRow); startBtn.class('modern-btn'); startBtn.style('padding', '12px 30px'); startBtn.mousePressed(startGameFromUI);
   
-  // 💡 테이블 영역이 넘칠 수 있으므로 최소 너비를 보장하는 컨테이너를 만듭니다.
   let tableContainer = createDiv(''); tableContainer.parent(setupDiv); tableContainer.style('min-width', '550px');
 
   let headerRow = createDiv(''); headerRow.parent(tableContainer); headerRow.style('display', 'flex'); headerRow.style('align-items', 'center'); headerRow.style('justify-content', 'space-between'); headerRow.style('margin-bottom', '5px'); headerRow.style('padding', '0 15px'); headerRow.style('color', '#88aaff'); headerRow.style('font-size', '12px'); headerRow.style('font-weight', 'bold');
@@ -914,7 +927,6 @@ function startGameFromUI() {
   if (!cbLight.checked() && totalP > 7) { alert(t.alert_light_mode); return; }
 
   WORLD_HEIGHT = parseInt(lenSlider.value());
-  // 💡 선택사항에서 제거된 기본 트랩들은 항상 true로 유지됩니다.
   useLightMode = cbLight.checked(); useMutantMode = cbMutant.checked(); useTeamBattle = cbTeam.checked();
   useCasterMode = cbCaster.checked(); 
   useElectricTrap = true; useBubbleTrap = true; useFirstPlaceOnly = cbFirstOnly.checked(); isRecording = cbRecord.checked();
@@ -943,12 +955,11 @@ function startGameFromUI() {
   } else { gaugeThreshold = parseInt(gaugeSlider.value()); teamGaugeThreshold = parseInt(teamGaugeSlider.value()); }
   
   document.querySelector('canvas').style.display = 'block'; userStartAudio(); osc.start(); setupDiv.hide(); gameStarted = true; isPaused = false; 
-  tickerX = width; // 시작 시 티커 위치 초기화
+  tickerX = width; 
   initWorld(); 
   if (isRecording) { startRecording(); }
 }
-
-function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
+  function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
 function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
 function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
 function getTeamName(team, t) { if (team === 'RED') return t.opt_red; if (team === 'BLUE') return t.opt_blue; if (team === 'GREEN') return t.opt_green; if (team === 'YELLOW') return t.opt_yellow; if (team === 'PURPLE') return t.opt_purple; if (team === 'ORANGE') return t.opt_orange; if (team === 'CYAN') return t.opt_cyan; if (team === 'PINK') return t.opt_pink; return ''; }
@@ -983,7 +994,6 @@ function downloadRankings() {
 function drawFinalScoreboard() {
   let t = i18n[currentLang];
   push();
-  // 💡 배경에 은은하고 부드러운 네온 효과를 더해 시각적 품격을 높입니다.
   drawingContext.shadowBlur = 40;
   drawingContext.shadowColor = 'rgba(0, 229, 255, 0.4)';
   fill(10, 15, 25, 230); stroke(0, 229, 255, 120); strokeWeight(2);
@@ -991,7 +1001,7 @@ function drawFinalScoreboard() {
   let panelW = min(width * 0.8, 650);
   let panelH = min(height * 0.8, 650);
   rect(width/2, height/2, panelW, panelH, 20);
-  drawingContext.shadowBlur = 0; // 초기화
+  drawingContext.shadowBlur = 0; 
 
   textAlign(CENTER, CENTER); textSize(45); fill(255); textFont('Orbitron'); noStroke();
   drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#00e5ff';
@@ -1037,7 +1047,6 @@ function drawFinalScoreboard() {
     for (let i = 1; i <= numSegments; i++) {
       let winner = segmentWinners[i];
       let rowY = startY + (i - 1) * 28;
-      // 💡 팀 구역별 승리자도 깔끔하게 중앙으로 정렬합니다.
       textAlign(CENTER, CENTER);
       if (winner) {
          fill(winner.color);
@@ -1059,7 +1068,6 @@ function drawFinalScoreboard() {
     }
 
   } else {
-    // 💡 개인전 결과 역시 글자를 키우고 중앙에 보기 좋게 정렬합니다.
     textAlign(CENTER, CENTER);
     for(let i=0; i<min(sortedBalls.length, 8); i++) {
        let b = sortedBalls[i];
@@ -1137,7 +1145,6 @@ function drawTrack(vTop, vBottom) {
 function drawAnnouncements() { 
   let tSize = map(constrain(width, 600, 1600), 600, 1600, 13, 22);
   let lineSpacing = tSize * 2.0;
-  // 티커가 활성화되어 있으면 공지사항을 조금 더 위로 올립니다.
   let startY = (devTickerActive && devTickerText.trim() !== "") ? height - 90 : height - 50; 
   for (let i = 0; i < announcements.length; i++) { 
     let ann = announcements[i]; if(!isPaused) ann.life--; let alpha = 100; 
@@ -1197,7 +1204,6 @@ function drawRankings() {
 function drawForceFinishButton(t) { 
   if (forceFinishAll) return; 
   let btnX = width - 85; 
-  // 티커가 켜져 있으면 버튼들을 위로 올려 겹치지 않게 합니다.
   let btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80; 
   let btnW = 75; let btnH = 60; 
   let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); 
@@ -1210,7 +1216,6 @@ function drawCameraButton(t) { if (forceFinishAll) return; let btnX = width - 85
 function drawPauseButton(t) { if (forceFinishAll || raceFinished) return; let btnX = width - 85; let btnY = 140; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(0, 0, 100, 80) : color(10, 12, 20, 180)); stroke(0, 0, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(isPaused ? t.btn_resume : t.btn_pause, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
 function drawMuteButton(t) { let btnX = width - 85; let btnY = 180; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(50, 80, 100, 80) : color(10, 12, 20, 180)); stroke(50, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(isMuted ? t.btn_unmute : t.btn_mute, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
 
-// 💡 미니맵 접기/펼치기 기능
 function drawMinimap(t) { 
   if (!minimapExpanded) {
     let btnX = width - 85; let btnY = 230; let btnW = 75; let btnH = 30;
@@ -1220,14 +1225,12 @@ function drawMinimap(t) {
   }
 
   let mmX = width - 85, mmY = 230, mmW = 75;
-  // 티커가 있을 경우 미니맵이 겹치지 않도록 높이를 조절합니다.
   let bottomSpace = (devTickerActive && devTickerText.trim() !== "") ? 130 : 90;
   let mmH = height - mmY - bottomSpace; 
   
   drawingContext.shadowBlur = 15; drawingContext.shadowColor = 'rgba(0,0,0,0.6)'; fill(10, 12, 20, 200); stroke(255, 30); strokeWeight(1); 
   rect(mmX, mmY, mmW, mmH, 12); drawingContext.shadowBlur = 0; 
   
-  // 닫기 버튼 영역
   fill(255, 20); rect(mmX, mmY, mmW, 25, 12, 12, 0, 0);
   fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(10); text("▼ CLOSE", mmX + mmW/2, mmY + 12);
 
@@ -1238,8 +1241,7 @@ function drawMinimap(t) {
   fill(280, 100, 80, 90); blackholePads.forEach(bh => ellipse(getX(bh.x), getY(bh.y), 4)); fill(55, 100, 100, 90); electricTraps.forEach(et => ellipse(getX(et.x), getY(et.y), 3)); fill(180, 60, 100, 90); soapBubbles.forEach(sb => ellipse(getX(sb.x), getY(sb.y), 3)); 
   balls.forEach(b => { let px = getX(b.x); let py = getY(b.y); if (b === targetBall) { stroke(190, 80, 100, 90); strokeWeight(2); fill(b.color); ellipse(px, py, 9); } else { noStroke(); fill(b.color); ellipse(px, py, 5); } }); 
   
-  let firstPlaceFinished = balls.some(b => b.finished); 
-  if (firstPlaceFinished && !raceFinished) { fill(100); textAlign(RIGHT); textSize(11); text(t.minimap_hint, mmX - 10, mmY + 35); } 
+  if (!raceFinished) { fill(100); textAlign(RIGHT); textSize(11); text(t.minimap_hint, mmX - 10, mmY + 35); } 
 }
 
 function drawCasterOverlay(t) {
@@ -1304,7 +1306,8 @@ function initWorld() {
   constellationSpots = []; constellationEdges = []; let n = balls.length;
   for (let i = 0; i < n; i++) {
     let angle = map(i, 0, n, -HALF_PI, TWO_PI - HALF_PI); let r = (i % 2 === 0 && n > 4) ? 140 : 70; if (n <= 4) r = 100; 
-    constellationSpots.push({ x: 0 + cos(angle) * r, y: WORLD_HEIGHT + 200 + sin(angle) * r });
+    // 💡 광고판과 겹치지 않게 별자리를 깊은 곳으로 배치
+    constellationSpots.push({ x: 0 + cos(angle) * r, y: WORLD_HEIGHT + 600 + sin(angle) * r });
     constellationEdges.push([i, (i + 1) % n]); if (n > 4) constellationEdges.push([i, (i + 2) % n]); 
   }
 
@@ -1353,6 +1356,7 @@ function draw() {
   background(260, 80, 5); 
   if (!gameStarted) return; 
   
+  // 💡 수정된 백그라운드 텍스트 렌더링 호출
   drawDevBgTexts(); 
 
   let t = i18n[currentLang];
@@ -1394,11 +1398,18 @@ function draw() {
   if (allDone && !raceFinished) { raceFinished = true; constellationTimer = 120; } 
   if (!isPaused && raceFinished && constellationTimer > 0) { constellationTimer--; }
 
+  let firstPlaceFinished = balls.some(b => b.finished);
+
   if (!raceFinished && targetBall) {
     let targetScale;
     let baseScaleForAction = map(targetBall.y, 0, WORLD_HEIGHT, 0.75, 1.1, true); 
     let speedZoom = constrain(targetBall.vy * 0.025, 0, 0.4); 
     let idealActionScale = max(0.35, baseScaleForAction - speedZoom);
+    
+    if (!firstPlaceFinished && targetBall.y > WORLD_HEIGHT - 3000) {
+        let zoomInFactor = map(targetBall.y, WORLD_HEIGHT - 3000, WORLD_HEIGHT, 1.0, 1.8, true);
+        idealActionScale *= zoomInFactor;
+    }
     
     if (cameraMode === 0) { targetScale = 0.45; if (!isPaused && zoomTimer > 0) zoomTimer--; } 
     else if (cameraMode === 2) { targetScale = 1.3; if (!isPaused && zoomTimer > 0) zoomTimer--; } 
@@ -1417,13 +1428,14 @@ function draw() {
       if (cameraShake > 0.1) { if (cameraMode === 1) { camX += random(-cameraShake, cameraShake) / camScale; camY += random(-cameraShake, cameraShake) / camScale; } cameraShake *= 0.85; }
     }
   } else if (!isPaused) { 
-    camScale = lerp(camScale, 0.85, 0.02); camX = lerp(camX, width / (2 * camScale) - 0, 0.05); camY = lerp(camY, height / (2 * camScale) - (WORLD_HEIGHT + 200), 0.05); 
+    camScale = lerp(camScale, 0.85, 0.02); 
+    camX = lerp(camX, width / (2 * camScale) - 0, 0.05); 
+    camY = lerp(camY, height / (2 * camScale) - (WORLD_HEIGHT + 600), 0.05); 
   }
 
   push(); scale(camScale); translate(camX, camY);
   let viewTop = targetBall ? targetBall.y - (height / camScale) * 1.5 : 0; let viewBottom = targetBall ? targetBall.y + (height / camScale) * 1.5 : WORLD_HEIGHT;
   
-  // 💡 광고 트랙 렌더링 (가장 바닥인 배경 그리드 바로 뒤나 앞에 위치)
   drawAdTrack(viewTop, viewBottom);
   
   drawBackgroundGrid(viewTop, viewBottom); drawTrack(viewTop, viewBottom); drawSegments(viewTop, viewBottom);
@@ -1467,6 +1479,7 @@ function draw() {
             if (!useTeamBattle || b.team !== mutantFlares[i].owner.team) {
               if (dist(b.x, b.y, mutantFlares[i].x, mutantFlares[i].y) < b.r + mutantFlares[i].r) { 
                 if (b.divineShieldTimer > 0) { mutantFlares.splice(i, 1); createParticles(b.x, b.y, color(60, 100, 100), 10); } 
+                else if (b.isBestDriver) { /* Dodge visual only, avoid direct collision effect */ }
                 else { b.vy = -8; b.slowTimer = 120; playBombSound(b.x, b.y); createParticles(b.x, b.y, color(10, 80, 100), 20); mutantFlares.splice(i, 1); }
               }
             }
@@ -1505,12 +1518,15 @@ function draw() {
     if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } 
     drawFinalScoreboard(); 
   }
-  else if (endingFairyTimer <= 0 && !raceFinished) { drawMinimap(t); drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawPauseButton(t); drawMuteButton(t); drawForceFinishButton(t); }
+  else if (endingFairyTimer <= 0 && !raceFinished) { 
+    // 💡 수정: 경기 시작과 동시에 미니맵은 항상 그려집니다.
+    drawMinimap(t); 
+    drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawPauseButton(t); drawMuteButton(t); drawForceFinishButton(t); 
+  }
 
   if (manualFocus && !raceFinished && endingFairyTimer <= 0) { push(); fill(255, 150); textAlign(CENTER, TOP); textSize(13); let txt = currentLang==='ko'?"빈 공간 클릭 시 선두 자동 추적":currentLang==='en'?"Click empty space to auto-focus leader":currentLang==='zh'?"点击空白处自动追踪第一名":"空白をクリックで先頭を自動追跡"; text(txt, width/2, 20); pop(); }
 }
-
-class GuardianRobot {
+  class GuardianRobot {
   constructor(y) { this.y = y; this.w = 80; this.h = 32; this.vx = 0; this.maxSpeed = 7; this.x = 0; }
   update(balls) {
     if (!globalGuardianActive) return; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t && this.x === 0 && this.vx === 0) this.x = t.center;
@@ -1541,8 +1557,13 @@ class GuardianRobot {
 
 class PrismFilter {
   constructor(x, y, team, col) { this.x = x; this.y = y; this.team = team; this.col = col; this.life = 300; this.maxLife = 300; this.w = 1500; }
-  update() { this.y -= 4; this.life--; }
-  display() { push(); translate(0, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); drawingContext.shadowBlur = 0; pop(); }
+  update() { 
+    // 💡 위로 솟구치며 항상 트랙의 가운데 정렬을 유지합니다.
+    let tIdx = constrain(floor(this.y / 40), 0, track.length - 1);
+    if(track[tIdx]) this.x = track[tIdx].center; 
+    this.y -= 4; this.life--; 
+  }
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); if (!useLightMode) { drawingContext.shadowBlur = 30; drawingContext.shadowColor = this.col.toString(); } stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); drawingContext.shadowBlur = 0; pop(); }
   applyEffect(b) { if (b.finished || b.divineShieldTimer > 0 || b.team === this.team || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 20) { b.y = this.y - b.r - 20; b.vy = -6; b.vx += random(-1, 1); createParticles(b.x, b.y, this.col, 3); } }
   isDead() { return this.life <= 0; }
 }
@@ -1567,6 +1588,7 @@ class RacingBall {
     this.hasRetribution = false; this.isBlackhole = false; this.isSticky = false; this.isDashing = false; 
     this.divineShieldTimer = 0; this.chaserTimer = 0; this.chaseTarget = null;
     this.reverseGravityTimer = 0; this.isJumping = false; this.jumpTimer = 0;
+    this.isBestDriver = false; 
   }
   
   incrementGauge() { 
@@ -1585,7 +1607,7 @@ class RacingBall {
   }
 
   activateMutantSkill() {
-    this.collisionGauge = 0; let t = i18n[currentLang]; let skillPool = []; let basePool = [0,1,2,3,4,5,6,7,10,11,13]; let teamPool = [8,9,12];
+    this.collisionGauge = 0; let t = i18n[currentLang]; let skillPool = []; let basePool = [0,1,2,3,4,5,6,7,10,11,13,14]; let teamPool = [8,9,12];
     basePool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); if(useTeamBattle) { teamPool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); }
     if (skillPool.length === 0) return;
     this.skillActive = true; this.mutantType = random(skillPool);
@@ -1608,6 +1630,7 @@ class RacingBall {
       case 11: let unfinished = balls.filter(b => !b.finished && !b.isJumping).sort((a,b)=>b.y - a.y); let chaseObj = unfinished[0]; if (chaseObj && chaseObj !== this) { this.chaseTarget = chaseObj; this.chaserTimer = 180; addEventLog(this, t.ann_chaser(this.name, chaseObj.name), this.color, true); } else { this.skillActive = false; } break;
       case 12: let applied = false; let teams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK']; teams.forEach(tm => { if(tm !== this.team) { let enemyLeader = balls.filter(b => b.team === tm && !b.finished).sort((a,b)=>b.y - a.y)[0]; if(enemyLeader && enemyLeader.divineShieldTimer <= 0) { enemyLeader.reverseGravityTimer = 300; applied = true; specialEffects.push(new NovaFX(enemyLeader.x, enemyLeader.y, color(280, 100, 100))); } } }); if(applied) addEventLog(this, t.ann_gravity(this.name), color(280, 100, 100), true); this.skillActive = false; break;
       case 13: this.isJumping = true; this.jumpTimer = 150; this.vy = 18; playIceSound(this.x, this.y); addEventLog(this, t.ann_babel(this.name), color(200, 20, 100), true); break;
+      case 14: this.isBestDriver = true; this.mutantTimer = 420; playIceSound(this.x, this.y); break; 
     }
   }
 
@@ -1632,6 +1655,37 @@ class RacingBall {
 
     if (this.skillActive && this.mutantTimer > 0) {
       this.mutantTimer--;
+      
+      // 💡 베스트 드라이버: 함정과 트랙 벽면을 요리조리 피하며 폭풍 질주
+      if (this.isBestDriver) {
+          let dodgeForce = 0;
+          let checkDodge = (obs, safeDist) => {
+             if (obs.y > this.y && obs.y < this.y + 250) {
+                 if (dist(this.x, this.y, obs.x, obs.y) < safeDist) {
+                     dodgeForce += (this.x < obs.x ? -2.0 : 2.0); // 장애물 반대 방향으로 회피
+                 }
+             }
+          };
+          staticPins.forEach(p => checkDodge(p, 80));
+          electricTraps.forEach(et => checkDodge(et, 100));
+          soapBubbles.forEach(sb => checkDodge(sb, 100));
+          mutantFlares.forEach(f => checkDodge(f, 80));
+          
+          // 트랙 벽면 회피
+          let tIdx = constrain(floor(this.y / 40), 0, track.length - 1);
+          let t = track[tIdx];
+          if (t) {
+              let distLeft = this.x - t.left;
+              let distRight = t.right - this.x;
+              if (distLeft < 100) dodgeForce += map(distLeft, 0, 100, 3.0, 0);
+              if (distRight < 100) dodgeForce -= map(distRight, 0, 100, 3.0, 0);
+          }
+          
+          this.vx += dodgeForce; 
+          this.vy += 0.35; // 속도 부스트
+          if(frameCount % 4 === 0) createParticles(this.x, this.y, color(50, 100, 100), 3);
+      }
+
       if (this.isSticky) { if(frameCount % 5 === 0) createParticles(this.x, this.y, color(100, 80, 80), 3); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 300) { other.slowTimer = 360; } }); }
       if (this.isBlackhole) { if(frameCount % 3 === 0) createParticles(this.x, this.y, color(280, 100, 50), 4); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 3.0, 0.5); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; } }); }
       if (this.hasRetribution) {
@@ -1639,7 +1693,7 @@ class RacingBall {
         else if (this.mutantTimer === 1) { playBombSound(this.x, this.y); specialEffects.push(new BombFX(this.x, this.y)); createParticles(this.x, this.y, color(0, 100, 100), 50); balls.forEach(other => { if (abs(this.y - other.y) > 350) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 350) { let angle = random(TWO_PI); let forceX = cos(angle) * random(15, 25); let forceY = sin(angle) * random(15, 25); other.vx = forceX; other.vy = forceY; other.frozenTimer = 60; createParticles(other.x, other.y, color(0, 100, 100), 15); } }); this.vy += 18; }
       }
       if (this.isDashing) { this.vy = 18; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx].center; this.x = lerp(this.x, tCenter, 0.15); if(frameCount % 2 === 0) createParticles(this.x, this.y, color(180, 100, 100), 3); balls.forEach(other => { if (abs(this.y - other.y) > 150) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.isJumping && d < this.r * 8) { let pushDir = (other.x > tCenter) ? 1 : -1; other.vx = pushDir * 15; createParticles(other.x, other.y, color(180, 30, 100), 2); } }); }
-      if (this.mutantTimer <= 0) { this.skillActive = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.isDashing = false; this.targetR = this.baseR; }
+      if (this.mutantTimer <= 0) { this.skillActive = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.isDashing = false; this.isBestDriver = false; this.targetR = this.baseR; }
     }
 
     if (this.chaserTimer > 0 && this.chaseTarget && !this.chaseTarget.finished) {
@@ -1710,7 +1764,7 @@ class RacingBall {
   }
 
   checkPinCollision(p, t) {
-    if (this.isLastOne || this.finished || !p.isActive || this.isDashing || this.isJumping) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
+    if (this.isLastOne || this.finished || !p.isActive || this.isDashing || this.isJumping || this.isBestDriver) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
     let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5; let d = dist(this.x, this.y, p.x, p.y);
     if (d < this.r + hitRadius) {
       this.incrementGauge(); addEventLog(this, t.ann_fast(this.name), color(120, 80, 100), false); addEventLog(this, t.ann_slow(this.name), color(0, 80, 100), false);
@@ -1748,6 +1802,10 @@ class RacingBall {
     if (this.isBlackhole) { push(); translate(this.x, this.y); rotate(frameCount*0.1); noFill(); stroke(280, 100, 20, 80); strokeWeight(30); ellipse(0, 0, 300 + sin(frameCount*0.3)*20); stroke(280, 60, 80, 50); strokeWeight(8); for(let i=0; i<4; i++) { rotate(PI/2); arc(0, 0, 260, 260, 0, PI/2 - 0.2); } fill(0, 0, 0, 80); noStroke(); ellipse(0,0,this.r*4); pop(); }
     if (this.hasRetribution) { push(); translate(this.x, this.y); let speedRot = map(this.mutantTimer, 150, 0, 0.1, 0.8); rotate(-frameCount * speedRot); let pullR = map(this.mutantTimer, 150, 0, 350, 10); fill(0, 100, 50, 40); stroke(0, 100, 100, 90); strokeWeight(4); beginShape(); for(let i=0; i<16; i++) { let a = i*TWO_PI/16; let rOff = pullR + (i%2===0 ? 25 : 0); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); }
     if (this.isDashing) { push(); translate(this.x, this.y); noStroke(); fill(180, 100, 100, 80); triangle(0, this.r*7, -this.r*3, -this.r*2, this.r*3, -this.r*2); stroke(180, 100, 100, 60); strokeWeight(3); line(-this.r*2, 0, -this.r*7, 0); line(this.r*2, 0, this.r*7, 0); pop(); }
+    
+    // 💡 베스트 드라이버 효과 연출
+    if (this.isBestDriver) { push(); translate(this.x, this.y); noFill(); stroke(50, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(3); ellipse(0, 0, this.r * 2.8 + sin(frameCount*0.4)*5); pop(); }
+
     if (this.img) { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(255); drawingContext.beginPath(); drawingContext.arc(0, 0, this.r, 0, Math.PI * 2); drawingContext.clip(); imageMode(CENTER); image(this.img, 0, 0, this.r * 2.2, this.r * 2.2); pop(); } else { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(this.color); ellipse(-this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); ellipse(this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); pop(); }
     if (!this.finished && !this.skillActive && this.collisionGauge > 0 && useMutantMode && !this.isJumping) { push(); translate(this.x, this.y); rotate(-HALF_PI); noFill(); stroke(255, 60); strokeWeight(2); ellipse(0, 0, this.r * 2.8); stroke(this.color); let arcEnd = map(this.collisionGauge, 0, gaugeThreshold, 0, TWO_PI); arc(0, 0, this.r * 2.8, this.r * 2.8, 0, arcEnd); pop(); }
     if (this.hasCatchUpShield && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle * 0.5); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = color(160, 80, 100).toString(); } stroke(160, 80, 100, 70 + sin(frameCount * 0.2) * 30); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<6; i++) { let a = i * TWO_PI/6; vertex(cos(a) * this.r * 2.5, sin(a) * this.r * 2.5); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
@@ -1762,24 +1820,20 @@ class IceFX { constructor(x, y) { this.x = x; this.y = y; this.life = 50; this.m
 class SwapFX { 
   constructor(x1, y1, x2, y2) { 
     this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2; 
-    this.life = 60; this.maxLife = 60; this.particles = []; 
-    let pCount = useLightMode ? 10 : 25; 
+    this.life = 40; this.maxLife = 40; this.particles = []; 
+    let pCount = 8; 
     for(let i=0; i<pCount; i++) { 
-      this.particles.push({ x: this.x1 + random(-30, 30), y: this.y1 + random(-40, 40), vx: random(-2, 2), vy: random(-4, 0), size: random(3, 8) }); 
-      this.particles.push({ x: this.x2 + random(-30, 30), y: this.y2 + random(-40, 40), vx: random(-2, 2), vy: random(-4, 0), size: random(3, 8) }); 
+      this.particles.push({ x: this.x1 + random(-20, 20), y: this.y1 + random(-20, 20), vx: random(-1, 1), vy: random(-2, 0), size: random(3, 6) }); 
+      this.particles.push({ x: this.x2 + random(-20, 20), y: this.y2 + random(-20, 20), vx: random(-1, 1), vy: random(-2, 0), size: random(3, 6) }); 
     } 
   } 
   update() { this.life--; for(let p of this.particles) { p.x += p.vx; p.y += p.vy; p.vy += 0.1; } } 
   display() { 
-    let alpha = map(this.life, 0, this.maxLife, 0, 255); 
+    let alpha = map(this.life, 0, this.maxLife, 0, 200); 
     push(); noStroke(); 
-    if (!useLightMode) { 
-      drawingContext.shadowBlur = 5; 
-      drawingContext.shadowColor = 'hsla(45, 100%, 80%, 1)'; 
-    } 
     fill(45, 80, 100, alpha); 
     for(let p of this.particles) { ellipse(p.x, p.y, p.size); } 
-    drawingContext.shadowBlur = 0; pop(); 
+    pop(); 
   } 
   isDead() { return this.life <= 0; } 
 }
@@ -1909,7 +1963,7 @@ class ElectricTrap {
     if (isC1) fill(55, 100, 100, 50); else fill(180, 100, 100, 50); ellipse(0, 0, this.r * 0.8); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (b.isLastOne || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
     if (dist(this.x, this.y, b.x, b.y) < this.r + b.r) { b.trapTimer = 180; b.trapType = 'electric'; b.trapObj = this; playZapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } 
   } 
 }
@@ -1929,7 +1983,7 @@ class SoapBubble {
     endShape(CLOSE); noStroke(); fill(255, 180); ellipse(-this.r*0.4, -this.r*0.4, this.r*0.3, this.r*0.2); drawingContext.shadowBlur = 0; pop(); 
   } 
   applyEffect(b) { 
-    if (b.isLastOne || this.popped || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping) return; 
+    if (b.isLastOne || this.popped || b.finished || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; 
     if (dist(this.x, this.y, b.x, b.y) < this.r) { b.trapTimer = 180; b.trapType = 'bubble'; b.trapObj = this; playSwapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } 
   } 
 }
@@ -1955,14 +2009,12 @@ function mousePressed() {
     isRankDragging = true; rankDragStartY = mouseY; rankScrollStartY = rankTargetScrollY; rankDragMoved = false; clickedUI = true;
   }
   
-  // 💡 즉시 완주 버튼 클릭 판정
   if (!forceFinishAll && endingFairyTimer <= 0) { 
     let btnX = width - 85, btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80, btnW = 75, btnH = 60; 
     if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { forceFinishAll = true; isPaused = false; let t = i18n[currentLang]; addEventLog(null, t.ann_force_finish, color(190, 80, 100), true); clickedUI = true; } 
   } 
   
   if (endingFairyTimer <= 0) { 
-    // 우측 UI 버튼들
     let btnX = width - 85, btnY = 100, btnW = 75, btnH = 35; 
     if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) { speedLevel = (speedLevel + 1) % 3; playNormalHit(1000, targetBall ? targetBall.x : 0, targetBall ? targetBall.y : height/2); clickedUI = true; }
     
@@ -1976,16 +2028,14 @@ function mousePressed() {
     if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= muteBtnY && mouseY <= muteBtnY + btnH) { isMuted = !isMuted; clickedUI = true; }
   }
   
-  let firstPlaceFinished = balls.some(b => b.finished); 
-  if (firstPlaceFinished && endingFairyTimer <= 0) { 
+  // 💡 미니맵 클릭은 경기 시작 후 언제든 가능하도록 수정
+  if (endingFairyTimer <= 0) { 
     let mmBtnX = width - 85, mmBtnY = 230, mmBtnW = 75, mmBtnH = 30;
     
-    // 💡 미니맵 [접기/펼치기] 버튼 영역 클릭 판정
     if (mouseX >= mmBtnX && mouseX <= mmBtnX + mmBtnW && mouseY >= mmBtnY && mouseY <= mmBtnY + mmBtnH) {
       minimapExpanded = !minimapExpanded;
       clickedUI = true;
     } 
-    // 💡 미니맵이 펼쳐져 있을 때, 내부 맵 영역 클릭 판정 (수동 포커스)
     else if (minimapExpanded) {
       let bottomSpace = (devTickerActive && devTickerText.trim() !== "") ? 130 : 90;
       let mmH = height - mmBtnY - bottomSpace;
