@@ -6,6 +6,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   
   <style>
     body {
@@ -55,26 +57,66 @@
 <div id="ui-container"></div>
 
 <script>
-let devBgTextActive = localStorage.getItem('devBgTextActive') !== 'false';
-let devBgText = localStorage.getItem('devBgText') !== null ? localStorage.getItem('devBgText') : "PEANUT RACE, MUTANT MODE, AWAKENING";
-let devBgColor = localStorage.getItem('devBgColor') !== null ? localStorage.getItem('devBgColor') : "#00e5ff";
-let devBgOpacity = localStorage.getItem('devBgOpacity') !== null ? parseInt(localStorage.getItem('devBgOpacity')) : 15;
-let devBgCount = localStorage.getItem('devBgCount') !== null ? parseInt(localStorage.getItem('devBgCount')) : 15;
+// 💡 방금 메모장에 복사해둔 당신의 보물 지도로 아래 내용을 교체해 주세요!
+const firebaseConfig = {
+  apiKey: "여기에_당신의_API키를_넣으세요",
+  authDomain: "여기에_당신의_도메인을_넣으세요",
+  databaseURL: "여기에_당신의_DB_URL을_넣으세요",
+  projectId: "여기에_당신의_프로젝트ID를_넣으세요",
+  storageBucket: "여기에_당신의_버킷을_넣으세요",
+  messagingSenderId: "여기에_당신의_센더ID를_넣으세요",
+  appId: "여기에_당신의_앱ID를_넣으세요"
+};
+
+// 마법의 수신기 켜기
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 개인 일기장(localStorage) 대신, 기본값을 먼저 준비합니다.
+let devBgTextActive = false;
+let devBgText = "PEANUT RACE, MUTANT MODE, AWAKENING";
+let devBgColor = "#00e5ff";
+let devBgOpacity = 15;
+let devBgCount = 15;
 let devBgTextsArr = [];
 
-let devTickerActive = localStorage.getItem('devTickerActive') === 'true';
-let devTickerText = localStorage.getItem('devTickerText') || "긴급 속보: 땅콩 레이스 절찬 진행 중! 한 치 앞을 알 수 없는 승부가 펼쳐지고 있습니다.";
-let devTickerTextColor = localStorage.getItem('devTickerTextColor') || "#ffffff";
-let devTickerBgColor = localStorage.getItem('devTickerBgColor') || "#aa0000";
-let devTickerOpacity = localStorage.getItem('devTickerOpacity') !== null ? parseInt(localStorage.getItem('devTickerOpacity')) : 80;
+let devTickerActive = true;
+let devTickerText = "긴급 속보: 땅콩 레이스 절찬 진행 중! 한 치 앞을 알 수 없는 승부가 펼쳐지고 있습니다.";
+let devTickerTextColor = "#ffffff";
+let devTickerBgColor = "#aa0000";
+let devTickerOpacity = 80;
 let tickerX = 0; 
 
-let devAds = localStorage.getItem('devAds') ? JSON.parse(localStorage.getItem('devAds')) : [
+let devAds = [
     {type: 'text', data: '🥜 PEANUT RACE 🥜'},
     {type: 'text', data: '⚡ MUTANT MODE ⚡'},
     {type: 'text', data: '🏆 ULTIMATE RUN 🏆'}
 ];
 let adItems = []; 
+
+// 💡 핵심: 전광판(Firebase)에 누군가 새 글을 쓰면, 내 화면의 변수들을 즉시 덮어쓰고 화면을 새로고침합니다.
+db.ref('peanutRace/devSettings').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        devBgTextActive = data.devBgTextActive !== undefined ? data.devBgTextActive : devBgTextActive;
+        devBgText = data.devBgText || devBgText;
+        devBgColor = data.devBgColor || devBgColor;
+        devBgOpacity = data.devBgOpacity !== undefined ? data.devBgOpacity : devBgOpacity;
+        devBgCount = data.devBgCount !== undefined ? data.devBgCount : devBgCount;
+        
+        devTickerActive = data.devTickerActive !== undefined ? data.devTickerActive : devTickerActive;
+        devTickerText = data.devTickerText || devTickerText;
+        devTickerTextColor = data.devTickerTextColor || devTickerTextColor;
+        devTickerBgColor = data.devTickerBgColor || devTickerBgColor;
+        devTickerOpacity = data.devTickerOpacity !== undefined ? data.devTickerOpacity : devTickerOpacity;
+        
+        if (data.devAds) devAds = data.devAds;
+        
+        // 전광판의 내용이 내 화면에 즉시 물들도록 재계산합니다.
+        initDevBgTexts(); 
+        loadAdItems();
+    }
+}); 
 
 // 💡 과거에 저장되어 있던 무거운 원본 배너 이미지들을 찾아내어 자동으로 압축합니다.
 devAds.forEach((ad, idx) => {
@@ -188,7 +230,7 @@ function openDevMode() {
   
   let fileAdWrap = createDiv(''); fileAdWrap.parent(adDiv); fileAdWrap.style('display', 'flex'); fileAdWrap.style('align-items', 'center'); fileAdWrap.style('justify-content', 'space-between'); fileAdWrap.style('margin-bottom', '15px');
   let fileAdLabel = createSpan('배너 이미지 첨부: '); fileAdLabel.parent(fileAdWrap); fileAdLabel.style('color', '#ccc'); fileAdLabel.style('font-size', '12px');
-  let fileAdInp = createFileInput((file) => {
+let fileAdInp = createFileInput((file) => {
       if (file.type === 'image') {
           let domImg = new Image();
           domImg.onload = () => {
@@ -198,8 +240,13 @@ function openDevMode() {
               let ctx = offC.getContext('2d');
               ctx.drawImage(domImg, 0, 0, targetW, targetH);
               let base64 = offC.toDataURL('image/jpeg', 0.85); 
+              
               devAds.push({type: 'img', data: base64});
-              localStorage.setItem('devAds', JSON.stringify(devAds));
+              
+              // 💡 내 일기장(localStorage)에 적던 것을 지우고,
+              // 새 이미지가 추가된 목록을 마을의 전광판(Firebase)으로 쏘아 올립니다.
+              db.ref('peanutRace/devSettings').update({ devAds: devAds });
+              
               loadAdItems(); renderAdList();
           };
           domImg.src = file.data;
@@ -216,18 +263,26 @@ function openDevMode() {
           let txt = ad.type === 'text' ? `📝 ${ad.data}` : `🖼️ [이미지 배너]`;
           let span = createDiv(txt); span.parent(row); span.class('ad-item-text');
           let delBtn = createButton('❌'); delBtn.parent(row); delBtn.class('ghost-btn'); delBtn.style('padding', '2px 6px'); delBtn.style('font-size', '10px');
-          delBtn.mousePressed(() => {
-              devAds.splice(i, 1);
-              localStorage.setItem('devAds', JSON.stringify(devAds));
+delBtn.mousePressed(() => {
+              devAds.splice(i, 1); // 💡 목록에서 해당 광고를 빼냅니다.
+              
+              // 💡 내 일기장(localStorage) 코드를 지우고, 
+              // 하나가 지워진 새로운 목록을 하늘의 전광판(Firebase)으로 쏘아 올립니다.
+              db.ref('peanutRace/devSettings').update({ devAds: devAds });
+              
               loadAdItems(); renderAdList();
           });
       });
   }
   
-  addTextBtn.mousePressed(() => {
+addTextBtn.mousePressed(() => {
       if (textAdInp.value().trim() !== '') {
           devAds.push({type: 'text', data: textAdInp.value()});
-          localStorage.setItem('devAds', JSON.stringify(devAds));
+          
+          // 💡 내 일기장(localStorage)에 쓰던 것을 지우고, 
+          // 이제는 하늘의 전광판(Firebase)에 새로운 광고 목록을 통째로 보냅니다.
+          db.ref('peanutRace/devSettings').update({ devAds: devAds });
+          
           loadAdItems(); renderAdList();
           textAdInp.value('');
       }
@@ -287,25 +342,24 @@ function openDevMode() {
 
   let saveBtn = createButton('💾 설정 저장 및 캔버스 적용'); saveBtn.parent(modal); saveBtn.class('modern-btn');
   saveBtn.style('padding', '12px');
-  saveBtn.mousePressed(() => {
-      devBgTextActive = cbBgText.checked();
-      devBgText = inpText.value();
-      devBgColor = inpColor.value();
-      devBgOpacity = parseInt(inpOp.value());
-      devBgCount = parseInt(inpCount.value());
-
-      devTickerActive = cbTicker.checked();
-      devTickerText = inpTickerText.value();
-      devTickerTextColor = inpTickerColor.value();
-      devTickerBgColor = inpTickerBgColor.value();
-      devTickerOpacity = parseInt(inpTickerOp.value());
-
-      localStorage.setItem('devBgTextActive', devBgTextActive); localStorage.setItem('devBgText', devBgText); localStorage.setItem('devBgColor', devBgColor); localStorage.setItem('devBgOpacity', devBgOpacity); localStorage.setItem('devBgCount', devBgCount);
-      localStorage.setItem('devTickerActive', devTickerActive); localStorage.setItem('devTickerText', devTickerText); localStorage.setItem('devTickerTextColor', devTickerTextColor); localStorage.setItem('devTickerBgColor', devTickerBgColor); localStorage.setItem('devTickerOpacity', devTickerOpacity);
-
-      initDevBgTexts(); 
-      tickerX = width; 
-      alert('개발자 설정이 성공적으로 반영되었습니다.');
+saveBtn.mousePressed(() => {
+      // 💡 내 일기장(localStorage)에 쓰던 것을 하늘의 전광판(Firebase)으로 한 번에 쏘아 올립니다.
+      db.ref('peanutRace/devSettings').update({
+          devBgTextActive: cbBgText.checked(),
+          devBgText: inpText.value(),
+          devBgColor: inpColor.value(),
+          devBgOpacity: parseInt(inpOp.value()),
+          devBgCount: parseInt(inpCount.value()),
+          devTickerActive: cbTicker.checked(),
+          devTickerText: inpTickerText.value(),
+          devTickerTextColor: inpTickerColor.value(),
+          devTickerBgColor: inpTickerBgColor.value(),
+          devTickerOpacity: parseInt(inpTickerOp.value())
+      }).then(() => {
+          // 저장이 완료되면 시스템이 스스로 알아차리고 on('value')를 통해 화면을 갱신합니다.
+          tickerX = width; 
+          alert('개발자 설정이 전 세계의 레이스에 성공적으로 반영되었습니다.');
+      });
   });
   
   let closeBtn = createButton('닫기'); closeBtn.parent(modal); closeBtn.class('ghost-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '10px'); closeBtn.mousePressed(() => { modal.remove(); });
