@@ -51,14 +51,15 @@
     .lib-item:hover { background: rgba(0, 229, 255, 0.2); transform: scale(1.1); }
     .lib-item img { width: 40px; height: 40px; object-fit: contain; }
 
-    #fsBtn { position: fixed; right: 10px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; pointer-events: auto; }
+#fsBtn { position: fixed; right: 10px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; pointer-events: auto; }
     #fsBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
+    
+    #bgmMuteBtn { position: fixed; right: 180px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; pointer-events: auto; }
+    #bgmMuteBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
 
     .ad-item-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05); }
     .ad-item-text { color: #ccc; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
 
-    /* 💬 독립된 댓글 창(관중석) 스타일 */
-    /* 💡 버튼이 항상 클릭되도록 pointer-events: auto를 명시합니다. */
     #commentOpenBtn { position: fixed; left: 0px; bottom: 0px; z-index: 1100; font-size: 15px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Noto Sans KR', sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3); pointer-events: auto; }
     #commentOpenBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4); }
     
@@ -71,6 +72,7 @@
 </head>
 <body>
   
+<button id="bgmMuteBtn">🎵 BGM ON</button>
 <button id="fsBtn">🔲 FULLSCREEN</button>
 <div id="ui-container"></div>
 
@@ -868,6 +870,7 @@ const i18n = {
 
 let currentLang = 'ko'; 
 let setupBgm = null;
+let isLobbyBgmMuted = false;
 let langDiv, setupDiv, playerListDiv;
 let playerRows = []; let customPlayersData = [];
 let useLightMode = true, useMutantMode = true, useElectricTrap = true, useBubbleTrap = true, useFirstPlaceOnly = false;
@@ -884,9 +887,9 @@ let framesSinceStart = 0;
 
 let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]; 
 let activeTeamSkills = [true, true, true, true];
-let activeCosmicSnap = false; // 💡 우주 스킬: 핑거스냅 활성화 여부
-let cosmicSnapTriggered = false; // 💡 핑거스냅 발동 여부
-let cosmicStars = []; // 💡 보랏빛 별 배열
+let activeCosmicSnap = false; 
+let cosmicSnapTriggered = false; 
+let cosmicStars = []; 
 
 let currentEditingRow = null;
 let currentEditingBtn = null;
@@ -921,6 +924,19 @@ let osc, env;
 
 let minimapExpanded = true;
 
+// 💡 [수정됨] BGM 끄기/켜기 버튼의 감각을 연결합니다
+document.getElementById('bgmMuteBtn').addEventListener('click', () => {
+  isLobbyBgmMuted = !isLobbyBgmMuted;
+  let btn = document.getElementById('bgmMuteBtn');
+  if (isLobbyBgmMuted) {
+    btn.innerText = '🔇 BGM OFF';
+    if (setupBgm) setupBgm.muted = true;
+  } else {
+    btn.innerText = '🎵 BGM ON';
+    if (setupBgm) setupBgm.muted = false;
+  }
+})
+
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.id('gameCanvas');
@@ -934,7 +950,38 @@ function setup() {
   loadAdItems(); 
   initDevBgTexts(); 
   
-  // 💡 완전히 독립된 관중석(댓글 창)을 짓습니다.
+  // 💡 [수정됨] 화면 어디든 첫 터치/클릭이 일어나는 순간 페이드 마법과 함께 음악을 깨웁니다.
+  let wakeUpMusic = () => {
+      if (!setupBgm) {
+          setupBgm = new Audio('intro.mp3'); // 깃허브에 올리신 파일명으로 적어주세요
+          setupBgm.loop = true;  
+          setupBgm.volume = 0.0; 
+          setupBgm.muted = isLobbyBgmMuted;
+          
+          setupBgm.addEventListener('timeupdate', () => {
+              let fadeTime = 3.0; 
+              let maxVol = 0.4;   
+              if (setupBgm.duration > 0) {
+                  let timeLeft = setupBgm.duration - setupBgm.currentTime;
+                  if (timeLeft <= fadeTime) {
+                      setupBgm.volume = Math.max(0, maxVol * (timeLeft / fadeTime));
+                  } else if (setupBgm.currentTime <= fadeTime) {
+                      setupBgm.volume = Math.min(maxVol, maxVol * (setupBgm.currentTime / fadeTime));
+                  } else {
+                      setupBgm.volume = maxVol;
+                  }
+              }
+          });
+      }
+      
+      setupBgm.play().catch(e => console.log("음악 재생 대기 중"));
+      document.removeEventListener('click', wakeUpMusic);
+      document.removeEventListener('touchstart', wakeUpMusic);
+  };
+  
+  document.addEventListener('click', wakeUpMusic);
+  document.addEventListener('touchstart', wakeUpMusic);
+
   buildCommentWindow(); 
 }
 
@@ -944,6 +991,10 @@ function windowResized() {
 }
 
 function createLangUI() {
+  // 💡 [수정됨] 로비로 돌아왔으니 BGM 스위치를 다시 꺼냅니다.
+  let muteBtn = document.getElementById('bgmMuteBtn');
+  if (muteBtn) muteBtn.style.display = 'block';
+
   if (langDiv) langDiv.remove(); if (setupDiv) setupDiv.remove();
   let uiContainer = select('#ui-container');
   langDiv = createDiv(''); langDiv.parent(uiContainer); langDiv.class('glass-panel');
@@ -951,22 +1002,13 @@ function createLangUI() {
   let preTitle = createElement('h1', 'PEANUT RACE'); preTitle.parent(langDiv); preTitle.class('futuristic-title'); preTitle.style('margin-bottom', '10px'); preTitle.style('text-shadow', '0 0 20px rgba(0, 229, 255, 0.8)');
   let title = createElement('h3', 'SYSTEM INITIALIZATION'); title.parent(langDiv); title.style('margin-bottom', '40px'); title.style('font-weight', '300'); title.style('color', '#88aaff');
   let langs = [{ code: 'ko', label: '🇰🇷 한국어 접속' }, { code: 'en', label: '🇺🇸 ENGLISH CONNECT' }, { code: 'zh', label: '🇨🇳 中文连接' }, { code: 'ja', label: '🇯🇵 日本語接続' }];
-langs.forEach(l => {
+  langs.forEach(l => {
     let btn = createButton(l.label); btn.parent(langDiv); btn.class('modern-btn');
     btn.style('width', '250px'); btn.style('padding', '15px'); btn.style('margin-bottom', '15px'); btn.style('font-size', '16px');
     btn.mousePressed(() => { 
         currentLang = l.code; 
         langDiv.remove(); 
         createSetupUI(); 
-        
-        // 💡 언어를 선택하는 순간(첫 클릭), 잔잔한 음악이 시작됩니다.
-        if (!setupBgm) {
-            // '음악주소.mp3' 부분에 실제 음악 파일의 링크를 넣어주세요.
-            setupBgm = new Audio('racer.mp3'); 
-            setupBgm.loop = true;  // 반복 재생
-            setupBgm.volume = 0.4; // 대화에 방해되지 않을 만큼의 부드러운 음량 (0.0 ~ 1.0)
-        }
-        setupBgm.play().catch(e => console.log("음악 재생 대기 중"));
     });
   });
 }
@@ -988,7 +1030,6 @@ function createSkillModal() {
   };
   makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13,14], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
   
-  // 💡 우주 스킬(재앙) 카테고리 추가
   let catCosmicTitle = createElement('h4', t.cat_cosmic); catCosmicTitle.parent(modal); 
   catCosmicTitle.style('color', '#a55eea'); catCosmicTitle.style('margin-top', '15px'); 
   catCosmicTitle.style('margin-bottom', '10px'); catCosmicTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)'); catCosmicTitle.style('padding-bottom', '5px');
@@ -1185,15 +1226,17 @@ function startGameFromUI() {
     teamGaugeThreshold = constrain(floor(gaugeThreshold * avgTeamSize * 1.2), 10, 100);
   } else { gaugeThreshold = parseInt(gaugeSlider.value()); teamGaugeThreshold = parseInt(teamGaugeSlider.value()); }
   
-document.querySelector('canvas').style.display = 'block'; userStartAudio(); osc.start(); setupDiv.hide(); gameStarted = true; isPaused = false; 
+  document.querySelector('canvas').style.display = 'block'; userStartAudio(); osc.start(); setupDiv.hide(); gameStarted = true; isPaused = false; 
   tickerX = width; 
   initWorld(); 
   if (isRecording) { startRecording(); }
   
-  // 💡 레이스 시작과 동시에 로비의 음악을 부드럽게 멈춥니다.
+  // 💡 [수정됨] 레이스가 시작되면 음악을 끄고, BGM 버튼을 숨깁니다.
+  let muteBtn = document.getElementById('bgmMuteBtn');
+  if (muteBtn) muteBtn.style.display = 'none';
   if (setupBgm) {
       setupBgm.pause();
-      setupBgm.currentTime = 0; // 음악의 재생 위치를 처음으로 되돌려 놓습니다.
+      setupBgm.currentTime = 0; 
   }
 }
   
@@ -2664,7 +2707,6 @@ function mouseWheel(event) {
   let panelWidth = useCasterMode ? 160 : 120; let panelHeight = min(250, balls.length * 24 + 16);
   if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) { rankTargetScrollY += event.delta; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); return false; }
 }
-// ⬆️ 여기까지 복사하시면 됩니다. ⬆️
 
 </script>
 </body>
