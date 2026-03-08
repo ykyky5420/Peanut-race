@@ -1,4 +1,1770 @@
-* 2.5);
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="땅콩 레이스">
+  <title>땅콩 레이스: 뮤턴트 모드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  
+  <style>
+    body {
+      margin: 0; padding: 0; display: flex; justify-content: center; align-items: center;
+      height: 100vh; width: 100vw; background-color: #05050a; overflow: hidden;
+      font-family: 'Noto Sans KR', sans-serif;
+      overscroll-behavior: none; 
+      touch-action: none; 
+    }
+    canvas { display: block; outline: none; }
+    
+    #ui-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 660px; height: 800px; max-height: 95vh; z-index: 10; pointer-events: none; }
+    .glass-panel, input, select, button { pointer-events: auto !important; }
+    
+    .glass-panel { position: relative; background: rgba(10, 12, 20, 0.7) !important; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08) !important; border-top: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; border-radius: 12px; overflow: auto; }
+    
+    .modern-input { background: rgba(255, 255, 255, 0.05) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 6px !important; padding: 10px 10px !important; font-family: 'Noto Sans KR', sans-serif; transition: all 0.3s ease; box-sizing: border-box; }
+    .modern-input:focus { outline: none; background: rgba(255, 255, 255, 0.1) !important; border-color: #00e5ff !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3) !important; }
+    .number-input { width: 35px !important; padding: 10px 5px !important; text-align: center; }
+    .modern-btn { background: linear-gradient(135deg, #007bff, #00e5ff) !important; color: #fff !important; border: none !important; border-radius: 8px !important; text-transform: uppercase; letter-spacing: 1px; font-weight: 700 !important; font-family: 'Noto Sans KR', sans-serif; transition: all 0.3s ease; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .modern-btn:hover { box-shadow: 0 0 20px rgba(0, 229, 255, 0.6) !important; transform: translateY(-2px); cursor: pointer; }
+    .ghost-btn { background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #aaa !important; border-radius: 6px !important; transition: all 0.3s ease; cursor: pointer; }
+    .ghost-btn:hover { background: rgba(255, 255, 255, 0.1) !important; color: #fff !important; border-color: rgba(255, 255, 255, 0.3) !important; }
+    input[type="checkbox"] { accent-color: #00e5ff; width: 16px; height: 16px; margin-right: 10px; cursor: pointer; }
+    input[type="range"] { width: 100%; accent-color: #00e5ff; cursor: pointer; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; -webkit-appearance: none; margin-top: 10px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #00e5ff; cursor: pointer; box-shadow: 0 0 10px rgba(0,229,255,0.8); }
+    .futuristic-title { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+    select option { background: #0a0c14; color: #fff; }
+    
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.5); }
+
+    .lib-item { font-size: 32px; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.05); text-align:center; }
+    .lib-item:hover { background: rgba(0, 229, 255, 0.2); transform: scale(1.1); }
+    .lib-item img { width: 40px; height: 40px; object-fit: contain; }
+
+    #fsBtn { position: fixed; right: 10px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; pointer-events: auto; }
+    #fsBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
+    
+    #bgmMuteBtn { position: fixed; right: 180px; top: 10px; z-index: 1000; font-size: 11px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Orbitron', sans-serif; pointer-events: auto; }
+    #bgmMuteBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
+
+    .ad-item-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05); }
+    .ad-item-text { color: #ccc; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+
+    #commentOpenBtn { position: fixed; left: 0px; bottom: 0px; z-index: 1100; font-size: 15px; letter-spacing: 1px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(10,12,20,0.8); color: #fff; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); font-family: 'Noto Sans KR', sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3); pointer-events: auto; }
+    #commentOpenBtn:hover { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.4); }
+    
+    .comment-item { background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; border-left: 4px solid #00e5ff; margin-bottom: 12px; font-size: 13px; color: #eee; word-break: break-all; transition: background 0.3s; }
+    .comment-item:hover { background: rgba(255,255,255,0.08); }
+    .comment-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .comment-author { font-weight: 700; color: #00e5ff; font-size: 13px; }
+    .comment-time { font-size: 10px; color: #88aaff; }
+
+    @keyframes titleEntrance {
+      0% { opacity: 0; transform: translateY(-30px) scale(0.8); letter-spacing: -10px; filter: blur(10px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 2px; filter: blur(0); }
+    }
+    @keyframes titlePulse {
+      0% { text-shadow: 0 0 15px rgba(0, 229, 255, 0.6), 0 0 30px rgba(0, 229, 255, 0.4); }
+      50% { text-shadow: 0 0 25px rgba(0, 229, 255, 1), 0 0 50px rgba(0, 229, 255, 0.8), 0 0 75px rgba(0, 229, 255, 0.6); }
+      100% { text-shadow: 0 0 15px rgba(0, 229, 255, 0.6), 0 0 30px rgba(0, 229, 255, 0.4); }
+    }
+    .title-anim {
+      animation: titleEntrance 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, titlePulse 3s ease-in-out 1.5s infinite;
+    }
+  </style>
+</head>
+<body>
+  
+<button id="bgmMuteBtn">🎵 BGM ON</button>
+<button id="fsBtn">🔲 FULLSCREEN</button>
+<div id="ui-container"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDnHCvo1Mot1gjKbWpbOBP_zHieYmQa9UY",
+  authDomain: "peanutrace.firebaseapp.com",
+  databaseURL: "https://peanutrace-default-rtdb.firebaseio.com/",
+  projectId: "peanutrace",
+  storageBucket: "peanutrace.firebasestorage.app",
+  messagingSenderId: "551828558031",
+  appId: "1:551828558031:web:9a7c99d57d266a79b6a7ba"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let devBgTextActive = false;
+let devBgText = "PEANUT RACE, MUTANT MODE, AWAKENING";
+let devBgColor = "#00e5ff";
+let devBgOpacity = 15;
+let devBgCount = 15;
+let devBgTextsArr = [];
+
+let devTickerActive = true;
+let devTickerText = "긴급 속보: 땅콩 레이스 절찬 진행 중! 한 치 앞을 알 수 없는 승부가 펼쳐지고 있습니다.";
+let devTickerTextColor = "#ffffff";
+let devTickerBgColor = "#aa0000";
+let devTickerOpacity = 80;
+let tickerX = 0; 
+
+let devAds = [
+    {type: 'text', data: '🥜 PEANUT RACE 🥜'},
+    {type: 'text', data: '⚡ MUTANT MODE ⚡'},
+    {type: 'text', data: '🏆 ULTIMATE RUN 🏆'}
+];
+let adItems = []; 
+
+db.ref('peanutRace/devSettings').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        devBgTextActive = data.devBgTextActive !== undefined ? data.devBgTextActive : devBgTextActive;
+        devBgText = data.devBgText || devBgText;
+        devBgColor = data.devBgColor || devBgColor;
+        devBgOpacity = data.devBgOpacity !== undefined ? data.devBgOpacity : devBgOpacity;
+        devBgCount = data.devBgCount !== undefined ? data.devBgCount : devBgCount;
+        
+        devTickerActive = data.devTickerActive !== undefined ? data.devTickerActive : devTickerActive;
+        devTickerText = data.devTickerText || devTickerText;
+        devTickerTextColor = data.devTickerTextColor || devTickerTextColor;
+        devTickerBgColor = data.devTickerBgColor || devTickerBgColor;
+        devTickerOpacity = data.devTickerOpacity !== undefined ? data.devTickerOpacity : devTickerOpacity;
+        
+        if (data.devAds) devAds = data.devAds;
+        
+        initDevBgTexts(); 
+        loadAdItems();
+        if (tickerX < -1000) tickerX = width; 
+    }
+});
+
+devAds.forEach((ad, idx) => {
+  if (ad.type === 'img' && ad.data.length > 100000) {
+    let domImg = new Image();
+    domImg.onload = () => {
+      let offC = document.createElement('canvas');
+      let targetW = 300; 
+      let targetH = targetW * (domImg.height / domImg.width);
+      offC.width = targetW; 
+      offC.height = targetH;
+      let ctx = offC.getContext('2d');
+      ctx.drawImage(domImg, 0, 0, targetW, targetH);
+      let compressedBase64 = offC.toDataURL('image/jpeg', 0.85); 
+      devAds[idx].data = compressedBase64; 
+      localStorage.setItem('devAds', JSON.stringify(devAds));
+      loadAdItems(); 
+    };
+    domImg.src = ad.data;
+  }
+});
+
+document.getElementById('fsBtn').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+});
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    document.getElementById('fsBtn').innerText = '🔲 WINDOWED';
+  } else {
+    document.getElementById('fsBtn').innerText = '🔲 FULLSCREEN';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && (e.key === 'a' || e.key === 'A')) {
+    e.preventDefault();
+    let pwd = prompt('창조자의 열쇠(비밀번호)를 입력하세요.');
+    if (pwd) {
+      firebase.auth().signInWithEmailAndPassword("lidotoryil@naver.com", pwd)
+        .then((userCredential) => { openDevMode(); })
+        .catch((error) => { alert('접근이 거부되었습니다. 세계의 질서를 지키는 열쇠가 맞는지 확인해 주세요.'); });
+    }
+  }
+});
+
+let uiContainerElt = document.getElementById('ui-container');
+let uiZoomLevel = 1.0;
+let initialPinchDist = null;
+
+uiContainerElt.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+  }
+}, { passive: false });
+
+uiContainerElt.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && initialPinchDist !== null) {
+    e.preventDefault(); 
+    let currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+    let scaleChange = currentDist / initialPinchDist;
+    uiZoomLevel = Math.min(Math.max(1.0, uiZoomLevel * scaleChange), 3.0); 
+    uiContainerElt.style.transform = `translate(-50%, -50%) scale(${uiZoomLevel})`;
+    initialPinchDist = currentDist; 
+  }
+}, { passive: false });
+
+uiContainerElt.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) { initialPinchDist = null; }
+});
+  
+function loadAdItems() {
+    adItems = [];
+    let adWidth = 70; 
+    devAds.forEach((ad) => {
+        if (ad.type === 'text') {
+            adItems.push({ type: 'text', data: ad.data, h: 250 });
+        } else if (ad.type === 'img') {
+            let item = { type: 'img', imgObj: null, h: 300 }; 
+            loadImage(ad.data, (img) => {
+                item.h = Math.floor(80 * (img.width / img.height)); 
+                if(img.width > 0 && img.height > 0) { img.resize(item.h, adWidth); }
+                item.imgObj = img;
+            });
+            adItems.push(item);
+        }
+    });
+}
+
+function openDevMode() {
+  if (document.getElementById('dev-modal')) return;
+  let modal = createDiv(''); modal.id('dev-modal'); modal.parent(select('#ui-container')); modal.class('glass-panel'); 
+  modal.style('position', 'absolute'); modal.style('top', '50%'); modal.style('left', '50%'); 
+  modal.style('transform', 'translate(-50%, -50%)'); modal.style('width', '500px'); modal.style('padding', '30px'); 
+  modal.style('z-index', '999'); modal.style('display', 'flex'); modal.style('flex-direction', 'column');
+  modal.style('max-height', '85vh'); modal.style('overflow-y', 'auto');
+
+  let title = createElement('h2', '🛠️ DEVELOPER MODE'); title.parent(modal); title.style('color', '#00e5ff'); title.style('text-align', 'center'); title.style('margin-top', '0');
+
+  let makeRow = (parentDiv, labelStr) => {
+      let r = createDiv(''); r.parent(parentDiv);
+      r.style('display', 'flex'); r.style('align-items', 'center'); r.style('justify-content', 'space-between'); r.style('margin-bottom', '12px');
+      let lbl = createSpan(labelStr); lbl.parent(r); lbl.style('color', '#fff'); lbl.style('font-size', '13px'); lbl.style('flex-shrink', '0');
+      return r;
+  }
+
+  let adDiv = createDiv(''); adDiv.parent(modal);
+  adDiv.style('background', 'rgba(255,255,255,0.03)'); adDiv.style('border', '1px solid rgba(255,255,255,0.1)');
+  adDiv.style('padding', '20px'); adDiv.style('border-radius', '8px'); adDiv.style('margin-bottom', '15px');
+  let adTitle = createDiv('🛤️ 양쪽 광고 트랙 (배너/텍스트)'); adTitle.parent(adDiv);
+  adTitle.style('color', '#55ffaa'); adTitle.style('margin-bottom', '15px'); adTitle.style('font-weight', 'bold');
+
+  let adInputRow = createDiv(''); adInputRow.parent(adDiv); adInputRow.style('display', 'flex'); adInputRow.style('gap', '5px'); adInputRow.style('margin-bottom', '10px');
+  let textAdInp = createInput(''); textAdInp.parent(adInputRow); textAdInp.class('modern-input'); textAdInp.style('flex-grow', '1'); textAdInp.attribute('placeholder', '광고 문구 입력');
+  let addTextBtn = createButton('+ 텍스트'); addTextBtn.parent(adInputRow); addTextBtn.class('ghost-btn'); addTextBtn.style('padding', '5px 10px');
+  
+  let fileAdWrap = createDiv(''); fileAdWrap.parent(adDiv); fileAdWrap.style('display', 'flex'); fileAdWrap.style('align-items', 'center'); fileAdWrap.style('justify-content', 'space-between'); fileAdWrap.style('margin-bottom', '15px');
+  let fileAdLabel = createSpan('배너 이미지 첨부: '); fileAdLabel.parent(fileAdWrap); fileAdLabel.style('color', '#ccc'); fileAdLabel.style('font-size', '12px');
+  let fileAdInp = createFileInput((file) => {
+      if (file.type === 'image') {
+          let domImg = new Image();
+          domImg.onload = () => {
+              let offC = document.createElement('canvas');
+              let targetW = 300; let targetH = targetW * (domImg.height / domImg.width);
+              offC.width = targetW; offC.height = targetH;
+              let ctx = offC.getContext('2d');
+              ctx.drawImage(domImg, 0, 0, targetW, targetH);
+              let base64 = offC.toDataURL('image/jpeg', 0.85); 
+              devAds.push({type: 'img', data: base64});
+              db.ref('peanutRace/devSettings').update({ devAds: devAds });
+              loadAdItems(); renderAdList();
+          };
+          domImg.src = file.data;
+      }
+  });
+  fileAdInp.parent(fileAdWrap); fileAdInp.style('color', '#aaa'); fileAdInp.style('font-size', '11px');
+
+  let adListDiv = createDiv(''); adListDiv.parent(adDiv); adListDiv.style('max-height', '150px'); adListDiv.style('overflow-y', 'auto');
+  
+  function renderAdList() {
+      adListDiv.html('');
+      devAds.forEach((ad, i) => {
+          let row = createDiv(''); row.parent(adListDiv); row.class('ad-item-row');
+          let txt = ad.type === 'text' ? `📝 ${ad.data}` : `🖼️ [이미지 배너]`;
+          let span = createDiv(txt); span.parent(row); span.class('ad-item-text');
+          let delBtn = createButton('❌'); delBtn.parent(row); delBtn.class('ghost-btn'); delBtn.style('padding', '2px 6px'); delBtn.style('font-size', '10px');
+          delBtn.mousePressed(() => {
+              devAds.splice(i, 1); 
+              db.ref('peanutRace/devSettings').update({ devAds: devAds });
+              loadAdItems(); renderAdList();
+          });
+      });
+  }
+  
+  addTextBtn.mousePressed(() => {
+      if (textAdInp.value().trim() !== '') {
+          devAds.push({type: 'text', data: textAdInp.value()});
+          db.ref('peanutRace/devSettings').update({ devAds: devAds });
+          loadAdItems(); renderAdList();
+          textAdInp.value('');
+      }
+  });
+  renderAdList();
+
+  let stDiv = createDiv(''); stDiv.parent(modal);
+  stDiv.style('background', 'rgba(255,255,255,0.03)'); stDiv.style('border', '1px solid rgba(255,255,255,0.1)');
+  stDiv.style('padding', '20px'); stDiv.style('border-radius', '8px'); stDiv.style('margin-bottom', '15px');
+  let stTitle = createDiv('🌊 배경 흐름 텍스트 설정'); stTitle.parent(stDiv);
+  stTitle.style('color', '#88aaff'); stTitle.style('margin-bottom', '15px'); stTitle.style('font-weight', 'bold');
+
+  let str0 = makeRow(stDiv, '배경 흐름 텍스트 활성화');
+  let cbBgText = createCheckbox('', devBgTextActive); cbBgText.parent(str0);
+
+  let r1 = makeRow(stDiv, '텍스트 문구<br><span style="font-size:10px;color:#aaa;">(쉼표로 구분하여 여러 개 등록)</span>');
+  let inpText = createInput(devBgText); inpText.parent(r1); inpText.class('modern-input'); inpText.style('width', '220px');
+
+  let r2 = makeRow(stDiv, '텍스트 색상');
+  let inpColor = createInput(devBgColor, 'color'); inpColor.parent(r2); inpColor.style('cursor', 'pointer'); inpColor.style('background', 'none'); inpColor.style('border', 'none');
+
+  let r3 = makeRow(stDiv, '투명도 (0~100)');
+  let opWrapper = createDiv(''); opWrapper.parent(r3); opWrapper.style('display', 'flex'); opWrapper.style('align-items', 'center');
+  let inpOp = createInput(devBgOpacity.toString(), 'range'); inpOp.parent(opWrapper); inpOp.attribute('min', '0'); inpOp.attribute('max', '100'); inpOp.style('width', '100px'); inpOp.style('margin-top', '0');
+  let opVal = createSpan(devBgOpacity); opVal.parent(opWrapper); opVal.style('color', '#00e5ff'); opVal.style('width', '30px'); opVal.style('text-align', 'right'); opVal.style('margin-left', '10px');
+  inpOp.input(() => { opVal.html(inpOp.value()); });
+
+  let r4 = makeRow(stDiv, '텍스트 갯수');
+  let inpCount = createInput(devBgCount.toString(), 'number'); inpCount.parent(r4); inpCount.class('modern-input'); inpCount.style('width', '60px'); inpCount.attribute('min', '0'); inpCount.attribute('max', '100');
+
+  let tDiv = createDiv(''); tDiv.parent(modal);
+  tDiv.style('background', 'rgba(255,255,255,0.03)'); tDiv.style('border', '1px solid rgba(255,255,255,0.1)');
+  tDiv.style('padding', '20px'); tDiv.style('border-radius', '8px'); tDiv.style('margin-bottom', '20px');
+  let tTitle = createDiv('📺 하단 자막 뉴스 (티커) 설정'); tTitle.parent(tDiv);
+  tTitle.style('color', '#ffaa00'); tTitle.style('margin-bottom', '15px'); tTitle.style('font-weight', 'bold');
+
+  let tr0 = makeRow(tDiv, '자막 뉴스 활성화');
+  let cbTicker = createCheckbox('', devTickerActive); cbTicker.parent(tr0);
+
+  let tr1 = makeRow(tDiv, '뉴스 텍스트 내용');
+  let inpTickerText = createInput(devTickerText); inpTickerText.parent(tr1); inpTickerText.class('modern-input'); inpTickerText.style('width', '220px');
+
+  let tr2 = makeRow(tDiv, '뉴스 글자 색상');
+  let inpTickerColor = createInput(devTickerTextColor, 'color'); inpTickerColor.parent(tr2); inpTickerColor.style('cursor', 'pointer'); inpTickerColor.style('background', 'none'); inpTickerColor.style('border', 'none');
+
+  let tr3 = makeRow(tDiv, '뉴스 배경 색상');
+  let inpTickerBgColor = createInput(devTickerBgColor, 'color'); inpTickerBgColor.parent(tr3); inpTickerBgColor.style('cursor', 'pointer'); inpTickerBgColor.style('background', 'none'); inpTickerBgColor.style('border', 'none');
+
+  let tr4 = makeRow(tDiv, '배경 투명도 (0~100)');
+  let tOpWrapper = createDiv(''); tOpWrapper.parent(tr4); tOpWrapper.style('display', 'flex'); tOpWrapper.style('align-items', 'center');
+  let inpTickerOp = createInput(devTickerOpacity.toString(), 'range'); inpTickerOp.parent(tOpWrapper); inpTickerOp.attribute('min', '0'); inpTickerOp.attribute('max', '100'); inpTickerOp.style('width', '100px'); inpTickerOp.style('margin-top', '0');
+  let tOpVal = createSpan(devTickerOpacity); tOpVal.parent(tOpWrapper); tOpVal.style('color', '#ffaa00'); tOpVal.style('width', '30px'); tOpVal.style('text-align', 'right'); tOpVal.style('margin-left', '10px');
+  inpTickerOp.input(() => { tOpVal.html(inpTickerOp.value()); });
+
+  let saveBtn = createButton('💾 설정 저장 및 캔버스 적용'); saveBtn.parent(modal); saveBtn.class('modern-btn');
+  saveBtn.style('padding', '12px');
+  saveBtn.mousePressed(() => {
+      db.ref('peanutRace/devSettings').update({
+          devBgTextActive: cbBgText.checked(), devBgText: inpText.value(), devBgColor: inpColor.value(),
+          devBgOpacity: parseInt(inpOp.value()), devBgCount: parseInt(inpCount.value()), devTickerActive: cbTicker.checked(),
+          devTickerText: inpTickerText.value(), devTickerTextColor: inpTickerColor.value(), devTickerBgColor: inpTickerBgColor.value(),
+          devTickerOpacity: parseInt(inpTickerOp.value())
+      }).then(() => {
+          tickerX = width; 
+          alert('개발자 설정이 전 세계의 레이스에 실시간 반영되었습니다.');
+      }).catch((err) => { console.error("저장 실패:", err); alert('저장에 실패했습니다.'); });
+  });
+  
+  let closeBtn = createButton('닫기'); closeBtn.parent(modal); closeBtn.class('ghost-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '10px'); closeBtn.mousePressed(() => { modal.remove(); });
+}
+
+function initDevBgTexts() {
+  devBgTextsArr = [];
+  if (!devBgTextActive || devBgCount <= 0 || !devBgText || devBgText.trim() === "") return;
+  let txts = devBgText.split(',').map(s => s.trim()).filter(s => s !== "");
+  if (txts.length === 0) return;
+  let safeCount = min(devBgCount, 150); 
+  let lanes = Math.max(1, Math.min(safeCount, Math.floor(width / 200))); 
+  let itemsPerLane = Math.ceil(safeCount / lanes);
+  let laneWidth = width / lanes;
+  let idx = 0;
+  for(let l = 0; l < lanes; l++) {
+      let laneSpeed = random(0.8, 1.8); 
+      let laneOffsetY = random(-500, 0); 
+      for(let i = 0; i < itemsPerLane; i++) {
+          if (idx >= safeCount) break;
+          devBgTextsArr.push({ text: random(txts), lane: l, x: l * laneWidth + laneWidth / 2, y: laneOffsetY + i * 250 + random(0, 50), speed: laneSpeed });
+          idx++;
+      }
+  }
+}
+
+function drawDevBgTexts() {
+  if (!devBgTextActive || devBgTextsArr.length === 0) return;
+  push(); textAlign(CENTER, CENTER); textFont('Orbitron'); 
+  let col = color(devBgColor); col.setAlpha(devBgOpacity); fill(col); noStroke();
+  let lanes = Math.max(1, Math.min(devBgCount, Math.floor(width / 200)));
+  let laneWidth = width / lanes; textSize(constrain(laneWidth * 0.12, 14, 30)); 
+  
+  for(let t of devBgTextsArr) {
+      t.y += t.speed; 
+      if(t.y > height + 100) {
+          let minY = height + 100;
+          for(let other of devBgTextsArr) { if (other.lane === t.lane && other !== t) { if (other.y < minY) minY = other.y; } }
+          t.y = Math.min(-100, minY - 250);
+      }
+      let worldX = (t.x - width/2) / camScale - camX + width/(2*camScale);
+      let worldY = (t.y - height/2) / camScale - camY + height/(2*camScale);
+      let tIdx = constrain(floor(worldY / 40), 0, track.length - 1); let trk = track[tIdx];
+      if (!trk || worldX < trk.left - 50 || worldX > trk.right + 50) { text(t.text, t.x, t.y); }
+  }
+  pop();
+}
+
+function drawAdTrack(vTop, vBottom) {
+    if (adItems.length === 0 || track.length === 0) return;
+    let adWidth = 70;  
+    let totalAdHeight = 0;
+    for (let item of adItems) totalAdHeight += item.h;
+    if (totalAdHeight === 0) return;
+
+    for (let side of ['left', 'right']) {
+        let startCycle = Math.max(0, Math.floor(vTop / totalAdHeight));
+        let currentY = startCycle * totalAdHeight;
+        while (currentY < vBottom + 500 && currentY < WORLD_HEIGHT - 500) {
+            for (let item of adItems) {
+                let yStart = currentY; let yEnd = currentY + item.h;
+                if (yEnd > vTop && yStart < vBottom) { drawCurvedAdItem(item, side, yStart, yEnd, adWidth); }
+                currentY += item.h; 
+            }
+        }
+    }
+}
+
+function drawCurvedAdItem(item, side, yStart, yEnd, adWidth) {
+    let midY = (yStart + yEnd) / 2;
+    let tIdx = constrain(floor(midY / 40), 0, track.length - 1); let t = track[tIdx];
+    if(!t) return;
+    let smoothOffset = 600; 
+    let xPos = side === 'left' ? t.center - smoothOffset : t.center + smoothOffset;
+    let tNext = track[constrain(tIdx + 1, 0, track.length - 1)];
+    let angle = atan2(tNext.center - t.center, 40); 
+    
+    push(); translate(xPos, midY); rotate(-angle); 
+    if (side === 'left') rotate(-PI);
+    
+    if (item.type === 'text') {
+        fill(30, 20, 30, 180); stroke(0, 0, 100, 30); strokeWeight(2); rect(-adWidth/2, -item.h/2, adWidth, item.h);
+        fill(0, 0, 100); noStroke(); textAlign(CENTER, CENTER); textSize(24); textFont('Orbitron');
+        push(); rotate(HALF_PI); text(item.data, 0, 0); pop();
+    } else if (item.type === 'img' && item.imgObj) {
+        imageMode(CENTER); push(); rotate(HALF_PI); image(item.imgObj, 0, 0); pop();
+        noFill(); stroke(0, 0, 100, 20); strokeWeight(2); rect(-adWidth/2, -item.h/2, adWidth, item.h);
+    }
+    fill(0, 0, 100, 50); noStroke(); 
+    rect(-adWidth/2, -item.h/2 - 2, adWidth, 4); rect(-adWidth/2, item.h/2 - 2, adWidth, 4);  
+    pop();
+}
+
+function drawTicker() {
+  if (!devTickerActive || devTickerText.trim() === "") return;
+  push(); let th = 40; let ty = height - th; 
+  let bgCol = color(devTickerBgColor); bgCol.setAlpha(map(devTickerOpacity, 0, 100, 0, 255));
+  noStroke(); fill(bgCol); rect(0, ty, width, th);
+  textSize(18); textFont('Noto Sans KR');
+  let tCol = color(devTickerTextColor); tCol.setAlpha(min(255, map(devTickerOpacity, 0, 100, 0, 255) + 100)); 
+  fill(tCol); textAlign(LEFT, CENTER);
+  text(devTickerText, tickerX, ty + th / 2 - 2);
+  if(!isPaused) tickerX -= 2.5; 
+  let tw = textWidth(devTickerText); if (tickerX < -tw) { tickerX = width; } 
+  pop();
+}
+
+const imgLibraryData = [
+  { category: "동물 얼굴 (Animals)", type: "emoji", items: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦉','🐺','🐴'] },
+  { category: "국기 (Flags)", type: "emoji", items: ['🇰🇷','🇺🇸','🇬🇧','🇯🇵','🇨🇳','🇩🇪','🇫🇷','🇧🇷','🇮🇹','🇨🇦','🇪🇸','🇦🇺'] },
+  { category: "스포츠 공 (Sports)", type: "emoji", items: ['⚽','⚾','🏀','🏐','🏈','🏉','🎾','🎱','🎳','🏓'] },
+  { category: "과일 단면 (Fruits)", type: "emoji", items: ['🍎','🍉','🍊','🍋','🍌','🍍','🥝','🥥','🍅','🥑'] }
+];
+
+const i18n = {
+  ko: {
+    game_title: "PEANUT RACE", lang_title: "언어 설정", setup_title: "여정의 준비", obs_title: "장애물 및 규칙 설정",
+    length_title: "여정의 척도 (거리)", len_short: "단거리", len_normal: "일반", len_long: "장거리", len_epic: "대장정",
+    cb_auto_gauge: "⚙️ 스마트 밸런스 (인원/길이에 맞게 게이지 자동조절)", gauge_title: "각성을 위한 시련의 깊이 (개인 게이지)", team_gauge_title: "팀 단합의 결정체 (팀 스킬 게이지)",
+    th_name: "이름", th_count: "참여수", th_team: "팀 설정", th_img: "이미지 첨부", btn_lib: "📚 앨범", lib_title: "이미지 라이브러리",
+    obs_light: "⚡ 라이트 모드 (참여자가 많을 때 사용)", obs_mutant: "🧬 뮤턴트 모드 (시련을 딛고 각성하는 랜덤 스킬)", obs_team: "⚔️ 팀 배틀 (스킬은 적군에게만, 1위 배출 팀 우승)", 
+    obs_caster: "📺 실시간 중계 화면 (시청자용 UI 제공)", obs_apocalypse: "☠️ 아포칼립스 모드 (죽음의 스모그)", smog_speed: "스모그 확산 속도",
+    smog_lvl: (lvl) => ["1단계 (가장 느림)", "2단계", "3단계", "4단계", "5단계 (가장 빠름)"][lvl-1],
+    team_red: "🔴 레드 팀", team_blue: "🔵 블루 팀", team_green: "🟢 그린 팀", team_yellow: "🟡 옐로우 팀", team_purple: "🟣 퍼플 팀", team_orange: "🟠 오렌지 팀", team_cyan: "🩵 시안 팀", team_pink: "💖 핑크 팀", 
+    team_win: (team, wins) => `🏆 ${team} 우승! (${wins}구간 점령) 🏆`, tie_breaker_msg: (team) => `(동률 타이브레이커 적용: 결승선을 먼저 통과한 선수가 있는 [${team}] 최종 우승!)`,
+    opt_red: "🔴 레드", opt_blue: "🔵 블루", opt_green: "🟢 그린", opt_yellow: "🟡 옐로우", opt_purple: "🟣 퍼플", opt_orange: "🟠 오렌지", opt_cyan: "🩵 시안", opt_pink: "💖 핑크",
+    obs_elec: "정전기 트랩 (기본 활성화)", obs_bubble: "비눗방울 (기본 활성화)", obs_first_only: "1등만 뽑기 (1등 도착 시 안전 완주)", obs_record: "레이스 녹화 (비디오 파일 저장)",
+    btn_add: "+ 참가자 추가", btn_start: "레이스 시작", btn_remove: "삭제", btn_force_finish: "🚀 즉시 완주",
+    btn_back: "⬅️ 언어 선택", btn_pause: "⏸️ 일시정지", btn_resume: "▶️ 계속하기", btn_mute: "🔊 소리 켜짐", btn_unmute: "🔇 소리 꺼짐",
+    speed_btn: (lvl) => ["⏳ 보통", "⏳ 빠름", "⏳ 매우 빠름"][lvl], cam_btn: (lvl) => ["🚁 드론 렌즈", "🎬 액션 렌즈", "🔍 밀착 렌즈"][lvl],
+    default_name: "이름없음", names: ["철수", "영희", "민수", "지우", "우성", "동원", "제니", "리사"],
+    alert_light_mode: "라이트 모드를 해제할 경우 그래픽 부하로 인해 참가 인원은 최대 10명까지만 가능합니다.",
+    skill_btn: "✨ 스킬 활성화 설정", modal_title: "스킬 활성화 설정", modal_close: "닫기",
+    cat_personal: "개인 스킬 (공통)", cat_teambattle: "개인 스킬 (팀 배틀 전용)", cat_teamulti: "팀 단위 스킬 (팀 게이지)", cat_cosmic: "🌌 우주 스킬 (재앙)",
+    cosmic_skill_name: "우주의 핑거스냅", cosmic_skill_desc: "4구간(또는 트랙 80%) 통과 시, 생존자의 절반을 파괴하는 보랏빛 별무리가 솟아오릅니다.",
+    skill_desc: [ "자신 주변의 적들을 얼려버립니다.", "적군 중 한명과 위치를 바꿉니다.", "주변 적들을 빨아들인 후 튕겨내고 자신은 가속합니다.", "지나간 자리에 적을 느리게 하는 늪을 남깁니다.", "적들을 끌어당기는 블랙홀이 됩니다.", "자신의 크기가 작아집니다.", "여러 갈래로 튕기는 파편을 흩뿌립니다.", "트랙 중앙으로 이동하여 앞의 적을 밀치며 돌진합니다.", "아군 선두에게 가속과 보호막을 부여합니다.", "적군 선두를 멈추게 합니다.", "자신 뒤에 거대한 벽을 세워 길을 막습니다.", "목표(1등)를 자석처럼 끌어당겨 거리를 좁힙니다.", "적 선두들의 중력을 5초간 역전시켜 뒤로 솟구치게 만듭니다.", "높이 도약하여 모든 장애물과 적을 뛰어넘어 전진합니다.", "요리조리 피하며 결승선으로 쏜살같이 질주합니다." ],
+    team_skill_names: ["정화의 성역", "미시적 관점", "프리즘 여과지", "최후의 수호자"], team_skill_desc: [ "팀원 전체의 상태 이상을 해제하고 보호막을 부여합니다.", "팀원 전체가 작아져 날렵해집니다.", "아군 선두에서 적군만 위로 밀어내는 장벽이 올라갑니다.", "각 구간의 골키퍼 로봇이 깨어나 적군을 방어합니다." ],
+    ann_apocalypse: "☠️ [경고] 죽음의 스모그가 생성되었습니다!",
+    ann_ice: (name) => `❄️ ${name}님이 적군의 시간을 묶어두었습니다!`, ann_bomb: (name) => `💥 ${name}님의 용기가 거대한 벽을 허물었습니다!`, ann_swap: (name, target) => `✨ 운명의 장난! ${name}님이 적군 ${target}와 자리를 바꿨습니다!`, ann_fast: (name) => `💨 ${name}님이 순풍을 타고 질주합니다!`, ann_slow: (name) => `늪에 빠진 ${name}님, 발걸음이 무거워집니다...`, ann_force_finish: "✨ 창조자의 자비로 모두가 보호받으며 결승선으로 이끌립니다! ✨", ann_starlight: (name, target) => `✨ ${name}님이 ${target}님에게 모든 힘을 실어줍니다!`, ann_anchor: (name, target) => `⚓ 어둠의 저격수! ${name}님이 적군 선두 ${target}의 발목을 잡았습니다!`, ann_wall: (name) => `🧱 ${name}님이 거대한 통곡의 벽을 세웠습니다!`, ann_chaser: (name, target) => `🧲 ${name}님이 선두 ${target}님을 무자비하게 끌어당깁니다!`, ann_gravity: (name) => `🌌 ${name}님이 적 선두들에게 중력의 배신을 선사합니다!`, ann_babel: (name) => `☁️ ${name}님이 바빌론의 탑을 쌓아 하늘을 비행합니다!`, ann_heal: (team) => `💖 [${team}]의 숭고한 결속으로 모든 시련이 정화되고 빛의 성역이 펼쳐집니다!`, ann_team_shrink: (team) => `🔍 [${team}]이(가) 미시적 관점을 얻어 7초간 크기가 축소됩니다!`, ann_team_prism: (team) => `🌈 [${team}]이(가) 프리즘 여과지를 전개하여 적들을 위로 밀어냅니다!`, ann_team_guardian: (team) => `🛡️ [${team}]이(가) 최후의 수호자를 각성시켰습니다! 구간을 철통같이 방어합니다!`, ann_cosmic_snap: "🌌 우주의 핑거스냅 발동! 절반의 생명이 사라집니다...",
+    section_pass: (sec, name, team) => `🚩 제 ${sec}구간 선두: [${team}] ${name}!`, ann_ending: "✨ 오늘의 엔딩 요정 ✨", minimap_hint: "미니맵을 눌러 대상을 변경하거나\n빈 공간을 눌러 추적을 복귀하세요", score_title: "RACE FINISHED", tag_destroyed: "(파괴됨)", btn_restart: "이 멤버로 다시 달리기", btn_new: "처음부터 다시 설정하기", btn_save_txt: "결과 텍스트로 저장", skill_names: ["빙결의 파동", "운명의 역전", "인과응보", "집착의 늪", "심연의 인력", "겸손의 미덕", "기억의 파편", "초월의 질주", "별을 미는 순풍", "어둠의 저격수", "통곡의 벽", "추격자", "중력의 배신", "바빌론의 탑", "베스트 드라이버"]
+  },
+  en: {
+    game_title: "PEANUT RACE", lang_title: "Select Language", setup_title: "Journey Preparation", obs_title: "Obstacles & Rules",
+    length_title: "Journey Length", len_short: "Short", len_normal: "Normal", len_long: "Long", len_epic: "Epic Odyssey",
+    cb_auto_gauge: "⚙️ Smart Balance", gauge_title: "Depth of Trials (Personal)", team_gauge_title: "Team Cohesion",
+    th_name: "Name", th_count: "Qty", th_team: "Team Mode", th_img: "Image", btn_lib: "📚 Lib", lib_title: "Image Library",
+    obs_light: "⚡ Light Mode", obs_mutant: "🧬 Mutant Mode", obs_team: "⚔️ Team Battle", obs_caster: "📺 Live Broadcast Mode",
+    obs_apocalypse: "☠️ Apocalypse Mode (Death Smog)", smog_speed: "Smog Speed", smog_lvl: (lvl) => ["Lv.1 (Slowest)", "Lv.2", "Lv.3", "Lv.4", "Lv.5 (Fastest)"][lvl-1],
+    team_red: "🔴 RED TEAM", team_blue: "🔵 BLUE TEAM", team_green: "🟢 GREEN TEAM", team_yellow: "🟡 YELLOW TEAM", team_purple: "🟣 PURPLE TEAM", team_orange: "🟠 ORANGE TEAM", team_cyan: "🩵 CYAN TEAM", team_pink: "💖 PINK TEAM",
+    team_win: (team, wins) => `🏆 ${team} WINS! (${wins} Sections) 🏆`, tie_breaker_msg: (team) => `(Tie-breaker applied: [${team}] wins by first-to-finish!)`,
+    opt_red: "🔴 Red", opt_blue: "🔵 Blue", opt_green: "🟢 Green", opt_yellow: "🟡 Yellow", opt_purple: "🟣 Purple", opt_orange: "🟠 Orange", opt_cyan: "🩵 Cyan", opt_pink: "💖 Pink",
+    obs_elec: "Electric Trap", obs_bubble: "Soap Bubbles", obs_first_only: "1st Place Only", obs_record: "Race Recording",
+    btn_add: "+ Add Participant", btn_start: "Start Race", btn_remove: "Remove", btn_force_finish: "🚀 Finish All",
+    btn_back: "⬅️ Language", btn_pause: "⏸️ Pause", btn_resume: "▶️ Resume", btn_mute: "🔊 Sound ON", btn_unmute: "🔇 Muted",
+    speed_btn: (lvl) => ["⏳ Normal", "⏳ Fast", "⏳ Faster"][lvl], cam_btn: (lvl) => ["🚁 Drone View", "🎬 Action View", "🔍 Close-up"][lvl],
+    default_name: "Unknown", names: ["Alice", "Bob", "Charlie", "Diana", "Evan", "Fiona", "George", "Hannah"],
+    alert_light_mode: "Max 10 players allowed when Light Mode is off.", skill_btn: "✨ Skill Settings", modal_title: "Skill Activation Settings", modal_close: "Close",
+    cat_personal: "Personal Skills", cat_teambattle: "Team Battle Skills", cat_teamulti: "Team Multicasts", cat_cosmic: "🌌 Cosmic Skill",
+    cosmic_skill_name: "Cosmic Snap", cosmic_skill_desc: "Reaching Sector 4 summons purple stars that destroy half the survivors.",
+    skill_desc: [ "Freezes enemies.", "Swaps position.", "Pulls and bursts.", "Leaves slime.", "Becomes a blackhole.", "Shrinks.", "Drops flares.", "Dashes.", "Grants shield to leader.", "Stuns leader.", "Summons wall.", "Magnetically pulls.", "Reverses gravity.", "Leaps high.", "Dodges obstacles." ],
+    team_skill_names: ["Cleansing Sanctuary", "Microscopic View", "Prism Filter", "Last Guardian"], team_skill_desc: [ "Cleanses debuffs.", "Shrinks allies.", "Deploys barrier.", "Awakens Guardians." ],
+    ann_apocalypse: "☠️ [WARNING] Death Smog Approaching!",
+    ann_ice: (name) => `❄️ ${name} froze the enemies!`, ann_bomb: (name) => `💥 ${name} shattered the wall!`, ann_swap: (name, target) => `✨ Fate inverted! ${name} swapped with ${target}!`, ann_fast: (name) => `💨 ${name} speeds up!`, ann_slow: (name) => `${name} slowing down...`, ann_force_finish: "✨ All safely guided! ✨", ann_starlight: (name, target) => `✨ ${name} transferred power to ${target}!`, ann_anchor: (name, target) => `⚓ ${name} anchored ${target}!`, ann_wall: (name) => `🧱 ${name} summoned a Wall!`, ann_chaser: (name, target) => `🧲 ${name} pulls ${target}!`, ann_gravity: (name) => `🌌 ${name} casted Gravity's Betrayal!`, ann_babel: (name) => `☁️ ${name} leaps into the sky!`, ann_heal: (team) => `💖 [${team}] cleanses all trials!`, ann_team_shrink: (team) => `🔍 [${team}] shrank!`, ann_team_prism: (team) => `🌈 [${team}] deployed Prism!`, ann_team_guardian: (team) => `🛡️ [${team}] awakened Guardian!`, ann_cosmic_snap: "🌌 Cosmic Snap activated!", section_pass: (sec, name, team) => `🚩 Section ${sec} Leader: [${team}] ${name}!`, ann_ending: "✨ ENDING FAIRY ✨", minimap_hint: "Click minimap to focus\nClick empty space to auto", score_title: "RACE FINISHED", tag_destroyed: "(Destroyed)", btn_restart: "Race Again", btn_new: "Reset Parameters", btn_save_txt: "Save Results", skill_names: ["Glacial Pulse", "Fate Inversion", "Retribution", "Sticky Slime", "Mini Blackhole", "Shrink", "Flare Drop", "Zenith Dash", "Starlight Transfer", "Dark Sniper", "Wailing Wall", "Chaser", "Gravity's Betrayal", "Tower of Babylon", "Best Driver"]
+  },
+  zh: {
+    game_title: "PEANUT RACE", lang_title: "选择语言", setup_title: "旅程准备", obs_title: "障碍与规则设置",
+    length_title: "旅程长度", len_short: "短途", len_normal: "标准", len_long: "长途", len_epic: "史诗远征",
+    cb_auto_gauge: "⚙️ 智能平衡", gauge_title: "觉醒所需的试炼", team_gauge_title: "团队凝聚力",
+    th_name: "名称", th_count: "数量", th_team: "队伍设置", th_img: "图片", btn_lib: "📚 图库", lib_title: "图片库",
+    obs_light: "⚡ 轻量模式", obs_mutant: "🧬 突变模式", obs_team: "⚔️ 团队战", obs_caster: "📺 实时转播模式",
+    obs_apocalypse: "☠️ 启示录模式 (死亡烟雾)", smog_speed: "烟雾速度", smog_lvl: (lvl) => ["Lv.1 (最慢)", "Lv.2", "Lv.3", "Lv.4", "Lv.5 (最快)"][lvl-1],
+    team_red: "🔴 红队", team_blue: "🔵 蓝队", team_green: "🟢 绿队", team_yellow: "🟡 黄队", team_purple: "🟣 紫队", team_orange: "🟠 橙队", team_cyan: "🩵 青队", team_pink: "💖 粉队",
+    team_win: (team, wins) => `🏆 ${team} 胜利! (${wins} 区间) 🏆`, tie_breaker_msg: (team) => `(平局决胜：[${team}] 获胜！)`,
+    opt_red: "🔴 红队", opt_blue: "🔵 蓝队", opt_green: "🟢 绿队", opt_yellow: "🟡 黄队", opt_purple: "🟣 紫队", opt_orange: "🟠 橙队", opt_cyan: "🩵 青队", opt_pink: "💖 粉队",
+    obs_elec: "静电陷阱", obs_bubble: "肥皂泡泡", obs_first_only: "只选第一名", obs_record: "比赛录像",
+    btn_add: "+ 添加参与者", btn_start: "开始比赛", btn_remove: "移除", btn_force_finish: "🚀 立即完成",
+    btn_back: "⬅️ 返回", btn_pause: "⏸️ 暂停", btn_resume: "▶️ 恢复", btn_mute: "🔊 声音开", btn_unmute: "🔇 静音",
+    speed_btn: (lvl) => ["⏳ 正常", "⏳ 较快", "⏳ 极快"][lvl], cam_btn: (lvl) => ["🚁 无人机", "🎬 动作视角", "🔍 紧密跟随"][lvl],
+    default_name: "无名", names: ["小明", "小红", "小刚", "小芳", "建国", "翠花", "子涵", "欣怡"], alert_light_mode: "最多允许 10 名玩家参与。",
+    skill_btn: "✨ 技能设置", modal_title: "技能激活设置", modal_close: "关闭", cat_personal: "个人技能", cat_teambattle: "团队战专用技能", cat_teamulti: "团队技能", cat_cosmic: "🌌 宇宙技能",
+    cosmic_skill_name: "宇宙响指", cosmic_skill_desc: "召唤紫色星星，摧毁一半的幸存者。",
+    skill_desc: [ "冻结", "交换", "吸附", "减速", "黑洞", "变小", "弹跳碎片", "冲刺", "加速和护盾", "定身", "高墙", "强力拉扯", "反转重力", "跨越冲刺", "巧妙躲避" ],
+    team_skill_names: ["净化圣域", "微观视角", "棱镜滤网", "最后守卫者"], team_skill_desc: [ "解除负面并赋予护盾。", "全队变小。", "展开光网推开敌人。", "唤醒机器人。" ],
+    ann_apocalypse: "☠️ [警告] 死亡烟雾来袭！",
+    ann_ice: (name) => `❄️ ${name} 冻结了敌人！`, ann_bomb: (name) => `💥 ${name} 击碎了高墙！`, ann_swap: (name, target) => `✨ 命运逆转！${name} 与 ${target} 交换！`, ann_fast: (name) => `💨 ${name} 加速前进！`, ann_slow: (name) => `${name} 步伐沉重...`, ann_force_finish: "✨ 全员直达终点！ ✨", ann_starlight: (name, target) => `✨ ${name} 力量传递给 ${target}！`, ann_anchor: (name, target) => `⚓ ${name} 拖住了 ${target}！`, ann_wall: (name) => `🧱 ${name} 召唤了叹息之墙！`, ann_chaser: (name, target) => `🧲 ${name} 吸向 ${target}！`, ann_gravity: (name) => `🌌 ${name} 施加了重力背叛！`, ann_babel: (name) => `☁️ ${name} 跃向天空！`, ann_heal: (team) => `💖 [${team}]净化了负面状态！`, ann_team_shrink: (team) => `🔍 [${team}] 获得了微观视角！`, ann_team_prism: (team) => `🌈 [${team}] 展开了棱镜滤网！`, ann_team_guardian: (team) => `🛡️ [${team}] 唤醒了最后守护者！`, ann_cosmic_snap: "🌌 宇宙响指发动！", section_pass: (sec, name, team) => `🚩 第 ${sec} 赛段领先: [${team}] ${name}!`, ann_ending: "✨ 结尾妖精 ✨", minimap_hint: "点击小地图更改目标", score_title: "RACE FINISHED", tag_destroyed: "(已摧毁)", btn_restart: "再跑一次", btn_new: "重新设置", btn_save_txt: "保存成绩", skill_names: ["冰川脉冲", "命运逆转", "因果报应", "执念沼泽", "深渊引力", "谦逊美德", "记忆碎片", "超越冲刺", "星光引流", "黑暗狙击手", "叹息之墙", "追击者", "重力背叛", "巴比伦塔", "最佳车手"]
+  },
+  ja: {
+    game_title: "PEANUT RACE", lang_title: "言語設定", setup_title: "旅の準備", obs_title: "障害物とルール",
+    length_title: "旅の長さ", len_short: "短距離", len_normal: "普通", len_long: "長距離", len_epic: "大遠征",
+    cb_auto_gauge: "⚙️ スマートバランス", gauge_title: "覚醒の試練", team_gauge_title: "チーム結束力",
+    th_name: "名前", th_count: "数", th_team: "チーム", th_img: "画像", btn_lib: "📚 アルバム", lib_title: "画像ライブラリ",
+    obs_light: "⚡ ライトモード", obs_mutant: "🧬 ミュータント", obs_team: "⚔️ チームバトル", obs_caster: "📺 リアルタイム中継",
+    obs_apocalypse: "☠️ アポカリプスモード (死のスモッグ)", smog_speed: "スモッグ速度", smog_lvl: (lvl) => ["Lv.1 (一番遅い)", "Lv.2", "Lv.3", "Lv.4", "Lv.5 (一番速い)"][lvl-1],
+    team_red: "🔴 レッド", team_blue: "🔵 ブルー", team_green: "🟢 グリーン", team_yellow: "🟡 イエロー", team_purple: "🟣 パープル", team_orange: "🟠 オレンジ", team_cyan: "🩵 シアン", team_pink: "💖 ピンク",
+    team_win: (team, wins) => `🏆 ${team} 勝利! (${wins}区間) 🏆`, tie_breaker_msg: (team) => `(同点ルール：先にゴールした [${team}] の勝利！)`,
+    opt_red: "🔴 レッド", opt_blue: "🔵 ブルー", opt_green: "🟢 グリーン", opt_yellow: "🟡 イエロー", opt_purple: "🟣 パープル", opt_orange: "🟠 オレンジ", opt_cyan: "🩵 シアン", opt_pink: "💖 ピンク",
+    obs_elec: "静電気トラップ", obs_bubble: "シャボン玉", obs_first_only: "1位のみ選出", obs_record: "レース録画",
+    btn_add: "+ 参加者追加", btn_start: "レース開始", btn_remove: "削除", btn_force_finish: "🚀 即時完走",
+    btn_back: "⬅️ 戻る", btn_pause: "⏸️ 一時停止", btn_resume: "▶️ 再開", btn_mute: "🔊 音声オン", btn_unmute: "🔇 ミュート",
+    speed_btn: (lvl) => ["⏳ 普通", "⏳ 速い", "⏳ 極速"][lvl], cam_btn: (lvl) => ["🚁 ドローン", "🎬 アクション", "🔍 密着カメラ"][lvl],
+    default_name: "名無し", names: ["太郎", "花子", "健太", "結衣", "翔太", "さくら", "大輝", "葵"], alert_light_mode: "最大10名までとなります。",
+    skill_btn: "✨ スキル設定", modal_title: "スキル設定", modal_close: "閉じる", cat_personal: "個人スキル", cat_teambattle: "チーム用スキル", cat_teamulti: "チームスキル", cat_cosmic: "🌌 宇宙スキル",
+    cosmic_skill_name: "宇宙の指パッチン", cosmic_skill_desc: "生存者の半分を破壊する星を召喚。",
+    skill_desc: [ "凍らせます。", "入れ替えます。", "吸い寄せて弾きます。", "沼を残します。", "ブラックホールに。", "小さく。", "破片を。", "突進します。", "加速とシールドを。", "足止めします。", "壁を出現させます。", "引き寄せます。", "重力を反転させます。", "飛び越えます。", "避けて疾走します。" ],
+    team_skill_names: ["浄化の聖域", "微視的観点", "プリズムフィルター", "最後の守護者"], team_skill_desc: [ "デバフ解除。", "味方が小さく。", "障壁を展開。", "ロボット覚醒。" ],
+    ann_apocalypse: "☠️ [警告] 死のスモッグが接近中！",
+    ann_ice: (name) => `❄️ ${name}が敵を凍らせました！`, ann_bomb: (name) => `💥 ${name}が壁を打ち砕きました！`, ann_swap: (name, target) => `✨ ${name}が ${target} と入れ替わり！`, ann_fast: (name) => `💨 ${name}が加速！`, ann_slow: (name) => `${name}の足取りが重く...`, ann_force_finish: "✨ 全員完走！ ✨", ann_starlight: (name, target) => `✨ ${name}が${target}に力を託しました！`, ann_anchor: (name, target) => `⚓ ${name}が${target}の足を引っ張りました！`, ann_wall: (name) => `🧱 ${name}が嘆きの壁を！`, ann_chaser: (name, target) => `🧲 ${name}が${target}を引き寄せ！`, ann_gravity: (name) => `🌌 ${name}が重力の裏切りを！`, ann_babel: (name) => `☁️ ${name}が空を！`, ann_heal: (team) => `💖 [${team}]が聖域を得ました！`, ann_team_shrink: (team) => `🔍 [${team}]が微視的観点を獲得！`, ann_team_prism: (team) => `🌈 [${team}]がプリズムを展開！`, ann_team_guardian: (team) => `🛡️ [${team}]が守護者を覚醒！`, ann_cosmic_snap: "🌌 宇宙の指パッチン発動！", section_pass: (sec, name, team) => `🚩 第 ${sec} 区間トップ: [${team}] ${name}!`, ann_ending: "✨ エンディング妖精 ✨", minimap_hint: "ミニマップで対象変更", score_title: "RACE FINISHED", tag_destroyed: "(破壊済)", btn_restart: "再レース", btn_new: "設定し直す", btn_save_txt: "結果を保存", skill_names: ["氷結の波動", "運命の逆転", "因果応報", "執着の沼", "深淵の引力", "謙譲の美徳", "記憶の破片", "超越の疾走", "星を押す追い風", "闇の狙撃手", "嘆きの壁", "追跡者", "重力の裏切り", "バビロンの塔", "ベストドライバー"]
+  }
+};
+
+let currentLang = 'ko'; 
+let setupBgm = null;
+let isLobbyBgmMuted = false;
+let langDiv, setupDiv, playerListDiv;
+let playerRows = []; let customPlayersData = [];
+let useLightMode = true, useMutantMode = true, useElectricTrap = true, useBubbleTrap = true, useFirstPlaceOnly = false;
+let useTeamBattle = false, useCasterMode = false;
+let useApocalypseMode = false;
+let smogSpeedLevel = 2; 
+let isPaused = false, isMuted = false;
+let cbLight, cbMutant, cbTeam, cbFirstOnly, cbRecord, cbAutoGauge, cbCaster, cbApocalypse;
+let lenSlider, gaugeSlider, teamGaugeSlider, teamModeSelect, randomTeamCountSelect, smogSpeedSlider; 
+let gaugeThreshold = 15;
+let teamGaugeThreshold = 30;
+let teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+let mediaRecorder = null, recordedChunks = [], isRecording = false, forceFinishAll = false;
+let firstWinner = null, endingFairyTimer = 0, constellationTimer = 0, speedLevel = 0, cameraMode = 0; 
+let framesSinceStart = 0; 
+
+let activeMutantSkills = [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]; 
+let activeTeamSkills = [true, true, true, true];
+let activeCosmicSnap = false; 
+let cosmicSnapTriggered = false; 
+let cosmicStars = []; 
+let isApocalypseTriggered = false;
+let apocalypseCinematicTimer = 0;
+let smogY = -5000;
+
+let currentEditingRow = null;
+let currentEditingBtn = null;
+
+let bgStars = [], balls = [], spinners = [], staticPins = [], track = [], blackholePads = [], bricks = [];
+let particles = [], shrinkPads = [], growPads = [], ripples = [], swapPads = [], specialEffects = [], wallBars = [];
+let electricTraps = [], soapBubbles = [], bubbleZones = [], announcements = [], mutantFlares = [], wailingWalls = [], prisms = []; 
+let guardians = [];
+
+let globalGuardianActive = false;
+let globalGuardianTeam = null;
+let globalGuardianTimer = 0;
+let globalGuardianColor = null;
+
+let flashColor = null, flashLife = 0, cameraShake = 0, zoomTimer = 0, targetDynamicZoom = 1.0;
+let WORLD_HEIGHT = 20000; 
+const BRICK_ZONES = [{ start: 0.30, end: 0.31 }, { start: 0.55, end: 0.56 }, { start: 0.80, end: 0.81 }];
+let camX = 0, camY = 0, camScale = 0.5, gameStarted = false, raceFinished = false, targetBall = null, manualFocus = false, finishCounter = 0;
+let constellationSpots = [], constellationEdges = [];
+
+let numSegments = 5;
+let segmentLength = 0;
+let segmentCrossed = {};
+let segmentWinners = {}; 
+let teamSegmentWins = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+let sectionBannerTimer = 0;
+let sectionBannerText = "";
+let sectionBannerColor = null;
+
+let rankScrollY = 0, rankTargetScrollY = 0, isRankDragging = false, rankDragStartY = 0, rankScrollStartY = 0, rankDragMoved = false;
+let osc, env;
+
+let minimapExpanded = true;
+
+document.getElementById('bgmMuteBtn').addEventListener('click', () => {
+  isLobbyBgmMuted = !isLobbyBgmMuted;
+  let btn = document.getElementById('bgmMuteBtn');
+  if (isLobbyBgmMuted) {
+    btn.innerText = '🔇 BGM OFF';
+    if (setupBgm) setupBgm.muted = true;
+  } else {
+    btn.innerText = '🎵 BGM ON';
+    if (setupBgm) setupBgm.muted = false;
+  }
+})
+
+function setup() {
+  let canvas = createCanvas(windowWidth, windowHeight);
+  canvas.id('gameCanvas');
+  canvas.elt.style.display = 'none';
+  canvas.elt.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+  colorMode(HSB, 360, 100, 100, 100); textFont('Noto Sans KR');
+  osc = new p5.Oscillator('sine'); env = new p5.Envelope();
+  env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(0.5, 0);
+  createLangUI();
+  loadAdItems(); 
+  initDevBgTexts(); 
+  
+  let wakeUpMusic = () => {
+      if (!setupBgm) {
+          setupBgm = new Audio('racer.mp3'); 
+          setupBgm.loop = true;  
+          setupBgm.volume = 0.0; 
+          setupBgm.muted = isLobbyBgmMuted;
+          setupBgm.addEventListener('timeupdate', () => {
+              let fadeTime = 3.0; let maxVol = 0.4;   
+              if (setupBgm.duration > 0) {
+                  let timeLeft = setupBgm.duration - setupBgm.currentTime;
+                  if (timeLeft <= fadeTime) setupBgm.volume = Math.max(0, maxVol * (timeLeft / fadeTime));
+                  else if (setupBgm.currentTime <= fadeTime) setupBgm.volume = Math.min(maxVol, maxVol * (setupBgm.currentTime / fadeTime));
+                  else setupBgm.volume = maxVol;
+              }
+          });
+      }
+      setupBgm.play().catch(e => console.log("음악 재생 대기 중"));
+      document.removeEventListener('click', wakeUpMusic);
+      document.removeEventListener('touchstart', wakeUpMusic);
+  };
+  document.addEventListener('click', wakeUpMusic);
+  document.addEventListener('touchstart', wakeUpMusic);
+  buildCommentWindow(); 
+}
+
+function windowResized() { resizeCanvas(windowWidth, windowHeight); initDevBgTexts(); }
+
+function createLangUI() {
+  let muteBtn = document.getElementById('bgmMuteBtn');
+  if (muteBtn) muteBtn.style.display = 'block';
+
+  if (langDiv) langDiv.remove(); if (setupDiv) setupDiv.remove();
+  let uiContainer = select('#ui-container');
+  langDiv = createDiv(''); langDiv.parent(uiContainer); langDiv.class('glass-panel');
+  langDiv.style('width', '100%'); langDiv.style('height', '100%'); langDiv.style('display', 'flex'); langDiv.style('flex-direction', 'column'); langDiv.style('align-items', 'center'); langDiv.style('justify-content', 'center');
+  
+  let preTitle = createElement('h1', 'PEANUT RACE'); preTitle.parent(langDiv); preTitle.class('futuristic-title title-anim'); preTitle.style('margin-bottom', '10px');
+  
+  let title = createElement('h3', 'SYSTEM INITIALIZATION'); title.parent(langDiv); title.style('margin-bottom', '40px'); title.style('font-weight', '300'); title.style('color', '#88aaff');
+  let langs = [{ code: 'ko', label: '🇰🇷 한국어 접속' }, { code: 'en', label: '🇺🇸 ENGLISH CONNECT' }, { code: 'zh', label: '🇨🇳 中文连接' }, { code: 'ja', label: '🇯🇵 日本語接続' }];
+langs.forEach(l => {
+    let btn = createButton(l.label); btn.parent(langDiv); btn.class('modern-btn');
+    btn.style('width', '250px'); btn.style('padding', '15px'); btn.style('margin-bottom', '15px'); btn.style('font-size', '16px');
+    btn.mousePressed(() => { 
+        currentLang = l.code; langDiv.remove(); createSetupUI(); 
+        if (!setupBgm) {
+            setupBgm = new Audio('intro.mp3'); 
+            setupBgm.loop = true; setupBgm.volume = 0.4; setupBgm.muted = isLobbyBgmMuted;
+            setupBgm.addEventListener('timeupdate', () => {
+                let fadeTime = 3.0; let maxVol = 0.4;   
+                if (setupBgm.duration > 0) {
+                    let timeLeft = setupBgm.duration - setupBgm.currentTime;
+                    if (timeLeft <= fadeTime) setupBgm.volume = Math.max(0, maxVol * (timeLeft / fadeTime));
+                    else if (setupBgm.currentTime <= fadeTime) setupBgm.volume = Math.min(maxVol, maxVol * (setupBgm.currentTime / fadeTime));
+                    else setupBgm.volume = maxVol;
+                }
+            });
+            setupBgm.play().catch(e => console.log("음악 재생 대기 중"));
+        }
+    });
+  });
+}
+
+function createSkillModal() {
+  let t = i18n[currentLang];
+  if(document.getElementById('skill-modal')) document.getElementById('skill-modal').remove();
+  let modal = createDiv(''); modal.id('skill-modal'); modal.parent(select('#ui-container')); modal.class('glass-panel'); modal.style('display', 'none'); modal.style('position', 'absolute'); modal.style('top', '50%'); modal.style('left', '50%'); modal.style('transform', 'translate(-50%, -50%)'); modal.style('width', '85%'); modal.style('height', '85%'); modal.style('padding', '25px'); modal.style('box-sizing', 'border-box'); modal.style('flex-direction', 'column'); modal.style('overflow-y', 'auto'); modal.style('z-index', '100');
+  let title = createElement('h2', t.modal_title); title.parent(modal); title.style('color', '#fff'); title.style('text-align', 'center'); title.style('margin-top', '0'); title.style('margin-bottom', '20px');
+  let makeCategory = (titleText, skillIndices, isTeamMulti) => {
+    let catTitle = createElement('h4', titleText); catTitle.parent(modal); catTitle.style('color', '#00e5ff'); catTitle.style('margin-top', '15px'); catTitle.style('margin-bottom', '10px'); catTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)'); catTitle.style('padding-bottom', '5px');
+    skillIndices.forEach(idx => {
+      let row = createDiv(''); row.parent(modal); row.style('display', 'flex'); row.style('align-items', 'flex-start'); row.style('margin-bottom', '10px');
+      let isChecked = isTeamMulti ? activeTeamSkills[idx] : activeMutantSkills[idx];
+      let name = isTeamMulti ? t.team_skill_names[idx] : t.skill_names[idx]; let desc = isTeamMulti ? t.team_skill_desc[idx] : t.skill_desc[idx];
+      let cb = createCheckbox('', isChecked); cb.parent(row); cb.style('margin-top', '2px'); cb.changed(() => { if(isTeamMulti) activeTeamSkills[idx] = cb.checked(); else activeMutantSkills[idx] = cb.checked(); });
+      let label = createDiv(`<b>${name}</b><br><span style="color:#aaa; font-size:12px;">${desc}</span>`); label.parent(row); label.style('color', '#fff'); label.style('font-size', '14px'); label.style('margin-left', '8px'); label.style('line-height', '1.4');
+    });
+  };
+  makeCategory(t.cat_personal, [0,1,2,3,4,5,6,7,10,11,13,14], false); makeCategory(t.cat_teambattle, [8,9,12], false); makeCategory(t.cat_teamulti, [0,1,2,3], true);
+  
+  let catCosmicTitle = createElement('h4', t.cat_cosmic); catCosmicTitle.parent(modal); 
+  catCosmicTitle.style('color', '#a55eea'); catCosmicTitle.style('margin-top', '15px'); 
+  catCosmicTitle.style('margin-bottom', '10px'); catCosmicTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)'); catCosmicTitle.style('padding-bottom', '5px');
+  let rCosmic = createDiv(''); rCosmic.parent(modal); rCosmic.style('display', 'flex'); rCosmic.style('align-items', 'flex-start'); rCosmic.style('margin-bottom', '10px');
+  let cbCosmic = createCheckbox('', activeCosmicSnap); cbCosmic.parent(rCosmic); cbCosmic.style('margin-top', '2px'); cbCosmic.changed(() => { activeCosmicSnap = cbCosmic.checked(); });
+  let lblCosmic = createDiv(`<b>${t.cosmic_skill_name}</b><br><span style="color:#aaa; font-size:12px;">${t.cosmic_skill_desc}</span>`); lblCosmic.parent(rCosmic); lblCosmic.style('color', '#fff'); lblCosmic.style('font-size', '14px'); lblCosmic.style('margin-left', '8px'); lblCosmic.style('line-height', '1.4');
+
+  let closeBtn = createButton(t.modal_close); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '30px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
+}
+
+function createLibModal() {
+  let t = i18n[currentLang];
+  if(document.getElementById('lib-modal')) document.getElementById('lib-modal').remove();
+  let modal = createDiv(''); modal.id('lib-modal'); modal.parent(select('#ui-container')); modal.class('glass-panel'); modal.style('display', 'none'); modal.style('position', 'absolute'); modal.style('top', '50%'); modal.style('left', '50%'); modal.style('transform', 'translate(-50%, -50%)'); modal.style('width', '85%'); modal.style('height', '85%'); modal.style('padding', '25px'); modal.style('box-sizing', 'border-box'); modal.style('flex-direction', 'column'); modal.style('overflow-y', 'auto'); modal.style('z-index', '200');
+  let title = createElement('h2', t.lib_title || "Library"); title.parent(modal); title.style('color', '#fff'); title.style('text-align', 'center'); title.style('margin-top', '0'); title.style('margin-bottom', '20px');
+  imgLibraryData.forEach(cat => {
+    let catTitle = createElement('h4', cat.category); catTitle.parent(modal); catTitle.style('color', '#00e5ff'); catTitle.style('margin-top', '15px'); catTitle.style('margin-bottom', '10px'); catTitle.style('border-bottom', '1px solid rgba(255,255,255,0.2)');
+    let grid = createDiv(''); grid.parent(modal); grid.style('display', 'flex'); grid.style('flex-wrap', 'wrap'); grid.style('gap', '10px'); grid.style('margin-bottom', '20px');
+    cat.items.forEach(item => {
+      let btn = createDiv(''); btn.parent(grid); btn.class('lib-item');
+      if (cat.type === 'emoji') { btn.html(item); btn.mousePressed(() => selectEmojiLib(item)); } 
+      else if (cat.type === 'url') { let img = createImg(item.url, item.name); img.parent(btn); img.elt.crossOrigin = "Anonymous"; btn.mousePressed(() => selectUrlLib(item.url)); }
+    });
+  });
+  let closeBtn = createButton(t.modal_close || "Close"); closeBtn.parent(modal); closeBtn.class('modern-btn'); closeBtn.style('margin-top', '10px'); closeBtn.style('padding', '12px'); closeBtn.mousePressed(() => { modal.style('display', 'none'); });
+}
+
+function openLibModal(rowData, btnElt) { currentEditingRow = rowData; currentEditingBtn = btnElt; document.getElementById('lib-modal').style.display = 'flex'; }
+function selectEmojiLib(emoji) { let c = document.createElement('canvas'); c.width = 64; c.height = 64; let ctx = c.getContext('2d'); ctx.font = '48px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(emoji, 32, 36); let dataUrl = c.toDataURL('image/png'); loadImage(dataUrl, (img) => { if (currentEditingRow) currentEditingRow.img = img; if (currentEditingBtn) { currentEditingBtn.style('background', '#00e5ff'); currentEditingBtn.style('color', '#000'); } }); document.getElementById('lib-modal').style.display = 'none'; }
+function selectUrlLib(url) { loadImage(url, (img) => { if (currentEditingRow) currentEditingRow.img = img; if (currentEditingBtn) { currentEditingBtn.style('background', '#00e5ff'); currentEditingBtn.style('color', '#000'); } }, (e) => { console.error("CORS Error:", e); alert("이미지를 불러올 수 없습니다."); }); document.getElementById('lib-modal').style.display = 'none'; }
+
+function createSetupUI() {
+  let t = i18n[currentLang]; playerRows = [];
+  let uiContainer = select('#ui-container');
+  setupDiv = createDiv(''); setupDiv.parent(uiContainer); setupDiv.class('glass-panel'); setupDiv.style('width', '100%'); setupDiv.style('height', '100%'); setupDiv.style('padding', '40px'); setupDiv.style('box-sizing', 'border-box'); setupDiv.style('overflow-y', 'auto'); setupDiv.style('overflow-x', 'auto');
+  
+  let backBtn = createButton(t.btn_back); backBtn.parent(setupDiv); backBtn.class('ghost-btn'); backBtn.style('position', 'absolute'); backBtn.style('top', '10px'); backBtn.style('left', '10px'); backBtn.style('padding', '8px 12px'); backBtn.style('z-index', '10');
+  backBtn.mousePressed(() => { setupDiv.remove(); createLangUI(); });
+
+  let mainTitle = createElement('h1', t.game_title); mainTitle.parent(setupDiv); mainTitle.class('futuristic-title'); mainTitle.style('text-align', 'center'); mainTitle.style('margin-top', '10px'); mainTitle.style('margin-bottom', '5px'); mainTitle.style('text-shadow', '0 0 20px rgba(0, 229, 255, 0.8)');
+  let title = createElement('p', t.setup_title); title.parent(setupDiv); title.style('text-align', 'center'); title.style('margin-top', '0px'); title.style('margin-bottom', '20px'); title.style('color', '#88aaff'); title.style('font-size', '14px');
+  
+  let lenDiv = createDiv(''); lenDiv.parent(setupDiv); lenDiv.style('margin-top', '25px'); lenDiv.style('margin-bottom', '10px');
+  let lenLabel = createElement('span', `${t.length_title}: 20000 (${t.len_normal})`); lenLabel.parent(lenDiv); lenLabel.style('color', '#fff'); lenLabel.style('font-weight', 'bold');
+  lenSlider = createInput('20000', 'range'); lenSlider.parent(lenDiv); lenSlider.attribute('min', '10000'); lenSlider.attribute('max', '80000'); lenSlider.attribute('step', '10000');
+  lenSlider.input(() => { let val = parseInt(lenSlider.value()); let desc = val <= 10000 ? t.len_short : val <= 30000 ? t.len_normal : val <= 50000 ? t.len_long : t.len_epic; lenLabel.html(`${t.length_title}: ${val} (${desc})`); });
+
+  cbAutoGauge = createCheckbox(' ' + t.cb_auto_gauge, true); cbAutoGauge.parent(setupDiv); cbAutoGauge.style('margin-top', '20px'); cbAutoGauge.style('color', '#00e5ff'); cbAutoGauge.style('font-weight', 'bold');
+
+  let gaugeDiv = createDiv(''); gaugeDiv.parent(setupDiv); gaugeDiv.style('margin-top', '15px'); gaugeDiv.style('margin-bottom', '10px');
+  let gaugeLabel = createElement('span', `${t.gauge_title}: 15`); gaugeLabel.parent(gaugeDiv); gaugeLabel.style('color', '#fff'); gaugeLabel.style('font-weight', 'bold');
+  gaugeSlider = createInput('15', 'range'); gaugeSlider.parent(gaugeDiv); gaugeSlider.attribute('min', '5'); gaugeSlider.attribute('max', '50'); gaugeSlider.attribute('step', '1');
+  gaugeSlider.input(() => { gaugeLabel.html(`${t.gauge_title}: ${gaugeSlider.value()}`); });
+
+  let teamGaugeDiv = createDiv(''); teamGaugeDiv.parent(setupDiv); teamGaugeDiv.style('margin-top', '15px'); teamGaugeDiv.style('margin-bottom', '10px');
+  let teamGaugeLabel = createElement('span', `${t.team_gauge_title}: 30`); teamGaugeLabel.parent(teamGaugeDiv); teamGaugeLabel.style('color', '#ff55aa'); teamGaugeLabel.style('font-weight', 'bold');
+  teamGaugeSlider = createInput('30', 'range'); teamGaugeSlider.parent(teamGaugeDiv); teamGaugeSlider.attribute('min', '10'); teamGaugeSlider.attribute('max', '100'); teamGaugeSlider.attribute('step', '5');
+  teamGaugeSlider.input(() => { teamGaugeLabel.html(`${t.team_gauge_title}: ${teamGaugeSlider.value()}`); });
+
+  gaugeDiv.style('display', 'none'); teamGaugeDiv.style('display', 'none'); 
+
+  let obsTitle = createElement('h3', t.obs_title); obsTitle.parent(setupDiv); obsTitle.style('margin-top', '10px'); obsTitle.style('border-bottom', '1px solid rgba(255,255,255,0.1)'); obsTitle.style('padding-bottom', '10px'); title.style('color', '#fff');
+  
+  cbLight = createCheckbox(' ' + t.obs_light, true); cbLight.parent(setupDiv); cbLight.style('margin-top', '15px'); cbLight.style('color', '#ffea00'); cbLight.style('font-weight', 'bold');
+  cbMutant = createCheckbox(' ' + t.obs_mutant, true); cbMutant.parent(setupDiv); cbMutant.style('margin-top', '15px'); cbMutant.style('color', '#ffaa00'); cbMutant.style('font-weight', 'bold');
+  cbTeam = createCheckbox(' ' + t.obs_team, false); cbTeam.parent(setupDiv); cbTeam.style('margin-top', '15px'); cbTeam.style('color', '#ff55aa'); cbTeam.style('font-weight', 'bold');
+  
+  cbApocalypse = createCheckbox(' ' + t.obs_apocalypse, false); cbApocalypse.parent(setupDiv); cbApocalypse.style('margin-top', '15px'); cbApocalypse.style('color', '#9b59b6'); cbApocalypse.style('font-weight', 'bold');
+  
+  let smogSpeedDiv = createDiv(''); smogSpeedDiv.parent(setupDiv); smogSpeedDiv.style('margin-top', '10px'); smogSpeedDiv.style('margin-left', '25px'); smogSpeedDiv.style('display', 'none');
+  let smogLabel = createElement('span', `${t.smog_speed}: ${t.smog_lvl(2)}`); smogLabel.parent(smogSpeedDiv); smogLabel.style('color', '#ccc'); smogLabel.style('font-size', '13px');
+  
+  smogSpeedSlider = createInput('2', 'range'); smogSpeedSlider.parent(smogSpeedDiv); smogSpeedSlider.attribute('min', '1'); smogSpeedSlider.attribute('max', '5'); smogSpeedSlider.attribute('step', '1');
+  smogSpeedSlider.input(() => { smogLabel.html(`${t.smog_speed}: ${t.smog_lvl(parseInt(smogSpeedSlider.value()))}`); });
+  
+  cbApocalypse.changed(() => { smogSpeedDiv.style('display', cbApocalypse.checked() ? 'block' : 'none'); });
+
+  cbCaster = createCheckbox(' ' + t.obs_caster, false); cbCaster.parent(setupDiv); cbCaster.style('margin-top', '15px'); cbCaster.style('color', '#00ffcc'); cbCaster.style('font-weight', 'bold');
+  cbFirstOnly = createCheckbox(' ' + t.obs_first_only, false); cbFirstOnly.parent(setupDiv); cbFirstOnly.style('margin-top', '10px'); cbFirstOnly.style('color', '#ddd');
+  cbRecord = createCheckbox(' ' + t.obs_record, false); cbRecord.parent(setupDiv); cbRecord.style('margin-top', '20px'); cbRecord.style('color', '#00e5ff'); cbRecord.style('font-weight', 'bold');
+
+  let skillBtn = createButton(t.skill_btn); skillBtn.parent(setupDiv); skillBtn.class('ghost-btn'); skillBtn.style('width', '100%'); skillBtn.style('margin-top', '20px'); skillBtn.style('padding', '10px'); skillBtn.mousePressed(() => { document.getElementById('skill-modal').style.display = 'flex'; });
+  createSkillModal(); createLibModal();
+
+  let btnRow = createDiv(''); btnRow.parent(setupDiv); btnRow.style('text-align', 'center'); btnRow.style('margin-top', '30px'); btnRow.style('margin-bottom', '20px');
+  let addBtn = createButton(t.btn_add); addBtn.parent(btnRow); addBtn.class('ghost-btn'); addBtn.style('padding', '12px 20px'); addBtn.style('margin-right', '15px'); addBtn.mousePressed(addPlayerRow);
+  let startBtn = createButton(t.btn_start); startBtn.parent(btnRow); startBtn.class('modern-btn'); startBtn.style('padding', '12px 30px'); startBtn.mousePressed(startGameFromUI);
+  
+  let tableContainer = createDiv(''); tableContainer.parent(setupDiv); tableContainer.style('min-width', '550px');
+
+  let headerRow = createDiv(''); headerRow.parent(tableContainer); headerRow.style('display', 'flex'); headerRow.style('align-items', 'center'); headerRow.style('justify-content', 'space-between'); headerRow.style('margin-bottom', '5px'); headerRow.style('padding', '0 15px'); headerRow.style('color', '#88aaff'); headerRow.style('font-size', '12px'); headerRow.style('font-weight', 'bold');
+  let hName = createDiv(t.th_name); hName.parent(headerRow); hName.style('width', '60px'); hName.style('text-align', 'center');
+  
+  let hCount = createDiv(''); hCount.parent(headerRow); hCount.style('width', '100px'); hCount.style('display', 'flex'); hCount.style('align-items', 'center'); hCount.style('justify-content', 'center');
+  let bulkMinus = createButton('-'); bulkMinus.parent(hCount); bulkMinus.class('ghost-btn'); bulkMinus.style('padding', '2px 8px'); bulkMinus.style('margin-right', '6px'); bulkMinus.style('font-size', '14px');
+  bulkMinus.mousePressed(() => { playerRows.forEach(r => { let v = parseInt(r.countInput.value()) || 1; if(v > 1) r.countInput.value(v - 1); }); });
+  let hCountText = createSpan(t.th_count); hCountText.parent(hCount); hCountText.style('font-size', '12px');
+  let bulkPlus = createButton('+'); bulkPlus.parent(hCount); bulkPlus.class('ghost-btn'); bulkPlus.style('padding', '2px 8px'); bulkPlus.style('margin-left', '6px'); bulkPlus.style('font-size', '14px');
+  bulkPlus.mousePressed(() => { playerRows.forEach(r => { let v = parseInt(r.countInput.value()) || 1; if(v < 50) r.countInput.value(v + 1); }); });
+  
+  let hTeam = createDiv(''); hTeam.parent(headerRow); hTeam.style('width', '110px'); hTeam.style('text-align', 'center'); hTeam.style('display', 'flex'); hTeam.style('flex-direction', 'column'); hTeam.id('hTeam');
+  let hTeamText = createDiv(t.th_team); hTeamText.parent(hTeam); hTeamText.style('font-size', '11px');
+  let teamModeWrapper = createDiv(''); teamModeWrapper.parent(hTeam); teamModeWrapper.style('display', 'flex'); teamModeWrapper.style('justify-content', 'center'); teamModeWrapper.style('gap', '3px'); teamModeWrapper.style('margin-top', '3px');
+  
+  teamModeSelect = createSelect(); teamModeSelect.parent(teamModeWrapper); teamModeSelect.class('modern-input'); teamModeSelect.style('padding', '2px'); teamModeSelect.style('font-size', '10px');
+  teamModeSelect.option(currentLang === 'ko' ? '선택' : 'Select', 'MANUAL'); 
+  teamModeSelect.option(currentLang === 'ko' ? '랜덤' : 'Rand', 'RANDOM');
+  
+  randomTeamCountSelect = createSelect(); randomTeamCountSelect.parent(teamModeWrapper); randomTeamCountSelect.class('modern-input'); randomTeamCountSelect.style('padding', '2px'); randomTeamCountSelect.style('font-size', '10px'); randomTeamCountSelect.style('display', 'none');
+  for(let i=2; i<=8; i++) randomTeamCountSelect.option(i + (currentLang==='ko'?'팀':'T'), i);
+  
+  let hImg = createDiv(t.th_img); hImg.parent(headerRow); hImg.style('width', '140px'); hImg.style('text-align', 'center');
+  let hDel = createDiv(''); hDel.parent(headerRow); hDel.style('width', '60px');
+  
+  playerListDiv = createDiv(''); playerListDiv.parent(tableContainer);
+  
+  teamModeSelect.changed(() => {
+    let isRand = (teamModeSelect.value() === 'RANDOM');
+    randomTeamCountSelect.style('display', isRand ? 'inline-block' : 'none');
+    playerRows.forEach(r => { r.teamSelect.style('visibility', isRand ? 'hidden' : 'visible'); });
+  });
+
+  cbTeam.changed(() => { 
+    let isTeam = cbTeam.checked();
+    let isRand = (teamModeSelect.value() === 'RANDOM');
+    playerRows.forEach(r => r.teamSelect.style('visibility', (isTeam && !isRand) ? 'visible' : 'hidden')); 
+    teamGaugeDiv.style('display', (isTeam && !cbAutoGauge.checked()) ? 'block' : 'none'); 
+    select('#hTeam').style('visibility', isTeam ? 'visible' : 'hidden'); 
+  });
+  cbAutoGauge.changed(() => { let disp = cbAutoGauge.checked() ? 'none' : 'block'; gaugeDiv.style('display', disp); teamGaugeDiv.style('display', (!cbAutoGauge.checked() && cbTeam.checked()) ? 'block' : 'none'); });
+  select('#hTeam').style('visibility', cbTeam.checked() ? 'visible' : 'hidden');
+
+  for(let i=0; i<4; i++) addPlayerRow();
+}
+
+function addPlayerRow() {
+  let t = i18n[currentLang];
+  let row = createDiv(''); row.parent(playerListDiv); row.style('display', 'flex'); row.style('align-items', 'center'); row.style('justify-content', 'space-between'); row.style('margin-bottom', '15px'); row.style('background', 'rgba(255,255,255,0.03)'); row.style('border', '1px solid rgba(255,255,255,0.08)'); row.style('padding', '10px 15px'); row.style('border-radius', '8px');
+  let defaultName = t.names[playerRows.length % t.names.length];
+  let nameInput = createInput(defaultName); nameInput.parent(row); nameInput.class('modern-input'); nameInput.style('width', '60px');
+  let countContainer = createDiv(''); countContainer.parent(row); countContainer.style('display', 'flex'); countContainer.style('align-items', 'center'); countContainer.style('width', '100px'); countContainer.style('justify-content', 'center');
+  let btnMinus = createButton('-'); btnMinus.parent(countContainer); btnMinus.class('ghost-btn'); btnMinus.style('padding', '5px 10px'); btnMinus.style('cursor', 'pointer');
+  let countInput = createInput('1'); countInput.parent(countContainer); countInput.class('modern-input'); countInput.style('width', '30px'); countInput.style('text-align', 'center'); countInput.style('margin', '0 5px'); countInput.style('padding', '8px 5px');
+  let btnPlus = createButton('+'); btnPlus.parent(countContainer); btnPlus.class('ghost-btn'); btnPlus.style('padding', '5px 10px'); btnPlus.style('cursor', 'pointer');
+  btnMinus.mousePressed(() => { let v = parseInt(countInput.value()) || 1; if(v > 1) countInput.value(v - 1); });
+  btnPlus.mousePressed(() => { let v = parseInt(countInput.value()) || 1; if(v < 50) countInput.value(v + 1); });
+
+  let teamSelect = createSelect(); teamSelect.parent(row); teamSelect.class('modern-input'); teamSelect.style('width', '85px'); teamSelect.style('padding', '8px 5px'); teamSelect.style('font-size', '12px'); teamSelect.style('margin-right', '5px');
+  teamSelect.option(t.opt_red, 'RED'); teamSelect.option(t.opt_blue, 'BLUE'); teamSelect.option(t.opt_green, 'GREEN'); teamSelect.option(t.opt_yellow, 'YELLOW'); teamSelect.option(t.opt_purple, 'PURPLE'); teamSelect.option(t.opt_orange, 'ORANGE'); teamSelect.option(t.opt_cyan, 'CYAN'); teamSelect.option(t.opt_pink, 'PINK');
+  let isTeamMode = cbTeam && cbTeam.checked();
+  let isRand = teamModeSelect && teamModeSelect.value() === 'RANDOM';
+  teamSelect.style('visibility', (isTeamMode && !isRand) ? 'visible' : 'hidden');
+
+  let rowData = { nameInput: nameInput, countInput: countInput, teamSelect: teamSelect, img: null };
+  let imgContainer = createDiv(''); imgContainer.parent(row); imgContainer.style('display', 'flex'); imgContainer.style('align-items', 'center'); imgContainer.style('width', '140px');
+  let libBtn = createButton(t.btn_lib || '📚'); libBtn.parent(imgContainer); libBtn.class('ghost-btn'); libBtn.style('padding', '4px 8px'); libBtn.style('font-size', '11px'); libBtn.style('margin-right', '5px'); libBtn.mousePressed(() => openLibModal(rowData, libBtn));
+  let fileInput = createFileInput((file) => { if (file.type === 'image') { loadImage(file.data, (img) => { rowData.img = img; libBtn.style('background', '#00e5ff'); libBtn.style('color', '#000'); }); } });
+  fileInput.parent(imgContainer); fileInput.style('font-size', '10px'); fileInput.style('width', '90px'); fileInput.style('color', '#aaa');
+  let removeBtn = createButton(t.btn_remove); removeBtn.parent(row); removeBtn.class('ghost-btn'); removeBtn.style('padding', '6px 10px'); removeBtn.style('font-size', '12px'); removeBtn.style('width', '60px'); removeBtn.mousePressed(() => { row.remove(); playerRows = playerRows.filter(r => r !== rowData); });
+  playerRows.push(rowData);
+}
+
+function startGameFromUI() {
+  if (playerRows.length === 0) return; let t = i18n[currentLang];
+  let totalP = 0; for (let r of playerRows) { totalP += parseInt(r.countInput.value()) || 1; }
+  if (!cbLight.checked() && totalP > 10) { alert(t.alert_light_mode); return; }
+
+  WORLD_HEIGHT = parseInt(lenSlider.value());
+  useLightMode = cbLight.checked(); useMutantMode = cbMutant.checked(); useTeamBattle = cbTeam.checked();
+  useCasterMode = cbCaster.checked(); 
+  useApocalypseMode = cbApocalypse.checked();
+  smogSpeedLevel = parseInt(smogSpeedSlider.value());
+  isApocalypseTriggered = false;
+  apocalypseCinematicTimer = 0;
+  smogY = -5000;
+  
+  useElectricTrap = true; useBubbleTrap = true; useFirstPlaceOnly = cbFirstOnly.checked(); isRecording = cbRecord.checked();
+  cosmicSnapTriggered = false; cosmicStars = [];
+
+  customPlayersData = [];
+  for (let r of playerRows) { 
+    let count = parseInt(r.countInput.value()) || 1; let baseName = r.nameInput.value() || t.default_name; let teamPref = r.teamSelect.value();
+    for (let i = 0; i < count; i++) { let displayName = count > 1 ? `${baseName} ${i + 1}` : baseName; customPlayersData.push({ name: displayName, img: r.img, teamPref: teamPref }); }
+  }
+
+  if (useTeamBattle && teamModeSelect.value() === 'RANDOM') {
+    let numRandomTeams = parseInt(randomTeamCountSelect.value());
+    let availableTeams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK'].slice(0, numRandomTeams);
+    let shuffled = [...customPlayersData];
+    for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+    shuffled.forEach((p, idx) => { p.assignedTeam = availableTeams[idx % numRandomTeams]; });
+  } else if (useTeamBattle) {
+    customPlayersData.forEach(p => p.assignedTeam = p.teamPref);
+  }
+
+  if (cbAutoGauge.checked()) {
+    let density = customPlayersData.length / (WORLD_HEIGHT / 10000); gaugeThreshold = constrain(floor(8 + density * 2.5), 5, 50);
+    let activeTeams = new Set(customPlayersData.map(p => p.assignedTeam)).size || 1; 
+    let avgTeamSize = customPlayersData.length / activeTeams;
+    teamGaugeThreshold = constrain(floor(gaugeThreshold * avgTeamSize * 1.2), 10, 100);
+  } else { gaugeThreshold = parseInt(gaugeSlider.value()); teamGaugeThreshold = parseInt(teamGaugeSlider.value()); }
+  
+  document.querySelector('canvas').style.display = 'block'; userStartAudio(); osc.start(); setupDiv.hide(); gameStarted = true; isPaused = false; 
+  tickerX = width; 
+  initWorld(); 
+  if (isRecording) { startRecording(); }
+  
+  let muteBtn = document.getElementById('bgmMuteBtn');
+  if (muteBtn) muteBtn.style.display = 'none';
+  if (setupBgm) { setupBgm.pause(); setupBgm.currentTime = 0; }
+}
+
+function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
+function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
+function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
+function getTeamName(team, t) { if (team === 'RED') return t.opt_red; if (team === 'BLUE') return t.opt_blue; if (team === 'GREEN') return t.opt_green; if (team === 'YELLOW') return t.opt_yellow; if (team === 'PURPLE') return t.opt_purple; if (team === 'ORANGE') return t.opt_orange; if (team === 'CYAN') return t.opt_cyan; if (team === 'PINK') return t.opt_pink; return ''; }
+
+function downloadRankings() { 
+  let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); 
+  let t = i18n[currentLang];
+  let txt = "🏆 PEANUT RACE - FINAL RANKINGS 🏆\n"; let dateStr = new Date().toLocaleString(); txt += `Date: ${dateStr}\n\n`; 
+  if (useTeamBattle && firstWinner) { 
+    let maxWins = -1; let winningTeam = null; let tiedTeams = []; 
+    for (let team in teamSegmentWins) { if (teamSegmentWins[team] > maxWins) { maxWins = teamSegmentWins[team]; tiedTeams = [team]; } else if (teamSegmentWins[team] === maxWins) { tiedTeams.push(team); } } 
+    if (tiedTeams.length === 1) { winningTeam = tiedTeams[0]; } 
+    else { let tieSorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); for(let b of tieSorted) { if(tiedTeams.includes(b.team)) { winningTeam = b.team; break; } } } 
+    if(!winningTeam) winningTeam = firstWinner.team; 
+    txt += `*** ${t.team_win(getTeamName(winningTeam, t), maxWins)} ***\n\n`; 
+  } 
+  sorted.forEach((b, i) => { let teamPrefix = useTeamBattle ? `[${getTeamPrefix(b.team).trim()}] ` : ''; let status = b.destroyed ? ` ${t.tag_destroyed}` : ''; txt += `${i + 1}. ${teamPrefix}${b.name}${status}\n`; }); 
+  let blob = new Blob([txt], { type: 'text/plain' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let fileDate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Rankings_${fileDate}.txt`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); 
+}
+
+function drawFinalScoreboard() {
+  let t = i18n[currentLang]; push(); drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'rgba(0, 229, 255, 0.4)'; fill(10, 15, 25, 230); stroke(0, 229, 255, 120); strokeWeight(2); rectMode(CENTER); let panelW = min(width * 0.8, 650); let panelH = min(height * 0.8, 650); rect(width/2, height/2, panelW, panelH, 20); drawingContext.shadowBlur = 0; 
+  textAlign(CENTER, CENTER); textSize(45); fill(255); textFont('Orbitron'); noStroke(); drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#00e5ff'; text(t.score_title, width/2, height/2 - panelH/2 + 50); drawingContext.shadowBlur = 0;
+  let sortedBalls = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; });
+  textFont('Noto Sans KR'); let startY = height/2 - panelH/2 + 120;
+  if (useTeamBattle) {
+    let maxWins = -1; let winningTeam = null; let tiedTeams = [];
+    for (let team in teamSegmentWins) { if (teamSegmentWins[team] > maxWins) { maxWins = teamSegmentWins[team]; tiedTeams = [team]; } else if (teamSegmentWins[team] === maxWins) { tiedTeams.push(team); } }
+    let isTieBreaker = false; if (tiedTeams.length === 1) { winningTeam = tiedTeams[0]; } else { isTieBreaker = true; for(let b of sortedBalls) { if(tiedTeams.includes(b.team)) { winningTeam = b.team; break; } } }
+    if(!winningTeam && firstWinner) winningTeam = firstWinner.team;
+    textSize(30); fill(getTeamHue(winningTeam), 80, 100); drawingContext.shadowBlur = 10; drawingContext.shadowColor = color(getTeamHue(winningTeam), 80, 100).toString(); text(t.team_win(getTeamName(winningTeam, t), maxWins), width/2, startY); drawingContext.shadowBlur = 0;
+    if (isTieBreaker) { textSize(14); fill(200); text(t.tie_breaker_msg(getTeamName(winningTeam, t)), width/2, startY + 35); }
+    startY += 70; textSize(18);
+    for (let i = 1; i <= numSegments; i++) { let winner = segmentWinners[i]; let rowY = startY + (i - 1) * 28; textAlign(CENTER, CENTER); if (winner) { fill(winner.color); text(`[Sec ${i}] ${getTeamPrefix(winner.team)} ${winner.name}`, width/2, rowY); } else { fill(100); text(`[Sec ${i}] -`, width/2, rowY); } }
+    startY += numSegments * 28 + 30; fill(255); textAlign(CENTER, CENTER); textSize(16); text("--- TOP RUNNERS ---", width/2, startY); textSize(24);
+    for(let i=0; i<min(sortedBalls.length, 3); i++) { let b = sortedBalls[i]; let nameTxt = `${i+1}. ${getTeamPrefix(b.team)}${b.name}`; if (b.destroyed) { fill(100); text(`❌ ${nameTxt}`, width/2, startY + 35 + i*30); } else { fill(b.color); text(nameTxt, width/2, startY + 35 + i*30); } }
+  } else {
+    textAlign(CENTER, CENTER); for(let i=0; i<min(sortedBalls.length, 8); i++) { let b = sortedBalls[i]; textSize(28); if (b.destroyed) { fill(100); text(`❌ ${i+1}. ${b.name}`, width/2, startY + i * 45); } else { fill(b.color); text(`${i+1}. ${b.name}`, width/2, startY + i * 45); } }
+  }
+  let btn1Y = height/2 + panelH/2 - 170; let btn2Y = height/2 + panelH/2 - 115; let btn3Y = height/2 + panelH/2 - 60;
+  let drawBtn = (y, label, glow) => { let isHover = mouseX > width/2 - 150 && mouseX < width/2 + 150 && mouseY > y && mouseY < y + 45; if (isHover) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = glow; } fill(isHover ? color(190, 80, 100) : color(10, 15, 25)); stroke(glow); strokeWeight(1); rect(width/2, y + 22.5, 300, 45, 8); fill(255); textAlign(CENTER, CENTER); textSize(15); noStroke(); text(label, width/2, y + 22.5); drawingContext.shadowBlur = 0; };
+  drawBtn(btn1Y, t.btn_restart, '#00e5ff'); drawBtn(btn2Y, t.btn_new, '#ff55aa'); drawBtn(btn3Y, t.btn_save_txt, '#ffff00'); pop();
+}
+
+function getTeamHue(team) { if (team === 'RED') return 355; if (team === 'BLUE') return 215; if (team === 'GREEN') return 130; if (team === 'YELLOW') return 45; if (team === 'PURPLE') return 280; if (team === 'ORANGE') return 30; if (team === 'CYAN') return 180; if (team === 'PINK') return 320; return 0; }
+  function isBrickZone(yRatio) { for (let z of BRICK_ZONES) { if (yRatio >= z.start && yRatio <= z.end) return true; } return false; }
+function getScatteredX(t, padding) { return random(t.left + padding, t.right - padding); }
+function getVolume(x, y, maxVol = 0.5) { if (!targetBall || isMuted) return 0; let d = dist(targetBall.x, targetBall.y, x, y); return map(d, 0, 1500, maxVol, 0, true); }
+function playNormalHit(freq, x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.5); if (vol < 0.01) return; osc.setType('sine'); osc.freq(freq + random(-30, 30)); env.setADSR(0.001, 0.05, 0.1, 0.05); env.setRange(vol, 0); env.play(osc); }
+function playBombSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.7); if (vol < 0.01) return; osc.setType('square'); osc.freq(120); env.setADSR(0.01, 0.3, 0.2, 0.6); env.setRange(vol, 0); env.play(osc); }
+function playIceSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.5); if (vol < 0.01) return; osc.setType('triangle'); osc.freq(2000); env.setADSR(0.01, 0.1, 0.3, 0.8); env.setRange(vol, 0); env.play(osc); }
+function playSwapSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.6); if (vol < 0.01) return; osc.setType('sine'); osc.freq(600); env.setADSR(0.05, 0.2, 0.5, 1.0); env.setRange(vol, 0); env.play(osc); setTimeout(() => { if(osc && !isMuted) osc.freq(1200); }, 100); }
+function playZapSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.4); if (vol < 0.01) return; osc.setType('sawtooth'); osc.freq(300); env.setADSR(0.01, 0.1, 0.2, 0.1); env.setRange(vol, 0); env.play(osc); }
+function playHealSound(x, y) { if (isMuted || getAudioContext().state !== 'running') return; let vol = getVolume(x, y, 0.6); if (vol < 0.01) return; osc.setType('sine'); osc.freq(800); env.setADSR(0.1, 0.4, 0.4, 1.2); env.setRange(vol, 0); env.play(osc); }
+function playRumbleSound() { if (isMuted || getAudioContext().state !== 'running') return; osc.setType('sawtooth'); osc.freq(40); env.setADSR(0.5, 1.0, 0.8, 2.0); env.setRange(0.6, 0); env.play(osc); }
+
+function addEventLog(ball, text, col, isMajor = false) { if (!isMajor && ball !== targetBall) { let unfinished = balls.filter(b => !b.finished && !b.destroyed).sort((a, b) => b.y - a.y); let isLeader = (unfinished.length > 0 && unfinished[0] === ball); if (!isLeader) return; } announcements.push({ text: text, color: col, life: 240, maxLife: 240 }); if (announcements.length > 5) announcements.shift(); }
+function sweepThePast(lastY) { let threshold = lastY - 2000; wallBars = wallBars.filter(o => o.y > threshold); staticPins = staticPins.filter(o => o.y > threshold); spinners = spinners.filter(o => o.y > threshold); blackholePads = blackholePads.filter(o => o.y > threshold); shrinkPads = shrinkPads.filter(o => o.y > threshold); growPads = growPads.filter(o => o.y > threshold); swapPads = swapPads.filter(o => o.y > threshold); electricTraps = electricTraps.filter(o => o.y > threshold); bubbleZones = bubbleZones.filter(o => o.yEnd > threshold); bricks = bricks.filter(o => o.y > threshold); wailingWalls = wailingWalls.filter(o => o.y > threshold); }
+function drawBackgroundGrid(vTop, vBottom) { noStroke(); bgStars.forEach(s => { s.blink += s.speed; if (s.y < vTop - 500 || s.y > vBottom + 500) return; let a = map(sin(s.blink), -1, 1, 10, 80); fill(0, 0, 100, a); ellipse(s.x, s.y, s.r); }); stroke(260, 50, 15, 60); strokeWeight(1); for (let i = -4000; i < 4000; i += 200) line(i, vTop - 500, i, vBottom + 500); let yStartGrid = floor((vTop - 500) / 200) * 200; for (let j = yStartGrid; j < vBottom + 500; j += 200) line(-4000, j, 4000, j); }
+function drawSegments(vTop, vBottom) { 
+  if (!useTeamBattle) return; let isAction = (cameraMode !== 0); 
+  for (let i = 1; i <= numSegments; i++) { 
+    let sy = i * segmentLength; if (sy < vTop - 500 || sy > vBottom + 500) continue; 
+    push(); stroke(255, 80); strokeWeight(4); drawingContext.setLineDash([20, 20]); line(-10000, sy, 10000, sy); drawingContext.setLineDash([]); 
+    let tIdx = constrain(floor(sy/40), 0, track.length - 1); let cx = track[tIdx] ? track[tIdx].center : 0; 
+    noStroke(); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 10; drawingContext.shadowColor = '#fff'; } 
+    fill(255, 200); textFont('Orbitron'); textSize(36); textAlign(CENTER, BOTTOM); text(`SECTION ${i}`, cx, sy - 10); drawingContext.shadowBlur = 0; pop(); 
+  } 
+}
+
+function drawTrack(vTop, vBottom) { 
+  noFill(); let isAction = (cameraMode !== 0); 
+  for (let i = 1; i < track.length; i++) { 
+    let p1 = track[i-1]; let p2 = track[i]; if (p2.y < vTop - 500 || p1.y > vBottom + 500) continue; let isInView = (p2.y > vTop && p2.y < vBottom); strokeWeight(15); 
+    if (isInView && !useLightMode && !isAction) { drawingContext.shadowBlur = 5; drawingContext.shadowColor = p2.cStr; stroke(p2.hue, 80, 100, 90); } else { drawingContext.shadowBlur = 0; stroke(p2.hue, 80, 100, 50); } 
+    line(p1.left, p1.y, p2.left, p2.y); line(p1.right, p1.y, p2.right, p2.y); 
+    if (p2.isBump) { drawingContext.shadowBlur = 0; if (!useLightMode && !isAction) { fill(p2.hue, 80, 100, 80); noStroke(); triangle(p2.left, p2.y, p2.left - 25, p2.y - 20, p2.left - 25, p2.y + 20); triangle(p2.right, p2.y, p2.right + 25, p2.y - 20, p2.right + 25, p2.y + 20); } else { fill(p2.hue, 80, 100, 50); noStroke(); triangle(p2.left, p2.y, p2.left - 25, p2.y - 20, p2.left - 25, p2.y + 20); triangle(p2.right, p2.y, p2.right + 25, p2.y - 20, p2.right + 25, p2.y + 20); } } 
+  } drawingContext.shadowBlur = 0; 
+}
+
+// 💡 깊이감과 일렁임을 더해 화려하게 피어오르는 연기 구름 스모그
+function drawSmog(vTop, vBottom) {
+    if (!useApocalypseMode || !isApocalypseTriggered) return;
+    if (smogY < vTop - 500) return; 
+
+    push();
+    noStroke();
+    
+    // 1. 깊은 바닥 (투명도를 낮춰 공이 보이게 함)
+    fill(130, 80, 10, 100); 
+    rect(-5000, vTop - 1500, 10000, smogY - (vTop - 1500));
+
+    // 2. 중간 층 (조금 더 밝고 불규칙하게 일렁임)
+    fill(130, 90, 20, 120);
+    beginShape();
+    vertex(-5000, smogY - 400);
+    for (let x = -3000; x <= 3000; x += 120) {
+        let yOff = sin(x * 0.002 + frameCount * 0.015) * 150 + noise(x * 0.003, frameCount * 0.01) * 200;
+        vertex(x, smogY - 100 + yOff);
+    }
+    vertex(5000, smogY - 400);
+    endShape(CLOSE);
+
+    // 3. 앞쪽 층 (화려한 빛을 더하는 혼합 모드)
+    blendMode(ADD);
+    fill(140, 80, 45, 80); // 밝고 거칠게 피어오르는 독기
+    beginShape();
+    vertex(-5000, smogY - 400);
+    for (let x = -3000; x <= 3000; x += 100) {
+        let yOff = sin(x * 0.004 + frameCount * 0.02) * 100 + noise(x * 0.006, frameCount * 0.015) * 250;
+        vertex(x, smogY + yOff);
+    }
+    vertex(5000, smogY - 400);
+    endShape(CLOSE);
+    
+    // 4. 일렁이는 에너지 파동선 (화려한 이펙트)
+    stroke(130, 100, 60, 150);
+    strokeWeight(3);
+    noFill();
+    beginShape();
+    for (let x = -3000; x <= 3000; x += 80) {
+        let yOff = cos(x * 0.005 + frameCount * 0.03) * 80 + noise(x * 0.01, frameCount * 0.02) * 100;
+        vertex(x, smogY + yOff);
+    }
+    endShape();
+
+    blendMode(BLEND);
+    pop();
+}
+
+function drawAnnouncements() { 
+  let tSize = map(constrain(width, 600, 1600), 600, 1600, 13, 22); let lineSpacing = tSize * 2.0; 
+  // 💡 댓글창 표와 겹치지 않도록 시작 위치를 상향 조정했습니다.
+  let startY = (devTickerActive && devTickerText.trim() !== "") ? height - 130 : height - 90; 
+  for (let i = 0; i < announcements.length; i++) { 
+    let ann = announcements[i]; if(!isPaused) ann.life--; let alpha = 100; 
+    if (ann.life > ann.maxLife - 30) alpha = map(ann.maxLife - ann.life, 0, 30, 0, 100); else if (ann.life < 30) alpha = map(ann.life, 0, 30, 0, 100); 
+    let yPos = startY - (announcements.length - 1 - i) * lineSpacing; if (ann.life < 30) yPos -= map(ann.life, 30, 0, 0, 10); 
+    push(); textAlign(LEFT, CENTER); textSize(tSize); fill(hue(ann.color), saturation(ann.color), brightness(ann.color), alpha); text(ann.text, width > 800 ? 40 : 20, yPos); pop(); 
+  } if(!isPaused) announcements = announcements.filter(a => a.life > 0); 
+}
+
+function drawRankings() { 
+  let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; return b.y - a.y; }); 
+  let panelWidth = useCasterMode ? 160 : 120; let contentHeight = sorted.length * 24 + 16; let panelHeight = min(250, contentHeight); let maxScroll = max(0, contentHeight - panelHeight); rankScrollY = lerp(rankScrollY, rankTargetScrollY, 0.15); 
+  fill(10, 12, 20, 80); stroke(255, 10); strokeWeight(1); rect(10, 15, panelWidth, panelHeight, 8); push(); drawingContext.save(); drawingContext.beginPath(); drawingContext.rect(10, 15, panelWidth, panelHeight); drawingContext.clip(); translate(0, -rankScrollY); textAlign(LEFT, CENTER); textSize(12); 
+  let leadY = sorted.length > 0 ? sorted[0].y : 0; 
+  sorted.forEach((b, i) => { 
+    let yPos = 30 + i * 24; if (b === targetBall) { noStroke(); fill(255, 40); rect(12, yPos - 11, panelWidth - 4, 22, 4); } 
+    if (b.finished) { fill(255); textSize(10); text(`🏁`, panelWidth - 5, yPos); textSize(12); } else if (b.destroyed) { fill(255); textSize(10); text(`❌`, panelWidth - 5, yPos); textSize(12); }
+    let displayName = b.name.length > 5 ? b.name.substring(0, 5) + '..' : b.name; let teamPrefix = useTeamBattle ? getTeamPrefix(b.team) : ''; 
+    if (b.destroyed) { fill(100); } else { fill(b.color); } 
+    let distText = ""; if (useCasterMode && i > 0 && !b.finished && !b.destroyed && sorted[0] && !sorted[0].finished) { let gap = Math.floor((leadY - b.y) / 10); distText = ` (-${gap}m)`; }
+    text(`${i+1}. ${teamPrefix}${displayName}${distText}`, 18, yPos); 
+  }); drawingContext.restore(); pop(); if (maxScroll > 0) { let scrollBarY = map(rankScrollY, 0, maxScroll, 18, 15 + panelHeight - 20); noStroke(); fill(255, 50); rect(10 + panelWidth - 5, scrollBarY, 3, 15, 2); } 
+}
+
+function drawForceFinishButton(t) { if (forceFinishAll) return; let btnX = width - 85; let btnY = (devTickerActive && devTickerText.trim() !== "") ? height - 120 : height - 80; let btnW = 75; let btnH = 60; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(190, 80, 100, 80) : color(10, 12, 20, 180)); stroke(190, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.btn_force_finish, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+function drawSpeedButton(t) { let btnX = width - 85; let btnY = 100; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(220, 80, 100, 80) : color(10, 12, 20, 180)); stroke(220, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.speed_btn(speedLevel), btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+function drawCameraButton(t) { if (forceFinishAll) return; let btnX = width - 85; let btnY = 60; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(280, 80, 100, 80) : color(10, 12, 20, 180)); stroke(280, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(t.cam_btn(cameraMode), btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+function drawPauseButton(t) { if (forceFinishAll || raceFinished) return; let btnX = width - 85; let btnY = 140; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(0, 0, 100, 80) : color(10, 12, 20, 180)); stroke(0, 0, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(isPaused ? t.btn_resume : t.btn_pause, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+function drawMuteButton(t) { let btnX = width - 85; let btnY = 180; let btnW = 75; let btnH = 35; let isHover = (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH); drawingContext.shadowBlur = 10; drawingContext.shadowColor = isHover ? '#00e5ff' : 'rgba(0,0,0,0.5)'; fill(isHover ? color(50, 80, 100, 80) : color(10, 12, 20, 180)); stroke(50, 80, 100, 80); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text(isMuted ? t.btn_unmute : t.btn_mute, btnX + btnW/2, btnY + btnH/2); drawingContext.shadowBlur = 0; }
+
+function drawMinimap(t) { 
+  if (!minimapExpanded) { let btnX = width - 85; let btnY = 230; let btnW = 75; let btnH = 30; fill(10, 12, 20, 200); stroke(255, 50); strokeWeight(1); rect(btnX, btnY, btnW, btnH, 8); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(11); text("🗺️ MAP", btnX + btnW/2, btnY + btnH/2); return; }
+  let mmX = width - 85, mmY = 230, mmW = 75; let bottomSpace = (devTickerActive && devTickerText.trim() !== "") ? 130 : 90; let mmH = height - mmY - bottomSpace; 
+  drawingContext.shadowBlur = 15; drawingContext.shadowColor = 'rgba(0,0,0,0.6)'; fill(10, 12, 20, 200); stroke(255, 30); strokeWeight(1); rect(mmX, mmY, mmW, mmH, 12); drawingContext.shadowBlur = 0; 
+  fill(255, 20); rect(mmX, mmY, mmW, 25, 12, 12, 0, 0); fill(255); noStroke(); textAlign(CENTER, CENTER); textSize(10); text("▼ CLOSE", mmX + mmW/2, mmY + 12);
+  let getX = (wx) => mmX + mmW/2 + map(wx, -500, 500, -mmW/2.5, mmW/2.5); let getY = (wy) => mmY + 25 + map(wy, 0, WORLD_HEIGHT, 0, mmH - 25); 
+  stroke(255, 15); strokeWeight(2); noFill(); beginShape(); for (let i = 0; i < track.length; i += 10) { vertex(getX(track[i].center), getY(track[i].y)); } endShape(); 
+  noStroke(); fill(0, 100, 100, 30); for (let z of BRICK_ZONES) { let yStart = mmY + 25 + z.start * (mmH - 25); let yHeight = (z.end - z.start) * (mmH - 25); rect(mmX + 2, yStart, mmW - 4, yHeight, 4); } 
+  
+  if (useApocalypseMode && isApocalypseTriggered) {
+      let sY = constrain(getY(smogY), mmY + 25, mmY + mmH);
+      if (sY > mmY + 25) {
+          fill(120, 80, 25, 180); 
+          rect(mmX + 2, mmY + 25, mmW - 4, sY - (mmY + 25), 4, 4, 0, 0);
+          stroke(130, 100, 90, 200); strokeWeight(2); 
+          line(mmX + 2, sY, mmX + mmW - 2, sY);
+          noStroke();
+      }
+  }
+
+  noStroke(); staticPins.forEach(p => { if (!p.isActive) return; if (p.type === 'fast') { fill(120, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else if (p.type === 'slow') { fill(0, 100, 100, 90); ellipse(getX(p.x), getY(p.y), 3); } else { fill(40, 100, 100, 40); ellipse(getX(p.x), getY(p.y), 1.5); } }); 
+  fill(280, 100, 80, 90); blackholePads.forEach(bh => ellipse(getX(bh.x), getY(bh.y), 4)); fill(55, 100, 100, 90); electricTraps.forEach(et => ellipse(getX(et.x), getY(et.y), 3)); fill(180, 60, 100, 90); soapBubbles.forEach(sb => ellipse(getX(sb.x), getY(sb.y), 3)); 
+  balls.forEach(b => { if(b.destroyed) return; let px = getX(b.x); let py = getY(b.y); if (b === targetBall) { stroke(190, 80, 100, 90); strokeWeight(2); fill(b.color); ellipse(px, py, 9); } else { noStroke(); fill(b.color); ellipse(px, py, 5); } }); 
+  if (!raceFinished) { fill(100); textAlign(RIGHT); textSize(11); text(t.minimap_hint, mmX - 10, mmY + 35); } 
+}
+
+function drawCasterOverlay(t) {
+  if (!useCasterMode) return; push(); drawingContext.shadowBlur = 10; drawingContext.shadowColor = 'red'; fill(0, 100, 100, 70 + sin(frameCount * 0.1) * 30); noStroke(); rect(10, height - 40, 60, 25, 5); fill(255); textSize(14); textAlign(CENTER, CENTER); textFont('Orbitron'); text("LIVE", 40, height - 27); drawingContext.shadowBlur = 0;
+  if (useTeamBattle) { let activeTeams = Object.keys(teamSegmentWins).filter(tm => balls.some(b => b.team === tm)); if (activeTeams.length > 0) { let barW = min(width - 300, 600); let barX = width/2 - barW/2; let barY = 15; fill(10, 15, 25, 180); stroke(255, 30); strokeWeight(1); rect(barX, barY, barW, 35, 8); let sectionW = barW / activeTeams.length; textAlign(CENTER, CENTER); textSize(12); textFont('Noto Sans KR'); activeTeams.forEach((tm, idx) => { let wins = teamSegmentWins[tm]; let tmHue = getTeamHue(tm); fill(tmHue, 80, 100); text(`${getTeamPrefix(tm)} ${wins} Sections`, barX + sectionW * idx + sectionW/2, barY + 17); if (idx < activeTeams.length - 1) { stroke(255, 20); line(barX + sectionW * (idx + 1), barY + 5, barX + sectionW * (idx + 1), barY + 30); noStroke(); } }); } } pop();
+}
+
+function initWorld() {
+  forceFinishAll = false; firstWinner = null; endingFairyTimer = 0; constellationTimer = 0; speedLevel = 0; cameraMode = 0; framesSinceStart = 0; 
+  cosmicSnapTriggered = false; cosmicStars = []; 
+  isApocalypseTriggered = false; apocalypseCinematicTimer = 0; smogY = -5000;
+  
+  teamGauges = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 };
+  balls = []; spinners = []; staticPins = []; track = []; blackholePads = []; bricks = []; particles = []; shrinkPads = []; growPads = []; ripples = []; swapPads = []; specialEffects = []; announcements = []; electricTraps = []; soapBubbles = []; bubbleZones = []; wallBars = []; mutantFlares = []; wailingWalls = []; prisms = []; guardians = [];
+  globalGuardianActive = false; globalGuardianTeam = null; globalGuardianTimer = 0; globalGuardianColor = null; flashColor = null; flashLife = 0; cameraShake = 0; zoomTimer = 0; targetDynamicZoom = 1.0; 
+  camX = 0; camY = 0; camScale = 0.5; raceFinished = false; targetBall = null; manualFocus = false; finishCounter = 0; rankScrollY = 0; rankTargetScrollY = 0;
+  numSegments = 5; segmentLength = WORLD_HEIGHT / numSegments; segmentCrossed = {}; segmentWinners = {}; 
+  for(let i=1; i<=numSegments; i++) segmentCrossed[i] = false; 
+  teamSegmentWins = { RED: 0, BLUE: 0, GREEN: 0, YELLOW: 0, PURPLE: 0, ORANGE: 0, CYAN: 0, PINK: 0 }; sectionBannerTimer = 0; sectionBannerText = ""; sectionBannerColor = null;
+  bgStars = []; for (let i = 0; i < 400; i++) bgStars.push({ x: random(-3000, 3000), y: random(-1000, WORLD_HEIGHT + 2000), r: random(1, 4), blink: random(TWO_PI), speed: random(0.01, 0.05) });
+  
+  let trackSeed = random(1000); 
+  for (let y = 0; y <= WORLD_HEIGHT; y += 40) {
+    let yRatio = y / WORLD_HEIGHT; let centerX = 0 + sin(y * 0.0008 + trackSeed) * 350 + cos(y * 0.0015 + trackSeed/2) * 120;
+    let baseW = map(yRatio, 0, 1, 500, 300); let bulge = sin(y * 0.001) > 0.5 ? sin((y * 0.001 - 0.5) * PI) * 350 : 0; let noiseW = (noise(y * 0.005 + trackSeed) - 0.5) * 100;
+    let w = constrain(baseW + bulge + noiseW, 250, 900); if (isBrickZone(yRatio)) w = 500; 
+    let isBump = (y > 0 && y % 320 === 0 && !isBrickZone(yRatio)); let bumpW = isBump ? 25 : 0;
+    let hueVal = (y / 40 + trackSeed) % 360; let cStr = color(hueVal, 80, 100).toString();
+    track.push({ y, left: centerX - w/2 + bumpW, right: centerX + w/2 - bumpW, center: centerX, hue: hueVal, cStr: cStr, isBump: isBump });
+  }
+
+  balls = [];
+  if (useTeamBattle && teamModeSelect.value() === 'RANDOM') {
+    let numRandomTeams = parseInt(randomTeamCountSelect.value()); let availableTeams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK'].slice(0, numRandomTeams); let shuffled = [...customPlayersData]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } shuffled.forEach((p, idx) => { p.assignedTeam = availableTeams[idx % numRandomTeams]; });
+  } else if (useTeamBattle) { customPlayersData.forEach(p => p.assignedTeam = p.teamPref); }
+
+  customPlayersData.forEach((pData, i) => {
+    let startSpread = max(20, 600 / customPlayersData.length); 
+    let startX = 0 + (i - customPlayersData.length/2) * startSpread + random(-5, 5);
+    let newBall = new RacingBall(startX, 250 + random(-20, 20), pData.name, i, customPlayersData.length, pData.assignedTeam);
+    if (pData.img) newBall.img = pData.img; balls.push(newBall);
+  });
+
+  constellationSpots = []; constellationEdges = []; let n = balls.length;
+  for (let i = 0; i < n; i++) {
+    let angle = map(i, 0, n, -HALF_PI, TWO_PI - HALF_PI); let r = (i % 2 === 0 && n > 4) ? 140 : 70; if (n <= 4) r = 100; 
+    constellationSpots.push({ x: 0 + cos(angle) * r, y: WORLD_HEIGHT + 600 + sin(angle) * r });
+    constellationEdges.push([i, (i + 1) % n]); if (n > 4) constellationEdges.push([i, (i + 2) % n]); 
+  }
+
+  for (let i = 1; i <= numSegments; i++) { guardians.push(new GuardianRobot(i * segmentLength - 120)); }
+  let barY = 800; while(barY < WORLD_HEIGHT - 1000) { if (!isBrickZone(barY / WORLD_HEIGHT)) { let tIdx = floor(barY / 40); if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; if ((t.right - t.left) >= 450) { wallBars.push(new WallBar(barY, random(['left', 'right']), t)); } } } barY += random(600, 1200); }
+  for (let y = 700; y < WORLD_HEIGHT - 500; y += 150) { if (isBrickZone(y / WORLD_HEIGHT)) continue; let tIdx = floor(y / 40); if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; let rowIdx = floor(y / 150); let colIdx = 0; let rowOffset = (rowIdx % 2 === 0) ? 0 : 75; for (let x = t.left + 70; x < t.right - 70; x += 150) { let pinType = 'normal'; let randVal = random(1); if (randVal < 0.02) pinType = 'fast'; else if (randVal < 0.04) pinType = 'slow'; let pinGroup = (rowIdx + colIdx) % 2; staticPins.push(new StaticPin(x + rowOffset + random(-10, 10), y + random(-10, 10), pinType, pinGroup)); colIdx++; } } }
+  let currentY = 1200; let obstacleTypes = ['spinner', 'shrink', 'grow', 'swap', 'electric', 'bubble'];
+  while (currentY < WORLD_HEIGHT - 1500) {
+    let yRatio = currentY / WORLD_HEIGHT; if (isBrickZone(yRatio)) { currentY += 400; continue; } let tIdx = floor(currentY / 40);
+    if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; let tWidth = t.right - t.left; let type = random(obstacleTypes); if (tWidth >= 550 && random(1) < 0.15) { type = 'blackhole'; } if (type === 'spinner') spinners.push(new Spinner(getScatteredX(t, 90), currentY, 160, 15, random(-0.12, 0.12))); else if (type === 'blackhole') blackholePads.push(new BlackholePad(getScatteredX(t, 80), currentY, 146, 106)); else if (type === 'shrink') shrinkPads.push(new ShrinkPad(getScatteredX(t, 60), currentY, 110)); else if (type === 'grow') growPads.push(new GrowPad(getScatteredX(t, 60), currentY, 110)); else if (type === 'swap') swapPads.push(new SwapPad(getScatteredX(t, 60), currentY, 45)); else if (type === 'electric' && useElectricTrap) electricTraps.push(new ElectricTrap(getScatteredX(t, 50), currentY)); else if (type === 'bubble' && useBubbleTrap) bubbleZones.push({ yStart: currentY - 200, yEnd: currentY + 600 }); } currentY += random(1000, 1500); 
+  }
+  let brickW = 60; let brickH = 25; for (let z of BRICK_ZONES) { for (let y = WORLD_HEIGHT * z.start; y < WORLD_HEIGHT * z.end; y += brickH + 5) { let tIdx = floor(y / 40); if (tIdx >= 0 && tIdx < track.length) { let t = track[tIdx]; for (let x = t.left + brickW/2; x < t.right - brickW/2; x += brickW + 2) bricks.push(new Brick(x, y, brickW, brickH)); } } }
+}
+
+function draw() {
+  background(260, 80, 5); 
+  if (!gameStarted) return; 
+  drawDevBgTexts(); 
+
+  let t = i18n[currentLang];
+  let unfinishedBalls = balls.filter(b => !b.finished && !b.destroyed); let lastBallRemaining = unfinishedBalls.length === 1 ? unfinishedBalls[0] : null;
+  let activeRunners = [...unfinishedBalls].sort((a, b) => b.y - a.y);
+  let leadBall = activeRunners.length > 0 ? activeRunners[0] : balls.find(b => !b.destroyed); 
+
+  if (!isPaused && useApocalypseMode && !isApocalypseTriggered && leadBall && leadBall.y > WORLD_HEIGHT * 0.2) {
+      isApocalypseTriggered = true;
+      apocalypseCinematicTimer = 180; 
+      smogY = 0; 
+      playRumbleSound();
+      sectionBannerTimer = 180; 
+      sectionBannerColor = color(130, 80, 40); 
+      sectionBannerText = t.ann_apocalypse; 
+  }
+
+  let isCinematic = (apocalypseCinematicTimer > 0);
+
+  if (!isPaused && !isCinematic) {
+    framesSinceStart++; 
+    if (frameCount % 60 === 0 && activeRunners.length > 0) { let lastY = activeRunners[activeRunners.length - 1].y; sweepThePast(lastY); }
+    if (globalGuardianTimer > 0) { globalGuardianTimer--; if (globalGuardianTimer <= 0) globalGuardianActive = false; }
+    for (let i = 1; i < activeRunners.length; i++) {
+      let current = activeRunners[i]; let ahead = activeRunners[i-1]; let gap = ahead.y - current.y;
+      if (gap > 1200 && !current.hasCatchUpShield) { current.hasCatchUpShield = true; playIceSound(current.x, current.y); } 
+      else if (gap < 400 && current.hasCatchUpShield) { current.hasCatchUpShield = false; createParticles(current.x, current.y, color(150, 80, 100), 10); }
+    }
+    if(activeRunners.length > 0) activeRunners[0].hasCatchUpShield = false;
+
+    if (isApocalypseTriggered && !raceFinished) {
+        let baseSpeed = 16.0;
+        let speeds = [baseSpeed * 0.2, baseSpeed * 0.4, baseSpeed * 0.6, baseSpeed * 0.8, baseSpeed * 1.0];
+        smogY += speeds[constrain(smogSpeedLevel - 1, 0, 4)];
+    }
+  }
+
+  if (endingFairyTimer > 0 && firstWinner) { targetBall = firstWinner; if(!isPaused && !isCinematic) endingFairyTimer--; }
+  else if (leadBall && !manualFocus) { targetBall = leadBall; }
+
+  if (!isPaused && !isCinematic && activeCosmicSnap && !cosmicSnapTriggered && leadBall) {
+      let triggerY = (WORLD_HEIGHT / numSegments) * 4; 
+      if (leadBall.y >= triggerY) {
+          cosmicSnapTriggered = true; addEventLog(null, t.ann_cosmic_snap, color(280, 100, 100), true); sectionBannerTimer = 180; sectionBannerColor = color(280, 100, 100); sectionBannerText = t.ann_cosmic_snap; playBombSound(leadBall.x, leadBall.y);
+          let aliveBalls = balls.filter(b => !b.destroyed && !b.finished); let starCount = Math.floor(aliveBalls.length / 2); if (starCount < 1 && aliveBalls.length > 1) starCount = 1; 
+          for (let i = 0; i < starCount; i++) { let tIdx = constrain(floor((leadBall.y + 1500) / 40), 0, track.length - 1); let spawnX = track[tIdx] ? track[tIdx].center + random(-200, 200) : 0; cosmicStars.push(new CosmicStar(spawnX, leadBall.y + random(1000, 2500))); }
+      }
+  }
+
+  if (!isPaused && !isCinematic && useTeamBattle && !raceFinished) {
+    for (let i = 1; i < numSegments; i++) {
+      let segY = i * segmentLength;
+      if (!segmentCrossed[i]) {
+        let crossedBalls = balls.filter(b => b.y >= segY && !b.destroyed).sort((a,b) => b.y - a.y);
+        if (crossedBalls.length > 0) {
+          let winnerOfSection = crossedBalls[0]; segmentCrossed[i] = true; teamSegmentWins[winnerOfSection.team]++; segmentWinners[i] = winnerOfSection;
+          sectionBannerTimer = 180; sectionBannerColor = winnerOfSection.color; sectionBannerText = t.section_pass(i, winnerOfSection.name, getTeamName(winnerOfSection.team, t)); playSwapSound(winnerOfSection.x, winnerOfSection.y);
+        }
+      }
+    }
+  }
+
+  let allDone = balls.every(b => b.finished || b.destroyed);
+  if (allDone && !raceFinished) { raceFinished = true; constellationTimer = 120; } 
+  if (!isPaused && !isCinematic && raceFinished && constellationTimer > 0) { constellationTimer--; }
+
+  let firstPlaceFinished = balls.some(b => b.finished);
+
+  if (isCinematic) {
+      apocalypseCinematicTimer--;
+      targetBall = null; 
+      let targetScale = 0.55;
+      camScale = lerp(camScale, targetScale, 0.05);
+      camX = lerp(camX, width / (2 * camScale) - 0, 0.05);
+      camY = lerp(camY, height / (2 * camScale) - (smogY + 500), 0.05);
+      cameraShake = random(2, 6);
+      if (cameraShake > 0) { camX += random(-cameraShake, cameraShake) / camScale; camY += random(-cameraShake, cameraShake) / camScale; }
+  } else if (!raceFinished && targetBall) {
+    let targetScale;
+    let baseScaleForAction = map(targetBall.y, 0, WORLD_HEIGHT, 0.75, 1.1, true); 
+    let speedZoom = constrain(targetBall.vy * 0.025, 0, 0.4); 
+    let idealActionScale = max(0.35, baseScaleForAction - speedZoom);
+    if (!firstPlaceFinished && targetBall.y > WORLD_HEIGHT - 3000) { let zoomInFactor = map(targetBall.y, WORLD_HEIGHT - 3000, WORLD_HEIGHT, 1.0, 1.8, true); idealActionScale *= zoomInFactor; }
+    if (cameraMode === 0) { targetScale = 0.45; if (!isPaused && zoomTimer > 0) zoomTimer--; } 
+    else if (cameraMode === 2) { targetScale = 1.3; if (!isPaused && zoomTimer > 0) zoomTimer--; } 
+    else { 
+      if (!isPaused && zoomTimer > 0) { zoomTimer--; targetDynamicZoom = lerp(targetDynamicZoom, targetDynamicZoom * 0.98 + idealActionScale * 0.02, 0.1); targetScale = targetDynamicZoom; } 
+      else { targetDynamicZoom = lerp(targetDynamicZoom, idealActionScale, 0.05); targetScale = targetDynamicZoom; } 
+    }
+    let baseLerp = endingFairyTimer > 0 ? 0.1 : 0.04; let scaleLerpSpeed = cameraMode === 1 ? 0.03 : baseLerp; 
+    if(!isPaused) {
+      camScale = lerp(camScale, targetScale, scaleLerpSpeed); 
+      camX = lerp(camX, width / (2 * camScale) - targetBall.x, baseLerp * 2.5); 
+      camY = lerp(camY, height / (2 * camScale) - targetBall.y, baseLerp * 2.5);
+      if (cameraShake > 0.1) { if (cameraMode === 1) { camX += random(-cameraShake, cameraShake) / camScale; camY += random(-cameraShake, cameraShake) / camScale; } cameraShake *= 0.85; }
+    }
+  } else if (!isPaused) { 
+    camScale = lerp(camScale, 0.85, 0.02); camX = lerp(camX, width / (2 * camScale) - 0, 0.05); camY = lerp(camY, height / (2 * camScale) - (WORLD_HEIGHT + 600), 0.05); 
+  }
+
+  push(); scale(camScale); translate(camX, camY);
+  let focusY = targetBall ? targetBall.y : (isCinematic ? smogY + 500 : WORLD_HEIGHT + 600);
+  let viewTop = focusY - (height / camScale) * 1.5; let viewBottom = focusY + (height / camScale) * 1.5;
+  
+  drawAdTrack(viewTop, viewBottom);
+  drawBackgroundGrid(viewTop, viewBottom); drawTrack(viewTop, viewBottom); drawSegments(viewTop, viewBottom);
+
+  guardians.forEach(g => { if(!isPaused && !isCinematic) g.update(balls); if (g.y > viewTop - 500 && g.y < viewBottom + 500) g.display(); if(!isPaused && !isCinematic) g.applyEffect(balls); });
+  wallBars.forEach(wb => { if (wb.y > viewTop && wb.y < viewBottom) wb.display(); });
+  if (useBubbleTrap && !isPaused && !isCinematic) { bubbleZones.forEach(zone => { let anyBallInZone = balls.some(b => !b.destroyed && b.y >= zone.yStart && b.y <= zone.yEnd); if (anyBallInZone && frameCount % 150 === 0 && soapBubbles.length < 8) { let tIdx = floor(zone.yEnd / 40); if(tIdx >= 0 && tIdx < track.length) soapBubbles.push(new SoapBubble(random(track[tIdx].left + 50, track[tIdx].right - 50), zone.yEnd)); } }); }
+
+  blackholePads.forEach(bh => { if (bh.y > viewTop && bh.y < viewBottom) bh.display(); }); shrinkPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); growPads.forEach(gp => { if (gp.y > viewTop && gp.y < viewBottom) gp.display(); }); swapPads.forEach(sp => { if (sp.y > viewTop && sp.y < viewBottom) sp.display(); }); bricks.forEach(br => { if (br.y > viewTop && br.y < viewBottom) br.display(); }); staticPins.forEach(p => { if (p.y > viewTop && p.y < viewBottom) p.display(); }); spinners.forEach(s => { if(!isPaused && !isCinematic) s.update(); if (s.y > viewTop && s.y < viewBottom) s.display(); }); electricTraps.forEach(et => { if (et.y > viewTop && et.y < viewBottom) et.display(); });
+  
+  for (let i = prisms.length - 1; i >= 0; i--) { let p = prisms[i]; if(!isPaused && !isCinematic) p.update(); if (p.y > viewTop && p.y < viewBottom) p.display(); if (p.isDead()) prisms.splice(i, 1); }
+  for (let i = soapBubbles.length - 1; i >= 0; i--) { let sb = soapBubbles[i]; if(!isPaused && !isCinematic) sb.update(); if (sb.y > viewTop && sb.y < viewBottom) sb.display(); if (sb.popped || sb.y < 0) soapBubbles.splice(i, 1); }
+  for (let i = ripples.length - 1; i >= 0; i--) { let r = ripples[i]; if(!isPaused && !isCinematic) r.update(); r.display(); if (r.isDead()) ripples.splice(i, 1); }
+  for (let i = mutantFlares.length - 1; i >= 0; i--) { let f = mutantFlares[i]; if(!isPaused && !isCinematic) f.update(); if (f.y > viewTop && f.y < viewBottom) f.display(); if (f.life <= 0) mutantFlares.splice(i, 1); }
+  for (let i = wailingWalls.length - 1; i >= 0; i--) { let w = wailingWalls[i]; if(!isPaused && !isCinematic) w.update(); if (w.y > viewTop && w.y < viewBottom) w.display(); if (w.isDead()) wailingWalls.splice(i, 1); }
+
+  for (let i = cosmicStars.length - 1; i >= 0; i--) {
+      let cs = cosmicStars[i];
+      if (!isPaused && !isCinematic) { cs.update(); cs.checkTrackCollision(); cs.checkPinCollision(staticPins); cs.checkBallCollision(balls); }
+      if (cs.y > viewTop - 500 && cs.y < viewBottom + 500) { cs.display(); }
+      if (cs.life <= 0) cosmicStars.splice(i, 1);
+  }
+
+  blendMode(ADD);
+  for (let i = specialEffects.length - 1; i >= 0; i--) { let fx = specialEffects[i]; if(!isPaused && !isCinematic) fx.update(); fx.display(); if (fx.isDead()) specialEffects.splice(i, 1); }
+  for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; if(!isPaused && !isCinematic) p.update(); p.display(); if (p.isDead()) particles.splice(i, 1); }
+  blendMode(BLEND);
+
+  if (raceFinished) { stroke(50, 60, 100, 60 + (isPaused?0:sin(frameCount * 0.05) * 40)); strokeWeight(2); for (let edge of constellationEdges) { let b1 = balls[edge[0]]; let b2 = balls[edge[1]]; line(b1.x, b1.y, b2.x, b2.y); } }
+  let triggerShieldForAll = useFirstPlaceOnly && balls.some(b => b.finished);
+
+  balls.forEach(b => {
+    if (b.destroyed) { b.display(); return; } 
+    
+    b.cosmicBoost = (!b.finished && leadBall && leadBall.y - b.y > 2500); b.isLastOne = (b === lastBallRemaining && !b.finished) || (triggerShieldForAll && !b.finished) || (forceFinishAll && !b.finished);
+    if(!isPaused && !isCinematic) {
+      b.update();
+      if (b.frozenTimer <= 0 && b.trapTimer <= 0 && !forceFinishAll && endingFairyTimer <= 0) {
+        b.checkBallCollision(balls);
+        if (b.checkTrackCollision()) playNormalHit(400, b.x, b.y);
+        wallBars.forEach(wb => wb.applyEffect(b)); staticPins.forEach(p => { if (b.checkPinCollision(p, t)) playNormalHit(800, b.x, b.y); });
+        spinners.forEach(s => { if (b.checkSpinnerCollision(s)) playNormalHit(300, b.x, b.y); }); blackholePads.forEach(bh => bh.applyForce(b)); shrinkPads.forEach(sp => sp.applyEffect(b)); 
+        growPads.forEach(gp => gp.applyEffect(b)); swapPads.forEach(sp => sp.applyEffect(b, leadBall)); electricTraps.forEach(et => et.applyEffect(b)); soapBubbles.forEach(sb => sb.applyEffect(b));
+        wailingWalls.forEach(w => w.applyEffect(b)); prisms.forEach(p => p.applyEffect(b));
+
+        for (let i = mutantFlares.length - 1; i >= 0; i--) {
+          if (abs(b.y - mutantFlares[i].y) > 100) continue; 
+          if (b !== mutantFlares[i].owner && !b.finished && !b.hasCatchUpShield && !b.isDashing && !b.isJumping) { 
+            if (!useTeamBattle || b.team !== mutantFlares[i].owner.team) {
+              if (dist(b.x, b.y, mutantFlares[i].x, mutantFlares[i].y) < b.r + mutantFlares[i].r) { 
+                if (b.divineShieldTimer > 0) { mutantFlares.splice(i, 1); createParticles(b.x, b.y, color(60, 100, 100), 10); } 
+                else if (b.isBestDriver) { }
+                else { b.vy = -8; b.slowTimer = 120; playBombSound(b.x, b.y); createParticles(b.x, b.y, color(10, 80, 100), 20); mutantFlares.splice(i, 1); }
+              }
+            }
+          }
+        }
+
+        for (let i = bricks.length - 1; i >= 0; i--) {
+          if (abs(b.y - bricks[i].y) > 100) continue; 
+          if (b.checkBrickCollision(bricks[i])) {
+            let hitBrick = bricks[i]; bricks.splice(i, 1); 
+            if (b.isDashing || b.divineShieldTimer > 0) { createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 15); continue; } 
+            if (hitBrick.item === 'ice') { playIceSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(200, 80, 100), 40); specialEffects.push(new IceFX(hitBrick.x, hitBrick.y)); addEventLog(b, t.ann_ice(b.name), b.color, false); balls.forEach(other => { if (other !== b && !other.destroyed && !other.finished && other.y > b.y && !other.hasCatchUpShield && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== b.team)) other.frozenTimer = 120; }); } 
+            else if (hitBrick.item === 'bomb') { playBombSound(hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(10, 90, 100), 50); specialEffects.push(new BombFX(hitBrick.x, hitBrick.y)); cameraShake = 20; zoomTimer = 50; targetDynamicZoom = 1.4; addEventLog(b, t.ann_bomb(b.name), b.color, false); for (let j = bricks.length - 1; j >= 0; j--) { if (dist(hitBrick.x, hitBrick.y, bricks[j].x, bricks[j].y) < 160) { createParticles(bricks[j].x, bricks[j].y, color(bricks[j].hue, 80, 100), 5); bricks.splice(j, 1); } } } 
+            else { playNormalHit(1200, hitBrick.x, hitBrick.y); createParticles(hitBrick.x, hitBrick.y, color(hitBrick.hue, 80, 100), 10); } break; 
+          }
+        }
+      }
+      
+      if (isApocalypseTriggered && !b.finished) {
+          if (b.y < smogY + 30) {
+              if (b.divineShieldTimer > 0) { 
+                  b.smogChokeTimer = 0; 
+              } else {
+                  b.smogChokeTimer = (b.smogChokeTimer || 0) + 1;
+                  b.slowTimer = 10; 
+                  
+                  if (frameCount % 10 === 0) {
+                      particles.push(new Particle(b.x + random(-15, 15), b.y - b.r, color(130, 80, 50)));
+                  }
+                  
+                  if (b.smogChokeTimer >= 180) {
+                      b.destroyed = true;
+                      playBombSound(b.x, b.y);
+                      createParticles(b.x, b.y, color(120, 80, 50), 40);
+                      specialEffects.push(new BombFX(b.x, b.y));
+                      addEventLog(b, `☠️ ${b.name}님이 짙은 독기에 삼켜졌습니다.`, color(120, 80, 50), true);
+                  }
+              }
+          } else {
+              b.smogChokeTimer = 0; 
+              if (b.y < smogY + 250 && frameCount % 10 === 0 && !b.divineShieldTimer) {
+                  particles.push(new Particle(b.x + random(-10, 10), b.y - b.r, color(120, 60, 30)));
+              }
+          }
+      }
+    }
+    b.display();
+  });
+
+  drawSmog(viewTop, viewBottom);
+
+  if (isApocalypseTriggered) {
+      push();
+      blendMode(ADD); 
+      noStroke();
+      balls.forEach(b => {
+          if (!b.destroyed && !b.finished && b.y < smogY + 300 && b.divineShieldTimer > 0) {
+              fill(60, 100, 100, 40 + sin(frameCount * 0.2) * 20);
+              ellipse(b.x, b.y, b.r * 12);
+              fill(60, 100, 100, 80);
+              ellipse(b.x, b.y, b.r * 6);
+          }
+      });
+      pop();
+  }
+
+  stroke(30, 100, 100, 50); strokeWeight(10); line(-5000, WORLD_HEIGHT - 100, 5000, WORLD_HEIGHT - 100); pop();
+
+  if (endingFairyTimer > 0 && firstWinner) { let alpha = min(150 - endingFairyTimer, 20) * 5; push(); fill(firstWinner.colorH, firstWinner.colorS, firstWinner.colorB, alpha * 0.2); rect(0, 0, width, height); textAlign(CENTER, CENTER); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = firstWinner.cStr; } fill(255, alpha); textSize(30); text(t.ann_ending, width/2, height - 200); textSize(60); text(firstWinner.name, width/2, height - 120); drawingContext.shadowBlur = 0; pop(); }
+  if (flashLife > 0 && flashColor) { if(!isPaused && !isCinematic) flashLife--; }
+  if (sectionBannerTimer > 0) { push(); let alpha = min(sectionBannerTimer, 20) * 12; let yOffset = map(sectionBannerTimer, 180, 160, -100, height/3, true); if (sectionBannerTimer < 20) yOffset = map(sectionBannerTimer, 20, 0, height/3, -100); fill(10, 15, 25, alpha * 0.4); rectMode(CENTER); rect(width/2, yOffset, width, 100); textAlign(CENTER, CENTER); textSize(26); textFont('Noto Sans KR'); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = sectionBannerColor.toString(); } stroke(sectionBannerColor.levels[0], sectionBannerColor.levels[1], sectionBannerColor.levels[2], alpha); strokeWeight(2); fill(255, alpha); text(sectionBannerText, width/2, yOffset); drawingContext.shadowBlur = 0; pop(); if(!isPaused && !isCinematic) sectionBannerTimer--; }
+
+  drawAnnouncements(); 
+  if (useCasterMode && !raceFinished) drawCasterOverlay(t);
+  drawTicker();
+
+  if (isPaused) { push(); fill(0, 0, 0, 60); rect(0, 0, width, height); textAlign(CENTER, CENTER); textSize(40); textFont('Orbitron'); fill(255); if (!useLightMode) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = '#00e5ff'; } text("PAUSED", width/2, height/2); drawingContext.shadowBlur = 0; pop(); }
+
+  if (raceFinished && endingFairyTimer <= 0 && constellationTimer <= 0) { 
+    if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } 
+    drawFinalScoreboard(); 
+  }
+  else if (endingFairyTimer <= 0 && !raceFinished) { 
+    drawMinimap(t); drawRankings(); drawSpeedButton(t); drawCameraButton(t); drawPauseButton(t); drawMuteButton(t); drawForceFinishButton(t); 
+  }
+
+  if (manualFocus && !raceFinished && endingFairyTimer <= 0) { push(); fill(255, 150); textAlign(CENTER, TOP); textSize(13); let txt = currentLang==='ko'?"빈 공간 클릭 시 선두 자동 추적":currentLang==='en'?"Click empty space to auto-focus leader":currentLang==='zh'?"点击空白处自动追踪第一名":"空白をクリックで先頭を自動追跡"; text(txt, width/2, 20); pop(); }
+}
+
+class CosmicStar {
+  constructor(x, y) { this.x = x; this.y = y; this.r = 15; this.vx = random(-6, 6); this.vy = random(-9, -22); this.life = 800; this.angle = random(TWO_PI); this.cStr = color(280, 100, 100).toString(); }
+  update() { this.x += this.vx; this.y += this.vy; this.angle += 0.2; this.life--; }
+  checkTrackCollision() { let idx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[idx]; if (t) { if (this.x < t.left + this.r) { this.x = t.left + this.r; this.vx *= -1; createParticles(this.x, this.y, color(280,100,100), 5); } if (this.x > t.right - this.r) { this.x = t.right - this.r; this.vx *= -1; createParticles(this.x, this.y, color(280,100,100), 5); } } }
+  checkPinCollision(pins) { for (let i = 0; i < pins.length; i++) { let p = pins[i]; if (abs(this.y - p.y) > 50) continue; if (!p.isActive) continue; let d = dist(this.x, this.y, p.x, p.y); let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5; if (d < this.r + hitRadius) { this.vx = (this.x > p.x) ? abs(this.vx) : -abs(this.vx); this.vy = -abs(this.vy);  createParticles(this.x, this.y, color(280,100,100), 3); } } }
+  checkBallCollision(balls) { for (let b of balls) { if (b.finished || b.destroyed || b.divineShieldTimer > 0) continue; let d = dist(this.x, this.y, b.x, b.y); if (d < this.r + b.r) { b.destroyed = true; playBombSound(b.x, b.y); createParticles(b.x, b.y, color(280, 100, 100), 40); specialEffects.push(new BombFX(b.x, b.y)); let t = i18n[currentLang]; addEventLog(b, `🌌 ${b.name} ${t.tag_destroyed}`, color(280, 100, 100), true); this.life = 0; break; } } }
+  display() { push(); translate(this.x, this.y); rotate(this.angle); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = this.cStr; } fill(280, 80, 100); stroke(255, 150); strokeWeight(2); beginShape(); for (let i = 0; i < 10; i++) { let a = i * TWO_PI / 10; let r = (i % 2 === 0) ? this.r * 1.5 : this.r * 0.6; vertex(cos(a) * r, sin(a) * r); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
+}
+
+class GuardianRobot {
+  constructor(y) { this.y = y; this.w = 80; this.h = 32; this.vx = 0; this.maxSpeed = 7; this.x = 0; }
+  update(balls) { if (!globalGuardianActive) return; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx]; if (t && this.x === 0 && this.vx === 0) this.x = t.center; let target = null; let minDist = 800;  for(let b of balls) { if(b.finished || b.destroyed || b.team === globalGuardianTeam || b.divineShieldTimer > 0 || b.isDashing || b.isJumping || b.isLastOne) continue; let dy = this.y - b.y; if(dy > 0 && dy < minDist) { minDist = dy; target = b; } } if (target) { let dx = target.x - this.x; this.vx = constrain(dx, -this.maxSpeed, this.maxSpeed); } else { this.vx *= 0.9; } this.x += this.vx; if (t) { this.x = constrain(this.x, t.left + this.w/2, t.right - this.w/2); } }
+  display() { push(); translate(this.x, this.y); if (globalGuardianActive) { fill(globalGuardianColor); stroke(255, 100); strokeWeight(3); } else { fill(40); stroke(80); strokeWeight(2); } rectMode(CENTER); rect(0, 0, this.w, this.h, 8);  if (globalGuardianActive) { fill(255); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); } else { fill(20); noStroke(); ellipse(-15, 0, 12); ellipse(15, 0, 12); } pop(); }
+  applyEffect(balls) { if (!globalGuardianActive) return; for(let b of balls) { if (b.finished || b.destroyed || b.team === globalGuardianTeam || b.isLastOne || b.isJumping) continue; let closestX = constrain(b.x, this.x - this.w/2, this.x + this.w/2); let closestY = constrain(b.y, this.y - this.h/2, this.y + this.h/2); if (dist(b.x, b.y, closestX, closestY) < b.r) { if (b.isDashing || b.divineShieldTimer > 0) { createParticles(closestX, closestY, color(255), 10); continue; } b.vy = -abs(b.vy) * 1.5 - 15; b.y = this.y - this.h/2 - b.r - 5; b.vx = (b.x < this.x ? -15 : 15); b.slowTimer = 60; playNormalHit(800, b.x, b.y); createParticles(b.x, b.y, globalGuardianColor, 15); } } }
+}
+
+class PrismFilter {
+  constructor(x, y, team, col) { this.x = x; this.y = y; this.team = team; this.col = col; this.life = 300; this.maxLife = 300; this.w = 1500; }
+  update() { let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); if(track[tIdx]) this.x = track[tIdx].center;  this.y -= 4; this.life--; }
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); stroke(hue(this.col), saturation(this.col), brightness(this.col), alpha); strokeWeight(40); line(-this.w/2, 0, this.w/2, 0); stroke(255, alpha); strokeWeight(10); line(-this.w/2, 0, this.w/2, 0); pop(); }
+  applyEffect(b) { if (b.finished || b.destroyed || b.divineShieldTimer > 0 || b.team === this.team || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 20) { b.y = this.y - b.r - 20; b.vy = -6; b.vx += random(-1, 1); createParticles(b.x, b.y, this.col, 3); } }
+  isDead() { return this.life <= 0; }
+}
+
+class WailingWall {
+  constructor(y, life, col) { this.y = y; this.life = life; this.maxLife = life; this.col = col; this.tIdx = constrain(floor(y / 40), 0, track.length - 1); this.w = track[this.tIdx] ? track[this.tIdx].right - track[this.tIdx].left : 600; this.x = track[this.tIdx] ? track[this.tIdx].center : 0; }
+  update() { this.life--; }
+  display() { push(); translate(this.x, this.y); let alpha = map(this.life, 0, this.maxLife, 0, 200); fill(hue(this.col), saturation(this.col), brightness(this.col), alpha); stroke(255, alpha); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.w, 20, 10); pop(); }
+  applyEffect(b) { if (b.finished || b.destroyed || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; if (abs(b.y - this.y) < b.r + 15) { if (b.y < this.y) { b.y = this.y - b.r - 15; b.vy = (-abs(b.vy) * 0.8 - 2); b.vx += random(-2, 2); createParticles(b.x, b.y, this.col, 5); playNormalHit(800, b.x, b.y); } } }
+  isDead() { return this.life <= 0; }
+}
+
+class RacingBall {
+  constructor(x, y, name, i, totalPlayers, assignedTeam) {
+    this.x = x; this.y = y; this.name = name; this.id = i; this.baseR = 13; this.targetR = 13; this.r = 13; 
+    if (useTeamBattle) { this.team = assignedTeam; let baseHue = 0; if (this.team === 'RED') baseHue = 355; else if (this.team === 'BLUE') baseHue = 215; else if (this.team === 'GREEN') baseHue = 130; else if (this.team === 'YELLOW') baseHue = 45; else if (this.team === 'PURPLE') baseHue = 280; else if (this.team === 'ORANGE') baseHue = 30; else if (this.team === 'CYAN') return 180; else if (this.team === 'PINK') baseHue = 320; this.color = color((baseHue + random(-10, 10) + 360) % 360, 85, 100); } else { this.team = null; this.color = color(i * (360 / totalPlayers), 85, 100); }
+    this.colorH = hue(this.color); this.colorS = saturation(this.color); this.colorB = brightness(this.color); this.cStr = this.color.toString();
+    this.vx = random(-1, 1); this.vy = 0; this.history = []; this.img = null; this.sizeTimer = 0; this.isLastOne = false; 
+    this.finished = false; this.finishOrder = 0; this.cooldown = 0; this.frozenTimer = 0; this.angle = random(TWO_PI);
+    this.trapTimer = 0; this.trapType = null; this.trapObj = null; this.trapCooldown = 0; this.fastTimer = 0; this.slowTimer = 0; this.cosmicBoost = false; this.hasCatchUpShield = false;
+    this.mutantType = -1; this.collisionGauge = 0; this.skillActive = false; this.mutantTimer = 0;
+    this.hasRetribution = false; this.isBlackhole = false; this.isSticky = false; this.isDashing = false; 
+    this.divineShieldTimer = 0; this.chaserTimer = 0; this.chaseTarget = null;
+    this.reverseGravityTimer = 0; this.isJumping = false; this.jumpTimer = 0;
+    this.isBestDriver = false; 
+    this.destroyed = false; 
+    this.smogChokeTimer = 0; 
+  }
+  
+  incrementGauge() { 
+    if (this.finished || this.destroyed || this.isLastOne) return; 
+    if (useMutantMode && !this.skillActive) { this.collisionGauge++; if (this.collisionGauge >= gaugeThreshold) { this.activateMutantSkill(); } }
+    if (useTeamBattle && this.team) { teamGauges[this.team]++; if (teamGauges[this.team] >= teamGaugeThreshold) { this.activateTeamSkill(); teamGauges[this.team] = 0; } }
+  }
+
+  activateTeamSkill() {
+    let t = i18n[currentLang]; let skillPool = []; for(let i=0; i<4; i++) { if(activeTeamSkills[i]) skillPool.push(i); } if (skillPool.length === 0) return;
+    let teamSkillType = random(skillPool);
+    if (teamSkillType === 0) { playHealSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished && !ally.destroyed) { ally.frozenTimer = 0; ally.slowTimer = 0; ally.trapTimer = 0; ally.trapObj = null; ally.fastTimer = 0; ally.isDashing = false; ally.hasRetribution = false; ally.isSticky = false; ally.isBlackhole = false; ally.reverseGravityTimer = 0; ally.divineShieldTimer = 150; createParticles(ally.x, ally.y, color(60, 100, 100), 15); } }); addEventLog(this, t.ann_heal(getTeamName(this.team, t)), color(60, 100, 100), true); } 
+    else if (teamSkillType === 1) { playIceSound(this.x, this.y); balls.forEach(ally => { if (ally.team === this.team && !ally.finished && !ally.destroyed) { ally.targetR = ally.baseR * 0.4; ally.sizeTimer = 420; createParticles(ally.x, ally.y, color(190, 80, 100), 15); } }); addEventLog(this, t.ann_team_shrink(getTeamName(this.team, t)), color(190, 100, 100), true); } 
+    else if (teamSkillType === 2) { let leadingAlly = balls.filter(b => b.team === this.team && !b.finished && !b.destroyed).sort((a,b)=>b.y - a.y)[0] || this; prisms.push(new PrismFilter(leadingAlly.x, leadingAlly.y, this.team, this.color)); playIceSound(this.x, this.y); addEventLog(this, t.ann_team_prism(getTeamName(this.team, t)), this.color, true); } 
+    else { playIceSound(this.x, this.y); globalGuardianActive = true; globalGuardianTeam = this.team; globalGuardianColor = this.color; globalGuardianTimer = 600; addEventLog(this, t.ann_team_guardian(getTeamName(this.team, t)), this.color, true); }
+  }
+
+  activateMutantSkill() {
+    this.collisionGauge = 0; let t = i18n[currentLang]; let skillPool = []; let basePool = [0,1,2,3,4,5,6,7,10,11,13,14]; let teamPool = [8,9,12];
+    basePool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); if(useTeamBattle) { teamPool.forEach(idx => { if(activeMutantSkills[idx]) skillPool.push(idx); }); }
+    if (skillPool.length === 0) return;
+    this.skillActive = true; this.mutantType = random(skillPool);
+    if (cameraMode === 1 && this.mutantType !== 13) { zoomTimer = 45; targetDynamicZoom = 1.4; }
+    if (this.mutantType !== 13 && this.mutantType !== 1) { specialEffects.push(new NovaFX(this.x, this.y, this.color)); for(let k=0; k<40; k++) particles.push(new Particle(this.x, this.y, this.color)); playIceSound(this.x, this.y); }
+    if (this.mutantType !== 1) { addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); }
+
+    switch(this.mutantType) {
+      case 0: balls.forEach(other => { if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 400) { other.vx = 0; other.vy = 0; other.frozenTimer = 240; createParticles(other.x, other.y, color(200, 80, 100), 10); } }); specialEffects.push(new IceFX(this.x, this.y)); this.skillActive = false; break;
+      case 1: let targets = balls.filter(b => !b.finished && !b.destroyed && b !== this && b.divineShieldTimer <= 0 && !b.isJumping && (!useTeamBattle || b.team !== this.team)).sort((a,b) => b.y - a.y); let target = targets[0]; if (!target && useTeamBattle) target = balls.filter(b => !b.finished && !b.destroyed && b !== this && b.divineShieldTimer <= 0 && !b.isJumping).sort((a,b) => b.y - a.y)[0]; if(target && target !== this) { let tx = this.x, ty = this.y, tvx = this.vx, tvy = this.vy; this.x = target.x; this.y = target.y; this.vx = target.vx; this.vy = target.vy; target.x = tx; target.y = ty; target.vx = tvx; target.vy = tvy; specialEffects.push(new SwapFX(this.x, this.y, target.x, target.y)); playSwapSound(this.x, this.y); addEventLog(this, `✨ MUTANT: ${this.name} - [${t.skill_names[this.mutantType]}]`, this.color, true); addEventLog(this, t.ann_swap(this.name, target.name), color(45, 100, 100), true); } this.skillActive = false; break;
+      case 2: this.hasRetribution = true; this.mutantTimer = 150; break;
+      case 3: this.isSticky = true; this.mutantTimer = 240; break;
+      case 4: this.isBlackhole = true; this.mutantTimer = 300; break;
+      case 5: this.targetR = this.baseR * 0.5; this.mutantTimer = 300; break;
+      case 6: for(let j=0; j<8; j++) { let ang = random(TWO_PI); let speed = random(15, 25); mutantFlares.push(new FlareTrap(this.x, this.y, cos(ang)*speed, sin(ang)*speed, this.cStr, this)); } this.skillActive = false; break;
+      case 7: this.isDashing = true; this.mutantTimer = 120; break;
+      case 8: let leadingAlly = balls.filter(b => (!useTeamBattle || b.team === this.team) && !b.finished && !b.destroyed && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingAlly) { leadingAlly.fastTimer = 180; leadingAlly.vy += 5; leadingAlly.hasCatchUpShield = true; this.frozenTimer = 60; specialEffects.push(new NovaFX(leadingAlly.x, leadingAlly.y, color(60, 100, 100))); addEventLog(this, t.ann_starlight(this.name, leadingAlly.name), color(60, 100, 100), true); } this.skillActive = false; break;
+      case 9: let leadingEnemy = balls.filter(b => (!useTeamBattle || b.team !== this.team) && !b.finished && !b.destroyed && b.divineShieldTimer <= 0).sort((a,b)=>b.y - a.y)[0]; if (leadingEnemy) { leadingEnemy.vy = 0; leadingEnemy.frozenTimer = 180; this.frozenTimer = 180; specialEffects.push(new NovaFX(leadingEnemy.x, leadingEnemy.y, color(280, 100, 50))); addEventLog(this, t.ann_anchor(this.name, leadingEnemy.name), color(280, 100, 50), true); } this.skillActive = false; break;
+      case 10: wailingWalls.push(new WailingWall(this.y - 80, 180, this.color)); addEventLog(this, t.ann_wall(this.name), this.color, true); this.skillActive = false; break;
+      case 11: let unfinished = balls.filter(b => !b.finished && !b.destroyed && !b.isJumping).sort((a,b)=>b.y - a.y); let chaseObj = unfinished[0]; if (chaseObj && chaseObj !== this) { this.chaseTarget = chaseObj; this.chaserTimer = 180; addEventLog(this, t.ann_chaser(this.name, chaseObj.name), this.color, true); } else { this.skillActive = false; } break;
+      case 12: let applied = false; let teams = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'CYAN', 'PINK']; teams.forEach(tm => { if(tm !== this.team) { let enemyLeader = balls.filter(b => b.team === tm && !b.finished && !b.destroyed).sort((a,b)=>b.y - a.y)[0]; if(enemyLeader && enemyLeader.divineShieldTimer <= 0) { enemyLeader.reverseGravityTimer = 300; applied = true; specialEffects.push(new NovaFX(enemyLeader.x, enemyLeader.y, color(280, 100, 100))); } } }); if(applied) addEventLog(this, t.ann_gravity(this.name), color(280, 100, 100), true); this.skillActive = false; break;
+      case 13: this.isJumping = true; this.jumpTimer = 150; this.vy = 18; playIceSound(this.x, this.y); addEventLog(this, t.ann_babel(this.name), color(200, 20, 100), true); break;
+      case 14: this.isBestDriver = true; this.mutantTimer = 420; playIceSound(this.x, this.y); break; 
+    }
+  }
+
+  update() {
+    if (this.destroyed) return;
+    
+    if (this.cooldown > 0) this.cooldown--; if (this.trapCooldown > 0) this.trapCooldown--;
+    if (this.reverseGravityTimer > 0) { this.reverseGravityTimer--; if (frameCount % 4 === 0) createParticles(this.x, this.y - 10, color(280, 80, 100), 2); if (this.divineShieldTimer > 0) this.reverseGravityTimer = 0; }
+    if (this.divineShieldTimer > 0) { this.divineShieldTimer--; this.frozenTimer = 0; this.slowTimer = 0; this.fastTimer = 0; this.trapTimer = 0; this.isDashing = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.chaserTimer = 0; this.trapObj = null; }
+
+    let currentZ = 0;
+
+    if (this.isJumping) {
+      this.jumpTimer--; this.vy = 18; 
+      let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx] ? track[tIdx].center : 0;
+      this.x = lerp(this.x, tCenter, 0.05);
+      let progress = 1 - (this.jumpTimer / 150); currentZ = sin(progress * Math.PI);
+      if (frameCount % 3 === 0) createParticles(this.x, this.y + 20, color(0, 0, 100), 2);
+      if (this.jumpTimer <= 0) {
+        this.isJumping = false; this.skillActive = false; playBombSound(this.x, this.y); specialEffects.push(new NovaFX(this.x, this.y, color(255)));
+        balls.forEach(other => { if (other !== this && !other.finished && !other.destroyed && !other.isJumping && dist(this.x, this.y, other.x, other.y) < 150) { let pushDir = (other.x > this.x) ? 1 : -1; other.vx = pushDir * 12; other.vy = 6; } });
+      }
+    }
+
+    if (this.skillActive && this.mutantTimer > 0) {
+      this.mutantTimer--;
+      if (this.isBestDriver) {
+          let dodgeForce = 0;
+          let checkDodgeList = (obsList, safeDist, isSorted) => {
+              for (let i = 0; i < obsList.length; i++) {
+                  let obs = obsList[i];
+                  if (obs.y < this.y) continue; 
+                  if (isSorted && obs.y > this.y + 300) break; 
+                  if (obs.y > this.y + 300) continue;
+                  if (dist(this.x, this.y, obs.x, obs.y) < safeDist) { dodgeForce += (this.x < obs.x ? -2.0 : 2.0); }
+              }
+          };
+          checkDodgeList(staticPins, 80, true); checkDodgeList(electricTraps, 100, false); checkDodgeList(soapBubbles, 100, false); checkDodgeList(mutantFlares, 80, false);
+          let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let t = track[tIdx];
+          if (t) { let distLeft = this.x - t.left; let distRight = t.right - this.x; if (distLeft < 100) dodgeForce += map(distLeft, 0, 100, 3.0, 0); if (distRight < 100) dodgeForce -= map(distRight, 0, 100, 3.0, 0); }
+          this.vx += dodgeForce; this.vy += 0.35; if(frameCount % 4 === 0) createParticles(this.x, this.y, color(50, 100, 100), 3);
+      }
+      if (this.isSticky) { if(frameCount % 5 === 0) createParticles(this.x, this.y, color(100, 80, 80), 3); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && dist(this.x, this.y, other.x, other.y) < 300) { other.slowTimer = 360; } }); }
+      if (this.isBlackhole) { if(frameCount % 3 === 0) createParticles(this.x, this.y, color(280, 100, 50), 4); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 3.0, 0.5); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; } }); }
+      if (this.hasRetribution) {
+        if (this.mutantTimer > 1) { if (frameCount % 3 === 0) createParticles(this.x, this.y, color(0, 100, 50), 2); balls.forEach(other => { if (abs(this.y - other.y) > 300) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isDashing && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 300 && d > 20) { let dx = this.x - other.x; let dy = this.y - other.y; let pull = map(d, 20, 300, 6.0, 1.0); other.vx += (dx / d) * pull; other.vy += (dy / d) * pull; other.vx *= 0.8; other.vy *= 0.8; } }); } 
+        else if (this.mutantTimer === 1) { playBombSound(this.x, this.y); specialEffects.push(new BombFX(this.x, this.y)); createParticles(this.x, this.y, color(0, 100, 100), 50); balls.forEach(other => { if (abs(this.y - other.y) > 350) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isJumping && other.divineShieldTimer <= 0 && (!useTeamBattle || other.team !== this.team) && d < 350) { let angle = random(TWO_PI); let forceX = cos(angle) * random(15, 25); let forceY = sin(angle) * random(15, 25); other.vx = forceX; other.vy = forceY; other.frozenTimer = 60; createParticles(other.x, other.y, color(0, 100, 100), 15); } }); this.vy += 18; }
+      }
+      if (this.isDashing) { this.vy = 18; let tIdx = constrain(floor(this.y / 40), 0, track.length - 1); let tCenter = track[tIdx].center; this.x = lerp(this.x, tCenter, 0.15); if(frameCount % 2 === 0) createParticles(this.x, this.y, color(180, 100, 100), 3); balls.forEach(other => { if (abs(this.y - other.y) > 150) return; let d = dist(this.x, this.y, other.x, other.y); if (other !== this && !other.finished && !other.destroyed && !other.isJumping && d < this.r * 8) { let pushDir = (other.x > tCenter) ? 1 : -1; other.vx = pushDir * 15; createParticles(other.x, other.y, color(180, 30, 100), 2); } }); }
+      if (this.mutantTimer <= 0) { this.skillActive = false; this.hasRetribution = false; this.isSticky = false; this.isBlackhole = false; this.isDashing = false; this.isBestDriver = false; this.targetR = this.baseR; }
+    }
+
+    if (this.chaserTimer > 0 && this.chaseTarget && !this.chaseTarget.finished && !this.chaseTarget.destroyed) {
+      this.chaserTimer--; let dx = this.chaseTarget.x - this.x; let dy = this.chaseTarget.y - this.y; let d = dist(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y);
+      if (d > 20) { this.vx += (dx / d) * 1.0; this.vy += (dy / d) * 1.5; if (this.chaseTarget.divineShieldTimer <= 0 && !this.chaseTarget.isJumping) { this.chaseTarget.vx -= (dx / d) * 0.3; this.chaseTarget.vy -= (dy / d) * 0.8; if (frameCount % 4 === 0) createParticles(this.chaseTarget.x, this.chaseTarget.y, color(210, 100, 100), 2); } }
+      if (this.chaserTimer <= 0) { this.skillActive = false; this.chaseTarget = null; }
+    } else if (this.chaserTimer > 0) { this.chaserTimer = 0; this.skillActive = false; this.chaseTarget = null; }
+
+    if (this.y > WORLD_HEIGHT - 100) {
+      if (!this.finished) { 
+        this.finished = true; finishCounter++; this.finishOrder = finishCounter; this.hasCatchUpShield = false; 
+        if (finishCounter === 1) { firstWinner = this; endingFairyTimer = 150; if (cameraMode === 1) { zoomTimer = 150; targetDynamicZoom = 2.8; cameraShake = 15; } for(let k = 0; k < 150; k++) specialEffects.push(new Confetti(this.x, this.y)); playSwapSound(this.x, this.y); }
+        if (useTeamBattle && !segmentCrossed[numSegments] && this.team) { segmentCrossed[numSegments] = true; teamSegmentWins[this.team]++; segmentWinners[numSegments] = this; }
+      }
+      let targetSpot = constellationSpots[this.id]; this.x = lerp(this.x, targetSpot.x, 0.04); this.y = lerp(this.y, targetSpot.y, 0.04); return; 
+    }
+    
+    if (!this.isJumping) this.angle += (this.vx * 0.15);
+    if (forceFinishAll && !this.finished) { this.trapTimer = 0; this.frozenTimer = 0; this.slowTimer = 0; this.hasCatchUpShield = false; this.vy += 1.0; }
+
+    if (this.trapTimer > 0) {
+      if (this.divineShieldTimer > 0 || this.isJumping) { this.trapTimer = 0; this.trapObj = null; createParticles(this.x, this.y, color(60, 100, 100), 5); } 
+      else {
+        this.trapTimer--; if (!this.trapObj) { this.trapTimer = 0; return; } 
+        if (this.trapType === 'electric') { this.x = this.trapObj.x + random(-5, 5); this.y = this.trapObj.y + random(-5, 5); if (frameCount % 10 === 0) createParticles(this.x, this.y, color(55, 100, 100), 2); if (this.trapTimer <= 0) { this.vx = (random() > 0.5 ? 1 : -1) * random(5, 8); this.vy = random(-8, -4); this.trapObj = null; this.trapCooldown = 90; this.trapTimer = 0; } return; } 
+        else if (this.trapType === 'bubble') { this.x = this.trapObj.x; this.y = this.trapObj.y; if (this.trapTimer <= 0 || this.trapObj.popped) { playIceSound(this.x, this.y); for(let i=0; i<20; i++) particles.push(new Particle(this.x, this.y, color(random(360), 40, 100))); if (this.trapObj) this.trapObj.popped = true; this.trapObj = null; this.vy = -2; this.trapCooldown = 60; this.trapTimer = 0; } return; }
+      }
+    }
+
+    if (this.frozenTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { if (this.divineShieldTimer > 0) { this.frozenTimer = 0; createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.frozenTimer--; this.vx *= 0.5; this.vy *= 0.5; this.x += this.vx; this.y += this.vy; return; } }
+    if (this.fastTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { this.fastTimer--; this.vy += 0.5; if (frameCount % 5 === 0) createParticles(this.x, this.y, color(120, 100, 100), 1); }
+    if (this.slowTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { if (this.divineShieldTimer > 0) { this.slowTimer = 0; createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.slowTimer--; this.vy *= 0.75; if (frameCount % 5 === 0) createParticles(this.x, this.y, color(0, 100, 100), 1); } }
+    if (this.cosmicBoost && !this.finished) { this.vy += 0.4; if (frameCount % 4 === 0) { let ang = random(TWO_PI); let d = random(10, 30); particles.push(new Particle(this.x + cos(ang) * d, this.y + sin(ang) * d, color(50, 80, 100))); } }
+    if (this.sizeTimer > 0) { this.sizeTimer--; if (this.sizeTimer <= 0 && !this.skillActive) this.targetR = this.baseR; }
+    this.r = lerp(this.r, this.targetR, 0.1);
+    
+    let maxHist = useLightMode ? 10 : 25; 
+    this.history.push({x: this.x, y: this.y, z: currentZ}); 
+    if (this.history.length > maxHist) this.history.shift();
+    let gravities = [0.12, 0.18, 0.26]; 
+    if (!this.isJumping) { if (this.reverseGravityTimer > 0) { this.vy -= 0.8; } else { this.vy += gravities[speedLevel]; } }
+    
+    this.vx = constrain(this.vx, -20, 20); this.vy = constrain(this.vy, -35, 40);
+    this.x += this.vx; this.y += this.vy; 
+    this.vx *= 0.985; if (!this.isJumping) this.vy *= 0.985;
+  }
+
+  checkBallCollision(others) {
+    if (this.finished || this.destroyed || this.cooldown > 0 || this.isJumping) return;
+    if (framesSinceStart < 180) return;
+    for (let other of others) {
+      if (other === this || other.finished || other.destroyed || other.cooldown > 0 || other.frozenTimer > 0 || other.trapTimer > 0 || other.isJumping) continue;
+      if (abs(this.y - other.y) > 50 || abs(this.x - other.x) > 50) continue; 
+      let d = dist(this.x, this.y, other.x, other.y);
+      if (d < this.r + other.r) { 
+        if (useTeamBattle && this.team === other.team) { let pushX = (this.x < other.x) ? -0.5 : 0.5; this.vx += pushX; other.vx -= pushX; this.cooldown = 10; other.cooldown = 10; } 
+        else { let midX = (this.x + other.x) / 2; let midY = (this.y + other.y) / 2; ripples.push(new Ripple(midX, midY)); playNormalHit(600, midX, midY); this.vy += 1.5; other.vy += 1.5; let pushX = (this.x < other.x) ? -1 : 1; this.vx += pushX * 0.8; other.vx -= pushX * 0.8; this.cooldown = 20; other.cooldown = 20; this.incrementGauge(); other.incrementGauge(); }
+        break; 
+      }
+    }
+  }
+
+  checkTrackCollision() {
+    if (this.finished || this.destroyed) return false; let idx = floor(this.y / 40);
+    if (idx >= 0 && idx < track.length) {
+      let t = track[idx];
+      if (this.x < t.left + this.r) { 
+        this.x = t.left + this.r; 
+        if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = abs(this.vx) * 0.5 + basePush; this.incrementGauge(); } 
+        if (!this.isJumping && frameCount % 5 === 0) createParticles(this.x, this.y, this.color, 3); 
+        return true; 
+      }
+      if (this.x > t.right - this.r) { 
+        this.x = t.right - this.r; 
+        if (!this.isDashing && !this.isJumping) { let basePush = random(1.5, 3); this.vx = -(abs(this.vx) * 0.5 + basePush); this.incrementGauge(); } 
+        if (!this.isJumping && frameCount % 5 === 0) createParticles(this.x, this.y, this.color, 3); 
+        return true; 
+      }
+    }
+    return false;
+  }
+
+  checkPinCollision(p, t) {
+    if (this.isLastOne || this.finished || this.destroyed || !p.isActive || this.isDashing || this.isJumping || this.isBestDriver) return false; if (this.hasCatchUpShield && p.type !== 'fast') return false;
+    let hitRadius = (p.type === 'normal') ? p.r : p.r * 1.5; let d = dist(this.x, this.y, p.x, p.y);
+    if (d < this.r + hitRadius) {
+      this.incrementGauge(); addEventLog(this, t.ann_fast(this.name), color(120, 80, 100), false); addEventLog(this, t.ann_slow(this.name), color(0, 80, 100), false);
+      if (p.type === 'fast') { this.fastTimer = 300; this.slowTimer = 0; playIceSound(this.x, this.y); } else if (p.type === 'slow') { if (this.divineShieldTimer > 0) { createParticles(this.x, this.y, color(60, 100, 100), 5); } else { this.slowTimer = 300; this.fastTimer = 0; playZapSound(this.x, this.y); } }
+      let angle = atan2(this.y - p.y, this.x - p.x) + random(-0.1, 0.1); let speed = sqrt(this.vx**2 + this.vy**2) + random(3, 5); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed; createParticles(this.x, this.y, this.color); return true;
+    }
+    return false;
+  }
+
+  checkSpinnerCollision(s) {
+    if (this.isLastOne || this.finished || this.destroyed || this.hasCatchUpShield || this.isDashing || this.divineShieldTimer > 0 || this.isJumping) return false;
+    let dx = this.x - s.x; let dy = this.y - s.y; let rx = dx * cos(-s.angle) - dy * sin(-s.angle); let ry = dx * sin(-s.angle) + dy * cos(-s.angle);
+    if (abs(rx) < s.w/2 + this.r && abs(ry) < s.h/2 + this.r) { let force = s.speed * rx * (1.5 + random(-0.2, 0.2)); this.vx += cos(s.angle) * force; this.vy = -abs(this.vy) * 0.6 - abs(force); createParticles(this.x, this.y, this.color); return true; }
+    return false;
+  }
+
+  checkBrickCollision(brick) {
+    if (this.isLastOne || this.finished || this.destroyed || this.hasCatchUpShield || this.isJumping) return false; 
+    let closestX = constrain(this.x, brick.x - brick.w/2, brick.x + brick.w/2); let closestY = constrain(this.y, brick.y - brick.h/2, brick.y + brick.h/2); let d = dist(this.x, this.y, closestX, closestY);
+    if (d < this.r) { if (this.isDashing || this.divineShieldTimer > 0) return true; let dx = this.x - closestX; let dy = this.y - closestY; if (abs(dx) > abs(dy)) { this.vx *= -0.8; this.x = closestX + (dx > 0 ? this.r : -this.r); } else { this.vy *= -0.8; this.y = closestY + (dy > 0 ? this.r : -this.r); } return true; }
+    return false; 
+  }
+
+  display() {
+    if (this.destroyed) {
+        push(); translate(this.x, this.y);
+        fill(50, 50, 50, 100); noStroke(); ellipse(0, 0, this.r * 2);
+        stroke(255, 100, 100, 150); strokeWeight(3);
+        line(-this.r, -this.r, this.r, this.r); line(-this.r, this.r, this.r, -this.r);
+        fill(100); noStroke(); textAlign(CENTER); textSize(14/camScale); text(this.name, 0, -18);
+        pop(); return;
+    }
+
+    let jumpScale = 1.0; let jumpOffsetY = 0;
+    if (this.isJumping) { let progress = 1 - (this.jumpTimer / 150); let z = sin(progress * Math.PI); jumpScale = 1.0 + z * 4.5; jumpOffsetY = -z * 150; push(); translate(this.x, this.y); noStroke(); fill(0, 0, 0, 80 * (1 - z * 0.8)); ellipse(0, z * 20, this.r * 2.5 * (1 - z * 0.4)); pop(); }
+    if (this.chaserTimer > 0 && this.chaseTarget && !this.isJumping) { push(); stroke(210, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(4); drawingContext.setLineDash([10, 15]); line(this.x, this.y, this.chaseTarget.x, this.chaseTarget.y); drawingContext.setLineDash([]); pop(); }
+    
+    let isAction = (cameraMode !== 0);
+    if (!isAction) blendMode(ADD); 
+    noStroke();
+    
+    for (let i = 0; i < this.history.length; i++) { 
+        let pos = this.history[i]; let pct = i / this.history.length; 
+        let alpha = isAction ? (pct * pct) * 50 : (pct * pct) * 90; 
+        let histZ = pos.z || 0; let histScale = 1.0 + histZ * 4.5; let histOffsetY = -histZ * 150; 
+        let size = map(pct, 0, 1, this.r * 0.2, this.r * 2.2) * histScale; 
+        fill(this.colorH, this.colorS, this.colorB, alpha); ellipse(pos.x, pos.y + histOffsetY, size); 
+    }
+    if (!isAction) blendMode(BLEND);
+    noStroke();
+    
+    if (this.isLastOne) { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'hsla(50, 100%, 100%, 1)'; } stroke(50, 80, 100, 60 + sin(frameCount * 0.1) * 40); strokeWeight(4); ellipse(this.x, this.y, this.r * 2.8); noStroke(); } 
+    else { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = this.cStr; } }
+    
+    if (this.reverseGravityTimer > 0) { push(); translate(this.x, this.y); rotate(frameCount*0.1); stroke(280, 100, 100, 90 + sin(frameCount)*50); strokeWeight(3); noFill(); let pulse = this.r * 2.5 + random(-2,2); ellipse(0,0,pulse); pop(); }
+    if (this.isSticky) { push(); translate(this.x, this.y); noFill(); stroke(100, 80, 50, 60); strokeWeight(40 + sin(frameCount*0.5)*15); ellipse(0, 0, 300); stroke(100, 100, 30, 40); strokeWeight(10); ellipse(0, 0, 250 + cos(frameCount*0.3)*20); pop(); }
+    if (this.isBlackhole) { push(); translate(this.x, this.y); rotate(frameCount*0.1); noFill(); stroke(280, 100, 20, 80); strokeWeight(30); ellipse(0, 0, 300 + sin(frameCount*0.3)*20); stroke(280, 60, 80, 50); strokeWeight(8); for(let i=0; i<4; i++) { rotate(PI/2); arc(0, 0, 260, 260, 0, PI/2 - 0.2); } fill(0, 0, 0, 80); noStroke(); ellipse(0,0,this.r*4); pop(); }
+    if (this.hasRetribution) { push(); translate(this.x, this.y); let speedRot = map(this.mutantTimer, 150, 0, 0.1, 0.8); rotate(-frameCount * speedRot); let pullR = map(this.mutantTimer, 150, 0, 350, 10); fill(0, 100, 50, 40); stroke(0, 100, 100, 90); strokeWeight(4); beginShape(); for(let i=0; i<16; i++) { let a = i*TWO_PI/16; let rOff = pullR + (i%2===0 ? 25 : 0); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); }
+    if (this.isDashing) { push(); translate(this.x, this.y); noStroke(); fill(180, 100, 100, 80); triangle(0, this.r*7, -this.r*3, -this.r*2, this.r*3, -this.r*2); stroke(180, 100, 100, 60); strokeWeight(3); line(-this.r*2, 0, -this.r*7, 0); line(this.r*2, 0, this.r*7, 0); pop(); }
+    if (this.isBestDriver) { push(); translate(this.x, this.y); noFill(); stroke(50, 100, 100, 80 + sin(frameCount*0.5)*40); strokeWeight(3); ellipse(0, 0, this.r * 2.8 + sin(frameCount*0.4)*5); pop(); }
+
+    if (this.img) { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(255); drawingContext.beginPath(); drawingContext.arc(0, 0, this.r, 0, Math.PI * 2); drawingContext.clip(); imageMode(CENTER); image(this.img, 0, 0, this.r * 2.2, this.r * 2.2); pop(); } else { push(); translate(this.x, this.y + jumpOffsetY); scale(jumpScale); rotate(this.angle); fill(this.color); ellipse(-this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); ellipse(this.r * 0.4, 0, this.r * 1.3, this.r * 1.3); pop(); }
+    if (!this.finished && !this.skillActive && this.collisionGauge > 0 && useMutantMode && !this.isJumping) { push(); translate(this.x, this.y); rotate(-HALF_PI); noFill(); stroke(255, 60); strokeWeight(2); ellipse(0, 0, this.r * 2.8); stroke(this.color); let arcEnd = map(this.collisionGauge, 0, gaugeThreshold , 0, TWO_PI); arc(0, 0, this.r * 2.8, this.r * 2.8, 0, arcEnd); pop(); }
+    if (this.hasCatchUpShield && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle * 0.5); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = color(160, 80, 100).toString(); } stroke(160, 80, 100, 70 + sin(frameCount * 0.2) * 30); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<6; i++) { let a = i * TWO_PI/6; vertex(cos(a) * this.r * 2.5, sin(a) * this.r * 2.5); } endShape(CLOSE); drawingContext.shadowBlur = 0; pop(); }
+    if (this.divineShieldTimer > 0 && !this.isLastOne && !this.finished && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(-this.angle * 0.5); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 25; drawingContext.shadowColor = color(60, 100, 100).toString(); } fill(60, 50, 100, 30); stroke(60, 100, 100, 80 + sin(frameCount * 0.3) * 40); strokeWeight(3); ellipse(0, 0, this.r * 3.5); drawingContext.shadowBlur = 0; pop(); }
+    if (this.frozenTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); rotate(this.angle); fill(200, 20, 100, 90); stroke(200, 80, 100, 100); strokeWeight(2); rect(-this.r*1.5, -this.r*1.5, this.r*3, this.r*3, 4); pop(); } else if (this.trapTimer > 0 && this.trapType === 'electric' && !this.isJumping) { push(); translate(this.x, this.y); let c = (frameCount % 4 < 2) ? color(55, 100, 100) : color(180, 100, 100); stroke(c); strokeWeight(3); noFill(); beginShape(); for(let i=0; i<10; i++) { let a = i * (TWO_PI/10); let rOff = this.r + random(5, 15); vertex(cos(a)*rOff, sin(a)*rOff); } endShape(CLOSE); pop(); } else if (this.trapCooldown > 0 && !this.isLastOne && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 0, 100, 60 + sin(frameCount * 0.2) * 40); strokeWeight(2); ellipse(0, 0, this.r * 2.5); pop(); } else if (this.fastTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(120, 80, 100, 80); strokeWeight(3); ellipse(0, 0, this.r * 2 + sin(frameCount * 0.5) * 5); pop(); } else if (this.slowTimer > 0 && !this.isLastOne && !this.isDashing && !this.isJumping) { push(); translate(this.x, this.y); noFill(); stroke(0, 80, 100, 80); strokeWeight(4); rectMode(CENTER); rect(0, 0, this.r * 2.5, this.r * 2.5, 4); pop(); }
+    drawingContext.shadowBlur = 0; fill(this.isLastOne ? color(50, 50, 100) : 100); textAlign(CENTER); textSize(14/camScale); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 5; drawingContext.shadowColor = 'black'; } text(this.name, this.x, this.y + jumpOffsetY - 18 * jumpScale); drawingContext.shadowBlur = 0;
+    
+    // 💡 3초의 생존 유예 (운명의 카운트다운 표시)
+    if (this.smogChokeTimer > 0 && !this.destroyed && !this.finished) {
+        let timeLeft = Math.ceil((180 - this.smogChokeTimer) / 60);
+        if (timeLeft > 0) {
+            push();
+            translate(this.x, this.y + jumpOffsetY);
+            scale(jumpScale);
+            textAlign(CENTER, CENTER);
+            textSize(24 / camScale);
+            textFont('Orbitron'); 
+            drawingContext.shadowBlur = 15;
+            drawingContext.shadowColor = 'red';
+            fill(0, 100, 100); 
+            stroke(255);
+            strokeWeight(2);
+            let pulseScale = 1 + sin(frameCount * 0.2) * 0.2;
+            scale(pulseScale);
+            text(timeLeft, 0, -this.r* 2.5);
             drawingContext.shadowBlur = 0;
             pop();
         }
