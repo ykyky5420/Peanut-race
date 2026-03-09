@@ -16,7 +16,8 @@
   <style>
     body {
       margin: 0; padding: 0; display: flex; justify-content: center; align-items: center;
-      height: 100vh; width: 100vw; background-color: #05050a; overflow: hidden;
+      /* 💡 모바일 브라우저 주소창 변화에 따른 덜컹거림을 막기 위해 100dvh로 변경 */
+      height: 100dvh; width: 100vw; background-color: #05050a; overflow: hidden;
       font-family: 'Noto Sans KR', sans-serif;
       overscroll-behavior: none; 
       touch-action: none; 
@@ -166,22 +167,20 @@ devAds.forEach((ad, idx) => {
   }
 });
 
-document.getElementById('fsBtn').addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  }
-});
-document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement) {
-    document.getElementById('fsBtn').innerText = '🔲 WINDOWED';
-  } else {
-    document.getElementById('fsBtn').innerText = '🔲 FULLSCREEN';
-  }
-});
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+if (isIOS) {
+  let fsBtn = document.getElementById('fsBtn');
+  if (fsBtn) fsBtn.style.display = 'none';
+} else {
+  document.getElementById('fsBtn').addEventListener('click', () => {
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } 
+    else { if (document.exitFullscreen) { document.exitFullscreen(); } }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) { document.getElementById('fsBtn').innerText = '🔲 WINDOWED'; } 
+    else { document.getElementById('fsBtn').innerText = '🔲 FULLSCREEN'; }
+  });
+}
 
 document.addEventListener('keydown', (e) => {
   if (e.altKey && (e.key === 'a' || e.key === 'A')) {
@@ -592,6 +591,11 @@ let useLightMode = true, useMutantMode = true, useElectricTrap = true, useBubble
 let useTeamBattle = false, useCasterMode = false;
 let useApocalypseMode = false;
 let smogSpeedLevel = 2; 
+
+// 💡 1~5단계 스모그의 속도를 직접 커스텀할 수 있는 공간입니다. (숫자가 클수록 빠름)
+// 기준이 되는 자유낙하 속도인 16.0과 비교하여 조율해 보세요.
+let smogSpeeds = [3.5, 7.0, 10.5, 14.0, 18.0]; 
+
 let isPaused = false, isMuted = false;
 let cbLight, cbMutant, cbTeam, cbFirstOnly, cbRecord, cbAutoGauge, cbCaster, cbApocalypse;
 let lenSlider, gaugeSlider, teamGaugeSlider, teamModeSelect, randomTeamCountSelect, smogSpeedSlider; 
@@ -659,6 +663,8 @@ document.getElementById('bgmMuteBtn').addEventListener('click', () => {
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.id('gameCanvas');
+  // 💡 스마트폰의 어깨를 가볍게 해주는 결정적인 마법
+  pixelDensity(1); 
   canvas.elt.style.display = 'none';
   canvas.elt.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
   colorMode(HSB, 360, 100, 100, 100); textFont('Noto Sans KR');
@@ -693,7 +699,12 @@ function setup() {
   buildCommentWindow(); 
 }
 
-function windowResized() { resizeCanvas(windowWidth, windowHeight); initDevBgTexts(); }
+// 💡 레이스가 시작된 후에는 기기가 화면 크기를 재계산하지 않도록 통제하여 힘을 아낍니다.
+function windowResized() { 
+  if (gameStarted) return; 
+  resizeCanvas(windowWidth, windowHeight); 
+  initDevBgTexts(); 
+}
 
 function createLangUI() {
   let muteBtn = document.getElementById('bgmMuteBtn');
@@ -811,7 +822,10 @@ function createSetupUI() {
 
   let obsTitle = createElement('h3', t.obs_title); obsTitle.parent(setupDiv); obsTitle.style('margin-top', '10px'); obsTitle.style('border-bottom', '1px solid rgba(255,255,255,0.1)'); obsTitle.style('padding-bottom', '10px'); title.style('color', '#fff');
   
-  cbLight = createCheckbox(' ' + t.obs_light, true); cbLight.parent(setupDiv); cbLight.style('margin-top', '15px'); cbLight.style('color', '#ffea00'); cbLight.style('font-weight', 'bold');
+  // 💡 모바일 접속자를 위한 라이트 모드 강제 켜기 배려
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  useLightMode = isMobile; 
+  cbLight = createCheckbox(' ' + t.obs_light, useLightMode); cbLight.parent(setupDiv); cbLight.style('margin-top', '15px'); cbLight.style('color', '#ffea00'); cbLight.style('font-weight', 'bold');
   cbMutant = createCheckbox(' ' + t.obs_mutant, true); cbMutant.parent(setupDiv); cbMutant.style('margin-top', '15px'); cbMutant.style('color', '#ffaa00'); cbMutant.style('font-weight', 'bold');
   cbTeam = createCheckbox(' ' + t.obs_team, false); cbTeam.parent(setupDiv); cbTeam.style('margin-top', '15px'); cbTeam.style('color', '#ff55aa'); cbTeam.style('font-weight', 'bold');
   
@@ -960,11 +974,14 @@ function startGameFromUI() {
   if (setupBgm) { setupBgm.pause(); setupBgm.currentTime = 0; }
 }
 
+// 💡 녹화 기능 복구
 function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
 function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
+
 function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
 function getTeamName(team, t) { if (team === 'RED') return t.opt_red; if (team === 'BLUE') return t.opt_blue; if (team === 'GREEN') return t.opt_green; if (team === 'YELLOW') return t.opt_yellow; if (team === 'PURPLE') return t.opt_purple; if (team === 'ORANGE') return t.opt_orange; if (team === 'CYAN') return t.opt_cyan; if (team === 'PINK') return t.opt_pink; return ''; }
 
+// 💡 텍스트 결과 저장 기능 복구
 function downloadRankings() { 
   let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); 
   let t = i18n[currentLang];
@@ -981,6 +998,7 @@ function downloadRankings() {
   let blob = new Blob([txt], { type: 'text/plain' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let fileDate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Rankings_${fileDate}.txt`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); 
 }
 
+// 💡 레이스 최종 결과창 그리기 복구
 function drawFinalScoreboard() {
   let t = i18n[currentLang]; push(); drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'rgba(0, 229, 255, 0.4)'; fill(10, 15, 25, 230); stroke(0, 229, 255, 120); strokeWeight(2); rectMode(CENTER); let panelW = min(width * 0.8, 650); let panelH = min(height * 0.8, 650); rect(width/2, height/2, panelW, panelH, 20); drawingContext.shadowBlur = 0; 
   textAlign(CENTER, CENTER); textSize(45); fill(255); textFont('Orbitron'); noStroke(); drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#00e5ff'; text(t.score_title, width/2, height/2 - panelH/2 + 50); drawingContext.shadowBlur = 0;
@@ -1093,7 +1111,7 @@ function drawSmog(vTop, vBottom) {
 
 function drawAnnouncements() { 
   let tSize = map(constrain(width, 600, 1600), 600, 1600, 13, 22); let lineSpacing = tSize * 2.0; 
-  // 💡 댓글창 표와 겹치지 않도록 시작 위치를 상향 조정했습니다.
+  // 💡 댓글창 표와 겹치지 않도록 시작 위치를 조금 올렸습니다.
   let startY = (devTickerActive && devTickerText.trim() !== "") ? height - 130 : height - 90; 
   for (let i = 0; i < announcements.length; i++) { 
     let ann = announcements[i]; if(!isPaused) ann.life--; let alpha = 100; 
@@ -1243,9 +1261,7 @@ function draw() {
     if(activeRunners.length > 0) activeRunners[0].hasCatchUpShield = false;
 
     if (isApocalypseTriggered && !raceFinished) {
-        let baseSpeed = 16.0;
-        let speeds = [baseSpeed * 0.2, baseSpeed * 0.4, baseSpeed * 0.6, baseSpeed * 0.8, baseSpeed * 1.0];
-        smogY += speeds[constrain(smogSpeedLevel - 1, 0, 4)];
+        smogY += smogSpeeds[constrain(smogSpeedLevel - 1, 0, 4)];
     }
   }
 
@@ -1764,7 +1780,7 @@ class RacingBall {
             strokeWeight(2);
             let pulseScale = 1 + sin(frameCount * 0.2) * 0.2;
             scale(pulseScale);
-            text(timeLeft, 0, -this.r* 2.5);
+            text(timeLeft, 0, -this.r * 2.5);
             drawingContext.shadowBlur = 0;
             pop();
         }
