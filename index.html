@@ -593,8 +593,10 @@ let useApocalypseMode = false;
 let smogSpeedLevel = 2; 
 
 // 💡 1~5단계 스모그의 속도를 직접 커스텀할 수 있는 공간입니다. (숫자가 클수록 빠름)
-// 기준이 되는 자유낙하 속도인 16.0과 비교하여 조율해 보세요.
 let smogSpeeds = [3.5, 7.0, 10.5, 14.0, 18.0]; 
+
+// 💡 창 크기 변경에 대응하기 위한 디바운싱 타이머 변수
+let resizeTimeout;
 
 let isPaused = false, isMuted = false;
 let cbLight, cbMutant, cbTeam, cbFirstOnly, cbRecord, cbAutoGauge, cbCaster, cbApocalypse;
@@ -699,11 +701,15 @@ function setup() {
   buildCommentWindow(); 
 }
 
-// 💡 레이스가 시작된 후에는 기기가 화면 크기를 재계산하지 않도록 통제하여 힘을 아낍니다.
+// 💡 너그러운 화면 회전 허락 (디바운싱 마법)
 function windowResized() { 
-  if (gameStarted) return; 
-  resizeCanvas(windowWidth, windowHeight); 
-  initDevBgTexts(); 
+  // 화면을 돌리거나 주소창이 움직일 때마다 호출되는 횟수를 무시하고,
+  // 마지막 움직임 이후 0.3초(300ms)가 지났을 때만 도화지를 다시 자릅니다.
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    resizeCanvas(windowWidth, windowHeight); 
+    initDevBgTexts(); 
+  }, 300);
 }
 
 function createLangUI() {
@@ -822,7 +828,6 @@ function createSetupUI() {
 
   let obsTitle = createElement('h3', t.obs_title); obsTitle.parent(setupDiv); obsTitle.style('margin-top', '10px'); obsTitle.style('border-bottom', '1px solid rgba(255,255,255,0.1)'); obsTitle.style('padding-bottom', '10px'); title.style('color', '#fff');
   
-  // 💡 모바일 접속자를 위한 라이트 모드 강제 켜기 배려
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   useLightMode = isMobile; 
   cbLight = createCheckbox(' ' + t.obs_light, useLightMode); cbLight.parent(setupDiv); cbLight.style('margin-top', '15px'); cbLight.style('color', '#ffea00'); cbLight.style('font-weight', 'bold');
@@ -974,14 +979,12 @@ function startGameFromUI() {
   if (setupBgm) { setupBgm.pause(); setupBgm.currentTime = 0; }
 }
 
-// 💡 녹화 기능 복구
 function startRecording() { recordedChunks = []; let canvasElt = document.querySelector('canvas'); let stream = canvasElt.captureStream(30); try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e) { console.warn('MediaRecorder init failed.'); return; } mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); }; mediaRecorder.onstop = function() { downloadRecording(); }; mediaRecorder.start(); }
 function downloadRecording() { let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Memory_${dateStr}.webm`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
 
 function getTeamPrefix(team) { if (!useTeamBattle || !team) return ''; if (team === 'RED') return '🔴 '; if (team === 'BLUE') return '🔵 '; if (team === 'GREEN') return '🟢 '; if (team === 'YELLOW') return '🟡 '; if (team === 'PURPLE') return '🟣 '; if (team === 'ORANGE') return '🟠 '; if (team === 'CYAN') return '🩵 '; if (team === 'PINK') return '💖 '; return ''; }
 function getTeamName(team, t) { if (team === 'RED') return t.opt_red; if (team === 'BLUE') return t.opt_blue; if (team === 'GREEN') return t.opt_green; if (team === 'YELLOW') return t.opt_yellow; if (team === 'PURPLE') return t.opt_purple; if (team === 'ORANGE') return t.opt_orange; if (team === 'CYAN') return t.opt_cyan; if (team === 'PINK') return t.opt_pink; return ''; }
 
-// 💡 텍스트 결과 저장 기능 복구
 function downloadRankings() { 
   let sorted = [...balls].sort((a, b) => { if(a.destroyed && !b.destroyed) return 1; if(!a.destroyed && b.destroyed) return -1; if(a.finished && b.finished) return a.finishOrder - b.finishOrder; if(a.finished) return -1; if(b.finished) return 1; return b.y - a.y; }); 
   let t = i18n[currentLang];
@@ -998,7 +1001,6 @@ function downloadRankings() {
   let blob = new Blob([txt], { type: 'text/plain' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); document.body.appendChild(a); a.style = 'display: none'; a.href = url; let fileDate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.download = `PeanutRace_Rankings_${fileDate}.txt`; a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); 
 }
 
-// 💡 레이스 최종 결과창 그리기 복구
 function drawFinalScoreboard() {
   let t = i18n[currentLang]; push(); drawingContext.shadowBlur = 40; drawingContext.shadowColor = 'rgba(0, 229, 255, 0.4)'; fill(10, 15, 25, 230); stroke(0, 229, 255, 120); strokeWeight(2); rectMode(CENTER); let panelW = min(width * 0.8, 650); let panelH = min(height * 0.8, 650); rect(width/2, height/2, panelW, panelH, 20); drawingContext.shadowBlur = 0; 
   textAlign(CENTER, CENTER); textSize(45); fill(255); textFont('Orbitron'); noStroke(); drawingContext.shadowBlur = 15; drawingContext.shadowColor = '#00e5ff'; text(t.score_title, width/2, height/2 - panelH/2 + 50); drawingContext.shadowBlur = 0;
@@ -1817,7 +1819,7 @@ class Ripple { constructor(x, y) { this.x = x; this.y = y; this.r = 15; this.lif
 class Particle { constructor(x, y, col) { this.x = x; this.y = y; this.colorH = hue(col); this.colorS = saturation(col); this.colorB = brightness(col); let angle = random(TWO_PI); let speed = random(2, 12); this.vx = cos(angle) * speed; this.vy = sin(angle) * speed; this.life = 100; this.r = random(3, 8); } update() { this.vx *= 0.92; this.vy *= 0.92; this.vy += 0.15; this.x += this.vx; this.y += this.vy; this.life -= 4; this.r *= 0.95; } display() { noStroke(); fill(this.colorH, this.colorS, this.colorB, this.life); ellipse(this.x, this.y, this.r * 2); } isDead() { return this.life <= 0; } }
 function createParticles(x, y, col, num = 8) { let finalNum = useLightMode ? floor(num / 3) + 1 : floor(num * 0.5) + 1; for (let i = 0; i < finalNum; i++) { particles.push(new Particle(x, y, col)); } }
 
-class Brick { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.hue = random(360); this.item = 'none'; let rand = random(1); if (rand < 0.05) this.item = 'ice'; else if (rand < 0.15) this.item = 'bomb'; if (this.item === 'ice') this.cStr = color(200, 80, 100).toString(); else if (this.item === 'bomb') this.cStr = color(10, 90, 100).toString(); else this.cStr = color(this.hue, 80, 100).toString(); } display() { push(); translate(this.x, this.y); noStroke(); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } if (this.item === 'ice') fill(200, 80, 100); else if (this.item === 'bomb') fill(10, 90, 100); else fill(this.hue, 80, 100); rect(-this.w/2, -this.h/2, this.w, this.h, 5); if (this.item === 'ice') fill(200, 30, 100, 80); else if (this.item === 'bomb') fill(10, 30, 100, 80); else fill(this.hue, 30, 100, 50); rect(-this.w/2 + 3, -this.h/2 + 3, this.w - 6, this.h - 6, 3); if (this.item === 'ice') { push(); stroke(200, 80, 100, 80 + sin(frameCount * 0.3) * 20); strokeWeight(1.5); for(let i=0; i<3; i++) { let a = i * PI / 3; line(cos(a)*-7, sin(a)*-7, cos(a)*7, sin(a)*7); } fill(255, 150); noStroke(); ellipse(0, 0, 3, 3); pop(); } else if (this.item === 'bomb') { push(); fill(10, 80, 20); stroke(10, 90, 100); strokeWeight(1.5); ellipse(0, 2, 12, 12); stroke(40, 100, 100); noFill(); arc(3, -4, 8, 8, PI, PI+HALF_PI); let pulse = 3 + sin(frameCount * 0.4) * 2; fill(10, 100, 100); noStroke(); ellipse(3, -8, pulse, pulse); pop(); } else if (this.item !== 'none') { fill(0, 0, 100, 50 + sin(frameCount * 0.2) * 50); ellipse(0, 0, 10, 10); } drawingContext.shadowBlur = 0; pop(); } }
+class Brick { constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.hue = random(360); this.item = 'none'; let rand = random(1); if (rand < 0.05) this.item = 'ice'; else if (rand < 0.15) this.item = 'bomb'; if (this.item === 'ice') this.cStr = color(200, 80, 100).toString(); else if (this.item === 'bomb') this.cStr = color(10, 90, 100).toString(); else this.cStr = color(this.hue, 80, 100).toString(); } display() { push(); translate(this.x, this.y); noStroke(); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } if (this.item === 'ice') fill(200, 80, 100); else if (this.item === 'bomb') fill(10, 90, 100); else fill(this.hue, 80,100); rect(-this.w/2, -this.h/2, this.w, this.h, 5); if (this.item === 'ice') fill(200, 30, 100, 80); else if (this.item === 'bomb') fill(10, 30, 100, 80); else fill(this.hue, 30, 100, 50); rect(-this.w/2 + 3, -this.h/2 + 3, this.w - 6, this.h - 6, 3); if (this.item === 'ice') { push(); stroke(200, 80, 100, 80 + sin(frameCount * 0.3) * 20); strokeWeight(1.5); for(let i=0; i<3; i++) { let a = i * PI / 3; line(cos(a)*-7, sin(a)*-7, cos(a)*7, sin(a)*7); } fill(255, 150); noStroke(); ellipse(0, 0, 3, 3); pop(); } else if (this.item === 'bomb') { push(); fill(10, 80, 20); stroke(10, 90, 100); strokeWeight(1.5); ellipse(0, 2, 12, 12); stroke(40, 100, 100); noFill(); arc(3, -4, 8, 8, PI, PI+HALF_PI); let pulse = 3 + sin(frameCount * 0.4) * 2; fill(10, 100, 100); noStroke(); ellipse(3, -8, pulse, pulse); pop(); } else if (this.item !== 'none') { fill(0, 0, 100, 50 + sin(frameCount * 0.2) * 50); ellipse(0, 0, 10, 10); } drawingContext.shadowBlur = 0; pop(); } }
 class WallBar { constructor(y, side, t) { this.y = y; this.side = side; this.t = t; this.wMax = random(120, 260); this.h = random(15, 35); this.phaseOffset = random(TWO_PI); this.speed = random(0.02, 0.08); } display() { let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); push(); let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.t.cStr; } fill(this.t.hue, 80, 100, 60); stroke(this.t.hue, 80, 100, 90); strokeWeight(2); if (this.side === 'left') { rect(this.t.left, this.y, extension, this.h, 0, 10, 10, 0); stroke(255, 80); line(this.t.left, this.y + this.h/2, this.t.left + extension, this.y + this.h/2); } else { rect(this.t.right - extension, this.y, extension, this.h, 10, 0, 0, 10); stroke(255, 80); line(this.t.right - extension, this.y + this.h/2, this.t.right, this.y + this.h/2); } drawingContext.shadowBlur = 0; pop(); } applyEffect(b) { if (b.finished || b.destroyed || b.hasCatchUpShield || b.isDashing || b.divineShieldTimer > 0 || b.isLastOne || b.isJumping) return; let extension = map(sin(frameCount * this.speed + this.phaseOffset), -1, 1, 0, this.wMax); let rectLeft, rectRight; if (this.side === 'left') { rectLeft = this.t.left - 50; rectRight = this.t.left + extension; } else { rectLeft = this.t.right - extension; rectRight = this.t.right + 50; } let rectTop = this.y; let rectBottom = this.y + this.h; let closestX = constrain(b.x, rectLeft, rectRight); let closestY = constrain(b.y, rectTop, rectBottom); let d = dist(b.x, b.y, closestX, closestY); if (d < b.r) { let bounceMult = b.extremeBounceTimer > 0 ? 3 : 1; let dx = b.x - closestX; let dy = b.y - closestY; if (abs(dx) > abs(dy)) { b.vx *= -1.2 * bounceMult; b.x = closestX + (dx > 0 ? b.r : -b.r); if (this.side === 'left') b.vx += random(2, 4) * bounceMult; else b.vx -= random(2, 4) * bounceMult; } else { b.vy *= -0.9 * bounceMult; b.y = closestY + (dy > 0 ? b.r : -b.r); if (dy < 0) b.vy -= random(3, 6) * bounceMult; } createParticles(closestX, closestY, b.color, 5); playNormalHit(500, closestX, closestY); } } }
 class StaticPin { constructor(x, y, type, group) { this.x = x; this.y = y; this.r = 6; this.type = type; this.group = group; this.pulse = random(TWO_PI); this.isActive = false; if (type === 'fast') this.cStr = color(120, 100, 100).toString(); else if (type === 'slow') this.cStr = color(0, 100, 100).toString(); else this.cStr = color(40, 100, 100).toString(); } display() { this.pulse += 0.05; this.isActive = (floor(frameCount / 75) % 2 === this.group); push(); translate(this.x, this.y); let isAction = (cameraMode !== 0); if (!this.isActive) { drawingContext.shadowBlur = 0; fill(255, 10); noStroke(); ellipse(0, 0, this.r * 1.5); pop(); return; } if (this.type === 'fast') { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(120, 80, 100); noStroke(); beginShape(); vertex(0, -this.r * 1.5); vertex(this.r * 1.2, this.r * 0.5); vertex(0, this.r * 1.2); vertex(-this.r * 1.2, this.r * 0.5); endShape(CLOSE); } else if (this.type === 'slow') { if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(0, 80, 100); noStroke(); rectMode(CENTER); rect(0, 0, this.r * 2.2, this.r * 2.2, 2); } else { let currentR = this.r + sin(this.pulse) * 1.5; if (!useLightMode && !isAction) { drawingContext.shadowBlur = 15; drawingContext.shadowColor = this.cStr; } fill(40, 80, 100); noStroke(); ellipse(0, 0, currentR * 2); } drawingContext.shadowBlur = 0; pop(); } }
 class Spinner { 
@@ -1862,8 +1864,7 @@ class SoapBubble {
   display() { if (this.popped) return; push(); translate(this.x, this.y); let hueVal = (frameCount * 2 + this.y) % 360; let isAction = (cameraMode !== 0); if (!useLightMode && !isAction) { drawingContext.shadowBlur = 20; drawingContext.shadowColor = `hsla(${hueVal}, 60%, 100%, 1)`; } fill(hueVal, 40, 100, 30); stroke(hueVal, 60, 100, 90); strokeWeight(2); beginShape(); for(let a=0; a<TWO_PI; a+=0.5) { let rOff = this.r + sin(a * 3 + frameCount * 0.1) * 3; vertex(cos(a) * rOff, sin(a) * rOff); } endShape(CLOSE); noStroke(); fill(255, 180); ellipse(-this.r*0.4, -this.r*0.4, this.r*0.3, this.r*0.2); drawingContext.shadowBlur = 0; pop(); } 
   applyEffect(b) { if (b.isLastOne || this.popped || b.finished || b.destroyed || b.hasCatchUpShield || b.trapTimer > 0 || b.trapCooldown > 0 || b.isDashing || b.divineShieldTimer > 0 || b.isJumping || b.isBestDriver) return; if (dist(this.x, this.y, b.x, b.y) < this.r) { b.trapTimer = 180; b.trapType = 'bubble'; b.trapObj = this; playSwapSound(b.x, b.y); zoomTimer = 60; targetDynamicZoom = 1.4; } } 
 }
-
-function buildCommentWindow() {
+  function buildCommentWindow() {
     let openBtn = createButton('💬 댓글창');
     openBtn.id('commentOpenBtn');
     openBtn.parent(document.body);
@@ -2057,7 +2058,6 @@ function mouseWheel(event) {
   let panelWidth = useCasterMode ? 160 : 120; let panelHeight = min(250, balls.length * 24 + 16);
   if (mouseX >= 10 && mouseX <= 10 + panelWidth && mouseY >= 15 && mouseY <= 15 + panelHeight) { rankTargetScrollY += event.delta; let maxScroll = max(0, balls.length * 24 + 16 - 250); rankTargetScrollY = constrain(rankTargetScrollY, 0, maxScroll); return false; }
 }
-
 </script>
 </body>
 </html>
