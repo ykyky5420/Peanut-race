@@ -16,13 +16,21 @@
   <style>
     body {
       margin: 0; padding: 0; display: flex; justify-content: center; align-items: center;
-      /* 💡 모바일 브라우저 주소창 변화에 따른 덜컹거림을 막기 위해 100dvh로 변경 */
-      height: 100dvh; width: 100vw; background-color: #05050a; overflow: hidden;
+      /* 💡 모바일 브라우저 주소창 변화에 따른 덜컹거림 방지 및 구형 브라우저 호환성 */
+      height: 100vh; height: 100dvh; 
+      width: 100vw; background-color: #05050a; overflow: hidden;
       font-family: 'Noto Sans KR', sans-serif;
       overscroll-behavior: none; 
       touch-action: none; 
     }
-    canvas { display: block; outline: none; }
+    
+    /* 💡 [핵심 수정] 캔버스를 flex 구속에서 완전히 해방시킵니다 */
+    canvas { 
+      display: block; outline: none; 
+      position: absolute !important; top: 0 !important; left: 0 !important; 
+      width: 100vw !important; height: 100dvh !important; 
+      z-index: 1; 
+    }
     
     #ui-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 660px; height: 800px; max-height: 95vh; z-index: 10; pointer-events: none; }
     .glass-panel, input, select, button { pointer-events: auto !important; }
@@ -172,10 +180,30 @@ if (isIOS) {
   let fsBtn = document.getElementById('fsBtn');
   if (fsBtn) fsBtn.style.display = 'none';
 } else {
+  // 💡 [핵심 수정] 꼬여있던 괄호를 바로잡고, 화면 방향 유지를 깔끔하게 엮었습니다.
   document.getElementById('fsBtn').addEventListener('click', () => {
-    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } 
-    else { if (document.exitFullscreen) { document.exitFullscreen(); } }
+    if (!document.fullscreenElement) { 
+      document.documentElement.requestFullscreen().then(() => {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('any').catch(err => {
+            console.log("화면 방향 잠금 유지 불가 (무시 가능):", err);
+          });
+        }
+      }).catch(err => {
+        console.log(`Fullscreen error: ${err.message}`);
+      });
+    } 
+    else { 
+      if (document.exitFullscreen) { 
+        document.exitFullscreen().then(() => {
+           if (screen.orientation && screen.orientation.unlock) {
+               screen.orientation.unlock();
+           }
+        }); 
+      } 
+    }
   });
+
   document.addEventListener('fullscreenchange', () => {
     if (document.fullscreenElement) { document.getElementById('fsBtn').innerText = '🔲 WINDOWED'; } 
     else { document.getElementById('fsBtn').innerText = '🔲 FULLSCREEN'; }
@@ -218,7 +246,6 @@ uiContainerElt.addEventListener('touchmove', (e) => {
 uiContainerElt.addEventListener('touchend', (e) => {
   if (e.touches.length < 2) { initialPinchDist = null; }
 });
-  
 function loadAdItems() {
     adItems = [];
     let adWidth = 70; 
@@ -901,7 +928,6 @@ function createSetupUI() {
 
   for(let i=0; i<4; i++) addPlayerRow();
 }
-
 function addPlayerRow() {
   let t = i18n[currentLang];
   let row = createDiv(''); row.parent(playerListDiv); row.style('display', 'flex'); row.style('align-items', 'center'); row.style('justify-content', 'space-between'); row.style('margin-bottom', '15px'); row.style('background', 'rgba(255,255,255,0.03)'); row.style('border', '1px solid rgba(255,255,255,0.08)'); row.style('padding', '10px 15px'); row.style('border-radius', '8px');
